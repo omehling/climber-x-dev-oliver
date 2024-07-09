@@ -1,0 +1,51 @@
+### Compiler #####################
+
+FC  = ifort
+
+### Library locations ############
+NETCDF_FORTRANROOT=/home/sw/spack/spack0.14.0/usr/opt/spack/linux-centos7-x86_64/intel-18.0.4/netcdf-fortran-4.5.2-eczn2bao2fmkxguhqq4cwyohxr4ksxrj
+NETCDF_CROOT=/home/sw/spack/spack0.14.0/usr/opt/spack/linux-centos7-x86_64/intel-18.0.4/netcdf-c-4.7.3-mh6a56c4ski5altculrsme5epkcsgjcm
+INC_NC  = -I${NETCDF_FORTRANROOT}/include
+LIB_NC  = -L${NETCDF_FORTRANROOT}/lib -lnetcdff -L${NETCDF_CROOT}/lib -lnetcdf
+
+COORDROOT = src/utils/coordinates/libcoordinates
+INC_COORD = -I${COORDROOT}/include
+LIB_COORD = -L${COORDROOT}/include -lcoordinates
+
+#LIB_MKL = -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+
+#LISROOT = /home/willeit/lis
+LISROOT = src/utils/lis
+INC_LIS = -I${LISROOT}/include 
+LIB_LIS = -L${LISROOT}/lib/ -llis
+
+#YELMOROOT = src/yelmo/libyelmo
+YELMOROOT = src/yelmo_default/libyelmo
+INC_YELMO = -I${YELMOROOT}/include
+LIB_YELMO = -L${YELMOROOT}/include -lyelmo
+
+#VILMAROOT = /p/projects/megarun/matteo/climberX/src/vilma
+VILMAROOT = src/vilma
+INC_VILMA = -I${VILMAROOT}/include
+LIB_VILMA = ${VILMAROOT}/lib/vega_vip.a
+
+#FFTWROOT = /p/projects/megarun/matteo/fftw/
+FFTWROOT = src/utils/fftw/
+INC_FFTW = -I${FFTWROOT}/include
+LIB_FFTW = -L${FFTWROOT}/lib -lfftw3_omp -lfftw3 -lfftw3f_omp -lfftw3f
+
+### Compiler options #############
+
+CPPFLAGS     = -fpp
+CPPFLAGS_BGC = #-DAGG
+# Note: BGC flags control HAMOCC behaviour
+
+DFLAGS_NODEBUG = -Ofast -traceback #-O3 -xHASWELL  #-O2 -fp-model precise
+DFLAGS_DEBUG   = -C  -fp-model precise -traceback -ftrapuv -fpe0 -check all -init=snan,arrays -warn -debug extended -gen-interfaces -warn interfaces -check arg_temp_created
+DFLAGS_PROFILE = -O3 -pg -g #-O2 -fp-model precise -pg 
+
+FFLAGS_DEFAULT = -module $(objdir) -L$(objdir) $(INC_NC) $(INC_LIS) $(INC_COORD) $(INC_YELMO) $(INC_VILMA) $(INC_FFTW)
+FFLAGS_OPENMP  = $(FFLAGS_DEFAULT) -qopenmp #-parallel -qopt-report-phase=par #-qopt-report=5 #-ipo -parallel -par-threshold90 -qopt-report #-mcmodel=medium
+
+LFLAGS  = $(LIB_NC) $(LIB_COORD) $(LIB_LIS) $(LIB_YELMO) $(LIB_VILMA) $(LIB_FFTW) -Wl,-zmuldefs
+

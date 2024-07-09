@@ -1,0 +1,89 @@
+
+&geo_par
+
+ !-------------------------------------------------------
+ ! geo model (only if flag_geo==true)
+ !-------------------------------------------------------
+ i_geo = 2                     ! geography update model:
+                               ! 0 = No bed model, only sea level from ice volume 
+                               ! 1 = Local Litosphere Relaxing Astenosphere GIA model + sea level from ice volume
+                               ! 2 = VILMA solid Earth model
+
+ !-------------------------------------------------------
+ ! land-sea mask and Straits settings  
+ !-------------------------------------------------------
+ f_crit           = 0.15        ! minimum ocean fraction for grid cell to be ocean on the coarse grid
+ f_crit_eq        = 0.15        ! minimum ocean fraction for grid cell to be ocean on the coarse grid around the equator
+ l_ocn_below_shelf = F          ! allow ocean below floating ice?
+ l_connect_ocn    = T           ! enforce connectivity of the ocean on the coarse ocean model grid?
+ l_close_panama   = T           ! enforce closed Panama strait?
+ l_close_bering   = F           ! enforce closed Bering strait?
+ l_close_hudson   = F           ! enforce closed Hudson strait?
+ l_close_baltic   = F           ! enforce disconnected Baltic Sea?
+ l_fix_cell_stab  = F           ! enforce that special cell causing instabilities in ocean model is always wet?
+ l_fix_agul       = F
+
+ h_ice_min = 10.                 ! m, minimum ice thickness for grid cell to be considered covered by ice sheet
+
+ !-------------------------------------------------------
+ ! reference high resolution geo file 
+ !-------------------------------------------------------
+ geo_ref_file       = "input/RTopo-2.0.1_0.125deg_DRThydrocorr.nc"
+
+ !-------------------------------------------------------
+ ! icefree bedrock topography at 1 min resolution
+ !-------------------------------------------------------
+ z_bed_1min_file  = "input/RTopo-2.0.1_1min.nc"
+
+ !-------------------------------------------------------
+ ! relaxed icefree bedrock topography 
+ !-------------------------------------------------------
+ z_bed_rel_file  = "input/RTopo-2.0.1_10min_z_bed_rel_icefree_LLRA.nc" !"input/VILMA_zbed_relaxed_icefree.nc"
+
+ !-------------------------------------------------------
+ ! VILMA solid Earth model
+ !-------------------------------------------------------
+ l_visc_3d = T          ! use 3d viscosity structure?
+ visc_1d_file = visko_80_420_122_Clemens.inp    ! name of file containing 1d viscosity structure, used only if l_visc_3d==F
+ visc_3d_file = visc3d_Bagge2021_min_19.5.nc    ! name of file containing 3d viscosity structure, used only if l_visc_3d==T
+ vilma_grid_file = "input/vilma/vilma_grid.nc"
+
+ !-------------------------------------------------------
+ ! lakes 
+ !-------------------------------------------------------
+ i_lakes = 1            ! lakes selection:
+                        ! 1 = all lakes are considered 
+                        ! 2 = only 'sea lakes' (lakes below sea level) are considered 
+ lake_area_crit = 10000.e6  ! m2, critical lake area for lake establishment
+ lake_sea_z_crit = 0.       ! m, critical deepest point lake topography for 'sea lake' (only for i_lakes==2)
+
+ !-------------------------------------------------------
+ ! glacial isostatic adjustment (used only if i_geo==1)
+ !-------------------------------------------------------
+ gia_time_lag = 3000.   ! years, time lag of the relaxing asthenosphere
+
+
+ lon_ocn_origin = -150       ! longitude of ocean origin point (point which is always ocean)
+ lat_ocn_origin = 0          ! latitude of ocean origin point (point which is always ocean)
+
+ n_coast_cells = 10          ! number of coastal cells over which runoff is spread
+
+ i_z_min_max = 1
+ i_z_sur_std = 2
+ sigma_filter = 100.        ! km
+
+ !-------------------------------------------------------
+ ! geothermal heat flux
+ !-------------------------------------------------------
+ i_q_geo = 2                                ! geothermal heat flux. 1..uniform value q_geo_const, 2..read from file q_geo_file
+ q_geo_const = 0.055                        ! W/m2, geothermal heat flux, used only if i_q_geo==1
+ q_geo_file = "input/q_geo_Lucazeau_2019_grl_Colgan_2022_ant_Burton_2020.nc"   ! geothermal heat flux input file, used only if i_q_geo==2
+
+ !-------------------------------------------------------
+ ! sediments 
+ !-------------------------------------------------------
+ sed_file = "input/sediment_thickness_Laske_etal_2013.nc"
+
+  l_write_timer = F             ! write simulation times of the different atm model components to standard output?
+ l_output_hires = T
+/
