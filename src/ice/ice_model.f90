@@ -518,7 +518,7 @@ contains
         ice%z_base = ylmo%tpo%now%z_base 
 
         ! bedrock elevation 
-        ice%z_bed = ylmo%tpo%now%z_bed
+        ice%z_bed = ylmo%bnd%z_bed
 
         ! basal melt [m(ice)/yr] => [m(ice)/s]
         ! (negativ bc yelmo convention is basal mass balance with melt negative)
