@@ -31,7 +31,7 @@ module diffusion_mod
   use precision, only : wp
   use constants, only : r_earth
   use tridiag, only : tridiag_solve
-  use ocn_params, only : dt, l_diff33_impl, diff_gm, diffx_max, diffy_max, i_frac
+  use ocn_params, only : dt, l_diff33_impl, diff_gm, diffx_max, diffy_max
   use ocn_grid, only : k1, maxi, maxj, maxk, mask_ocn, mask_c, mask_u, mask_v, mask_w, dx, dxv, dy, dz, dza, rdx, rdy, rdza, zw, ocn_area
 
   implicit none
@@ -85,11 +85,7 @@ contains
           if (mask_u(I,j,k).eq.1) then  
             ip1 = i+1
             if (ip1.eq.maxi+1) ip1=1
-            if (i_frac.eq.1) then
-              dy_dz = dy*dz(k)
-            else if (i_frac.eq.2) then
-              dy_dz = dy*dz(k)*min(f_ocn(i,j),f_ocn(ip1,j))
-            endif
+            dy_dz = dy*dz(k)
             fdx(I,j,k) = - rdx(j) * min(diffx_max(j),diff_iso) * (tracer(ip1,j,k)-tracer_ijk) *dy_dz*dt  ! volume flux
             if (i_diff.eq.1 .and. diff_iso.ne.diff_gm) then
               drhodx = drho_dx(I,j,k)
@@ -126,11 +122,7 @@ contains
 
           ! flux to north
           if (j.lt.maxj .and. mask_v(i,J,k).eq.1) then 
-            if (i_frac.eq.1) then
-              dx_dz = dxv(J)*dz(k)
-            else if (i_frac.eq.2) then
-              dx_dz = dxv(J)*dz(k)*min(f_ocn(i,j),f_ocn(i,j+1))
-            endif
+            dx_dz = dxv(J)*dz(k)
             fdy(i,J,k) = - rdy * min(diffy_max(J),diff_iso) * (tracer(i,j+1,k)-tracer_ijk) *dx_dz*dt
             if (i_diff.eq.1 .and. diff_iso.ne.diff_gm) then
               ! add isoneutral diffusion

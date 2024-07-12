@@ -30,7 +30,7 @@ module velc_mod
 
   use precision, only : wp
   use ocn_grid, only : maxi, maxj, maxk, k1, f_pbl, c, rc, cv, rcv, rdsv, rds2, rdphi, dx, dxv, dy, dz, dza, rh, R_earth
-  use ocn_params, only : fcor, fcorv, drag_bcl, rho0, rtv, rtv3, urelax, dt, i_frac
+  use ocn_params, only : fcor, fcorv, drag_bcl, rho0, rtv, rtv3, urelax, dt
   use constants, only : g
 
   implicit none
@@ -189,17 +189,10 @@ contains
         im1 = i-1
         if (im1.eq.0) im1=maxi
         do k=k1(i,j),maxk
-          if (i_frac.eq.1) then
-            dy_dz_i = dy*dz(k)
-            dy_dz_im1 = dy*dz(k)
-            dx_dz_j = dxv(j)*dz(k)
-            dx_dz_jm1 = dxv(j-1)*dz(k)
-          else if (i_frac.eq.2) then
-            dy_dz_i = dy*dz(k)*min(f_ocn(i,j),f_ocn(ip1,j))
-            dy_dz_im1 = dy*dz(k)*min(f_ocn(im1,j),f_ocn(i,j))
-            dx_dz_j = dxv(j)*dz(k)*min(f_ocn(i,j),f_ocn(i,min(maxj,j+1)))
-            dx_dz_jm1 = dxv(j-1)*dz(k)*min(f_ocn(i,max(1,j-1)),f_ocn(i,j))
-          endif
+          dy_dz_i = dy*dz(k)
+          dy_dz_im1 = dy*dz(k)
+          dx_dz_j = dxv(j)*dz(k)
+          dx_dz_jm1 = dxv(j-1)*dz(k)
           tv1 = (u(1,i,j,k)*dy_dz_i - u(1,i-1,j,k)*dy_dz_im1) ! m3/s
           tv2 = (u(2,i,j,k)*dx_dz_j - u(2,i,j-1,k)*dx_dz_jm1) ! m3/s
           u(3,i,j,k) = tv - (tv1 + tv2) / (dx(j)*dy)

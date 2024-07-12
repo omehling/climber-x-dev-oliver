@@ -42,7 +42,7 @@ module ocn_out
   use ocn_grid, only : map_isles, map_edge
   use ocn_params, only : l_daily_output, l_output_extended
   use ocn_params, only: dt, age_tracer, i_age, dye_tracer, i_dye, cons_tracer, i_cons, l_cfc, i_cfc11, i_cfc12, rho0, saln0, n_tracers_ocn
-  use ocn_params, only: diff_dia, drag, drag_bcl, l_hosing, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, i_alphabeta
+  use ocn_params, only: diff_dia, drag, drag_bcl, l_hosing, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, i_fwf_buoy, i_alphabeta
   use ocn_params, only : l_noise_fw, l_noise_flx
   use ocn_params, only : depth_buoy
   use ocn_params, only : l_diff_dia_strat
@@ -99,13 +99,9 @@ module ocn_out
      real(wp) :: faz, fazs, fazn
      real(wp) :: buoyT_NA(nlatv_buoy)
      real(wp) :: buoyS_NA(nlatv_buoy)
-     real(wp) :: buoyT_NA2(nlatv_buoy)
-     real(wp) :: buoyS_NA2(nlatv_buoy)
      real(wp) :: buoySw_NA(nlatv_buoy)
      real(wp) :: buoySi_NA(nlatv_buoy)
-     real(wp) :: buoy1_NA(nlatv_buoy)
-     real(wp) :: buoy2_NA(nlatv_buoy)
-     real(wp) :: buoy1_NA2(nlatv_buoy)
+     real(wp) :: buoy_NA(nlatv_buoy)
      real(wp) :: hosing
      real(wp) :: noise_fw, noise_flx, fw_noise
      real(wp) :: cfc11, cfc12
@@ -878,7 +874,7 @@ contains
      endif
     enddo
 
-    ! define depth of mixed layer for North Atlantic buoyancy diagnostics
+    ! define depth of 'mixed layer' for North Atlantic buoyancy diagnostics
     k1_buoy = maxk
     tv1 = 1000._wp
     do k=maxk,1,-1
@@ -948,8 +944,7 @@ contains
     real(wp) :: shelf
     integer :: bmask
     real(wp) :: fov, fovs, fovn, faz, fazn, fazs, vbar, dxdz, vzab, vzam, sza1, sza2, fazz
-    real(wp) :: buoy1_NA(nlatv_buoy), buoy2_NA(nlatv_buoy), buoyT_NA(nlatv_buoy), buoyS_NA(nlatv_buoy)
-    real(wp) :: buoy1_NA2(nlatv_buoy), buoyT_NA2(nlatv_buoy), buoyS_NA2(nlatv_buoy)
+    real(wp) :: buoy_NA(nlatv_buoy), buoyT_NA(nlatv_buoy), buoyS_NA(nlatv_buoy)
     real(wp) :: buoySw_NA(nlatv_buoy), buoySi_NA(nlatv_buoy)
     real(wp) :: alpha, beta, rho1, rho2
     real(wp), allocatable, dimension(:,:,:) :: rho
@@ -1456,7 +1451,6 @@ contains
       JNS = minloc(abs(sv(:)-sin(pi*latv_buoy(n)/180.0)),1) + lbound(sv,1) - 1    ! -1 because index of sv array starts from 0!
       ! thermal effect
       buoyT_NA(n) = 0._wp
-      buoyT_NA2(n) = 0._wp
       do j=JNS+1,maxj
         do i=1,maxi
           if (ocn%f_ocn(i,j).gt.0._wp .and. basin_mask(i,j).eq.i_atlantic) then
@@ -1468,16 +1462,12 @@ contains
               alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
             endif
             !print *,'T,S,alpha,alpha1',ocn%ts(i,j,maxk,1),ocn%ts(i,j,maxk,2),alpha,rho2-rho1
-            buoyT_NA(n) = buoyT_NA(n) - g/cap_w*ocn%flx(i,j)*alpha/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg*K/J * J/s/m2 * kg/m3/K * m3/kg * m2 *s = kg*m/s2 = N
-            if (.not.(lon(i).lt.-40._wp .and. lon(i).gt.-100._wp .and. lat(j).lt.80._wp)) then
-              buoyT_NA2(n) = buoyT_NA2(n) - g/cap_w*ocn%flx(i,j)*alpha/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg*K/J * J/s/m2 * kg/m3/K * m3/kg * m2 *s = kg*m/s2 = N
-            endif
+            buoyT_NA(n) = buoyT_NA(n) + g/cap_w*ocn%flx(i,j)*alpha/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg*K/J * J/s/m2 * kg/m3/K * m3/kg * m2 *s = kg*m/s2 = N
           endif
         enddo
       enddo
       ! haline effect
       buoyS_NA(n) = 0._wp
-      buoyS_NA2(n) = 0._wp
       do j=JNS+1,maxj
         do i=1,maxi
           if (ocn%f_ocn(i,j).gt.0._wp .and. basin_mask(i,j).eq.i_atlantic) then
@@ -1489,32 +1479,30 @@ contains
               beta = 0.8_wp   ! kg/m3/psu
             endif
             !print *,'beta,beta1',beta,rho2-rho1
-            buoyS_NA(n) = buoyS_NA(n) - g*ocn%fw_corr(i,j)*beta*saln0/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu * m2 *s = kg*m/s2 = N
-            !buoyS_NA(n) = buoyS_NA(n) - g*ocn%flx_sur(i,j,2)/ocn%ts(i,j,maxk,2)*beta*saln0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * m/s*psu / psu * kg/m3/psu * psu * m2 *s = kg*m/s2 = N
-            !buoyS_NA(n) = buoyS_NA(n) - g*ocn%flx_sur(i,j,2)*beta*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * m/s*psu * kg/m3/psu * m2 *s = kg*m/s2 = N
-            if (.not.(lon(i).lt.-40._wp .and. lon(i).gt.-100._wp .and. lat(j).lt.80._wp)) then
-              buoyS_NA2(n) = buoyS_NA2(n) - g*ocn%fw_corr(i,j)*beta*saln0/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu * m2 *s = kg*m/s2 = N
+            if (i_fwf_buoy.eq.1) then 
+              buoyS_NA(n) = buoyS_NA(n) + g*ocn%fw_corr(i,j)*beta*saln0/rho0*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu * m2 *s = kg*m/s2 = N
+            else if (i_fwf_buoy.eq.2) then
+              buoyS_NA(n) = buoyS_NA(n) + g*ocn%flx_sur(i,j,2)*beta*ocn%grid%ocn_area(i,j)*dt  ! m/s2 * m/s*psu * kg/m3/psu * m2 *s = kg*m/s2 = N
             endif
           endif
         enddo
       enddo
-      ! buoyancy from meridional salinity flux in water column
+      ! buoyancy from meridional salinity flux relative to saln0 in the mixed layer
       buoySw_NA(n) = 0._wp
       beta = 0.8_wp   ! kg/m3/psu
       J = JNS
-      do k=1,k1_buoy   ! exclude 'mixed layer'?
+      do k=maxk,k1_buoy,-1
         do i=1,maxi
-          if (basin_mask(i,j).eq.i_atlantic .and. mask_v(i,J,k).eq.1) then
-            buoySw_NA(n) = buoySw_NA(n) - g*beta*(ocn%fay(i,J,k,2)+ocn%fdy(i,J,k,2))    ! m/s2 * kg/m3/psu * m3*psu = kg*m/s2 = N
+          if (lon(i).gt.-70. .and. basin_mask(i,j).eq.i_atlantic .and. mask_v(i,J,k).eq.1) then
+            buoySw_NA(n) = buoySw_NA(n) - g*beta*(0.5*(ocn%ts(i,j,k,2)+ocn%ts(i,j+1,k,2))-saln0)*ocn%u(2,i,J,k)*dxv(J)*dz(k)*dt    
+            ! m/s2 * kg/m3/psu * psu * m/s*m2*s = kg*m/s2 = N
           endif
         enddo
       enddo
       ! buoyancy from sea ice export
       buoySi_NA(n) = ocn%buoy_sic_NA(n)
       ! sum
-      buoy1_NA(n) = buoyT_NA(n) + buoyS_NA(n) 
-      buoy1_NA2(n) = buoyT_NA2(n) + buoyS_NA2(n) 
-      buoy2_NA(n) = buoyT_NA(n) + buoySw_NA(n) + buoySi_NA(n)
+      buoy_NA(n) = buoyT_NA(n) + buoyS_NA(n) 
     enddo
 
 
@@ -1838,13 +1826,9 @@ contains
       ann_ts(y)%fazn   = 0._wp
       ann_ts(y)%buoyT_NA(:) = 0._wp
       ann_ts(y)%buoyS_NA(:) = 0._wp
-      ann_ts(y)%buoyT_NA2(:) = 0._wp
-      ann_ts(y)%buoyS_NA2(:) = 0._wp
       ann_ts(y)%buoySw_NA(:) = 0._wp
       ann_ts(y)%buoySi_NA(:) = 0._wp
-      ann_ts(y)%buoy1_NA2(:) = 0._wp
-      ann_ts(y)%buoy1_NA(:) = 0._wp
-      ann_ts(y)%buoy2_NA(:) = 0._wp
+      ann_ts(y)%buoy_NA(:) = 0._wp
       ann_ts(y)%fw_bering = 0._wp
       ann_ts(y)%fw_davis = 0._wp
       ann_ts(y)%fw_fram = 0._wp
@@ -1959,13 +1943,9 @@ contains
     ann_ts(y)%fazn  = ann_ts(y)%fazn + fazn*1e-6 * ann_avg  ! Sv
     ann_ts(y)%buoyT_NA(:)  = ann_ts(y)%buoyT_NA(:) + buoyT_NA(:)
     ann_ts(y)%buoyS_NA(:)  = ann_ts(y)%buoyS_NA(:) + buoyS_NA(:)
-    ann_ts(y)%buoyT_NA2(:)  = ann_ts(y)%buoyT_NA2(:) + buoyT_NA2(:)
-    ann_ts(y)%buoyS_NA2(:)  = ann_ts(y)%buoyS_NA2(:) + buoyS_NA2(:)
     ann_ts(y)%buoySw_NA(:)  = ann_ts(y)%buoySw_NA(:) + buoySw_NA(:)
     ann_ts(y)%buoySi_NA(:)  = ann_ts(y)%buoySi_NA(:) + buoySi_NA(:)
-    ann_ts(y)%buoy1_NA(:)  = ann_ts(y)%buoy1_NA(:) + buoy1_NA(:)
-    ann_ts(y)%buoy2_NA(:)  = ann_ts(y)%buoy2_NA(:) + buoy2_NA(:)
-    ann_ts(y)%buoy1_NA2(:)  = ann_ts(y)%buoy1_NA2(:) + buoy1_NA2(:)
+    ann_ts(y)%buoy_NA(:)  = ann_ts(y)%buoy_NA(:) + buoy_NA(:)
     ann_ts(y)%fw_bering = ann_ts(y)%fw_bering + fw_bering    * ann_avg ! Sv
     ann_ts(y)%fw_davis = ann_ts(y)%fw_davis + fw_davis    * ann_avg ! Sv
     ann_ts(y)%fw_fram = ann_ts(y)%fw_fram + fw_fram    * ann_avg ! Sv
@@ -2046,7 +2026,7 @@ contains
           pe_lab = pe_lab + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)   ! J/m2*m2=J
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_lab = buoy_lab - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_lab = buoy_lab + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_lab = t_lab + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_lab = s_lab + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_lab = area_lab + ocn%grid%ocn_area(i,j)
@@ -2080,7 +2060,7 @@ contains
           pe_irm = pe_irm + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)   ! J/m2*m2=J
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_irm = buoy_irm - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_irm = buoy_irm + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_irm = t_irm + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_irm = s_irm + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_irm = area_irm + ocn%grid%ocn_area(i,j)
@@ -2114,7 +2094,7 @@ contains
           pe_gin = pe_gin + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_gin = buoy_gin - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_gin = buoy_gin + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_gin = t_gin + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_gin = s_gin + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_gin = area_gin + ocn%grid%ocn_area(i,j)
@@ -2148,7 +2128,7 @@ contains
           pe_bkn = pe_bkn + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_bkn = buoy_bkn - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_bkn = buoy_bkn + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_bkn = t_bkn + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_bkn = s_bkn + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_bkn = area_bkn + ocn%grid%ocn_area(i,j)
@@ -2182,7 +2162,7 @@ contains
           pe_wedd = pe_wedd + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_wedd = buoy_wedd - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_wedd = buoy_wedd + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_wedd = t_wedd + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_wedd = s_wedd + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_wedd = area_wedd + ocn%grid%ocn_area(i,j)
@@ -2216,7 +2196,7 @@ contains
           pe_ross = pe_ross + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_ross = buoy_ross - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_ross = buoy_ross + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
           t_ross = t_ross + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_ross = s_ross + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_ross = area_ross + ocn%grid%ocn_area(i,j)
@@ -2250,7 +2230,8 @@ contains
           pe_so = pe_so + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)
           alpha = (519._wp+122._wp*ocn%ts(i,j,maxk,1))*1.e-4_wp    ! kg/m3/K
           beta = 0.8_wp   ! kg/m3/psu
-          buoy_so = buoy_so - (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+          buoy_so = buoy_so + (ocn%flx(i,j)*alpha/cap_w+ocn%fw_corr(i,j)*beta*saln0) * g/rho0*ocn%grid%ocn_area(i,j)*dt  ! N 
+
           t_sos = t_sos + ocn%ts(i,j,maxk,1)*ocn%grid%ocn_area(i,j)
           s_sos = s_sos + ocn%ts(i,j,maxk,2)*ocn%grid%ocn_area(i,j)
           area_so = area_so + ocn%grid%ocn_area(i,j)
@@ -2839,7 +2820,11 @@ contains
           else if (i_alphabeta.eq.2) then
             beta = 0.8_wp   ! kg/m3/psu
           endif
-          mon_o(mon)%buoyS(i,j) = mon_o(mon)%buoyS(i,j) + g*ocn%fw_corr(i,j)*beta*saln0/rho0 * mon_avg  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu = kg*m/s2 = N/m2/s
+          if (i_fwf_buoy.eq.1) then 
+            mon_o(mon)%buoyS(i,j) = mon_o(mon)%buoyS(i,j) + g*ocn%fw_corr(i,j)*beta*saln0/rho0 * mon_avg  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu = kg*m/s2 = N/m2/s
+          else if (i_fwf_buoy.eq.2) then 
+            mon_o(mon)%buoyS(i,j) = mon_o(mon)%buoyS(i,j) + g*ocn%flx_sur(i,j,2)*beta * mon_avg  ! m/s2 * kg/m2/s kg/m3/psu * m3/kg * psu = kg*m/s2 = N/m2/s
+          endif
           mon_o(mon)%buoy(i,j) = mon_o(mon)%buoyT(i,j) + mon_o(mon)%buoyS(i,j)
         endif
       enddo
@@ -3186,22 +3171,17 @@ contains
     call nc_write(fnm,"fazs",    vars%fazs,dim1=dim_time,start=[ndat],count=[y],long_name="Freshwater flux by the azonal circulation into the Atlantic at its southern border",units="Sv",ncid=ncid)
     call nc_write(fnm,"fazn",    vars%fazn,dim1=dim_time,start=[ndat],count=[y],long_name="Freshwater flux by the azonal circulation out of the Atlantic at its northern border",units="Sv",ncid=ncid)
 
-    call nc_write(fnm,"buoyT_NA55",    vars%buoyT_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Thermal component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoyS_NA55",    vars%buoyS_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Haline component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoySw_NA55",    vars%buoySw_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux from net salinity transport into the North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoySi_NA55",    vars%buoySi_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Sea ice export component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoy1_NA55",    vars%buoy1_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Bouyancy flux over North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoy2_NA55",    vars%buoy2_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="-Bouyancy flux over North Atlantic",units="N",ncid=ncid)
-    call nc_write(fnm,"buoyT_NA65E",    vars%buoyT_NA2(ilatv_buoy_sel2),dim1=dim_time,start=[ndat],count=[y],long_name="-Thermal component of surface bouyancy flux over North Atlantic 2",units="N",ncid=ncid)
-    call nc_write(fnm,"buoyS_NA65E",    vars%buoyS_NA2(ilatv_buoy_sel2),dim1=dim_time,start=[ndat],count=[y],long_name="-Haline component of surface bouyancy flux over North Atlantic 2",units="N",ncid=ncid)
-    call nc_write(fnm,"buoy1_NA65E",    vars%buoy1_NA2(ilatv_buoy_sel2),dim1=dim_time,start=[ndat],count=[y],long_name="-Bouyancy flux over North Atlantic 2",units="N",ncid=ncid)
+    call nc_write(fnm,"buoyT_NA55",    vars%buoyT_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="Thermal component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+    call nc_write(fnm,"buoyS_NA55",    vars%buoyS_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="Haline component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+    call nc_write(fnm,"buoySw_NA55",    vars%buoySw_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux from net salinity transport into the North Atlantic",units="N",ncid=ncid)
+    call nc_write(fnm,"buoySi_NA55",    vars%buoySi_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="Sea ice export component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+    call nc_write(fnm,"buoy_NA55",    vars%buoy_NA(ilatv_buoy_sel),dim1=dim_time,start=[ndat],count=[y],long_name="Bouyancy flux over North Atlantic",units="N",ncid=ncid)
     do n=1,nlatv_buoy
-      call nc_write(fnm,"buoyT_NA",    vars%buoyT_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Thermal component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-      call nc_write(fnm,"buoyS_NA",    vars%buoyS_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Haline component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-      call nc_write(fnm,"buoySw_NA",    vars%buoySw_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Buoyancy flux from net salinity transport into the North Atlantic",units="N",ncid=ncid)
-      call nc_write(fnm,"buoySi_NA",    vars%buoySi_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Sea ice export component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
-      call nc_write(fnm,"buoy1_NA",    vars%buoy1_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Bouyancy flux over North Atlantic",units="N",ncid=ncid)
-      call nc_write(fnm,"buoy2_NA",    vars%buoy2_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="-Bouyancy flux over North Atlantic 2",units="N",ncid=ncid)
+      call nc_write(fnm,"buoyT_NA",    vars%buoyT_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="Thermal component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+      call nc_write(fnm,"buoyS_NA",    vars%buoyS_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="Haline component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+      call nc_write(fnm,"buoySw_NA",    vars%buoySw_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="Buoyancy flux from net salinity transport into the North Atlantic",units="N",ncid=ncid)
+      call nc_write(fnm,"buoySi_NA",    vars%buoySi_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="Sea ice export component of surface bouyancy flux over North Atlantic",units="N",ncid=ncid)
+      call nc_write(fnm,"buoy_NA",    vars%buoy_NA(n),dim1=dim_lat,dim2=dim_time,start=[n,ndat],count=[1,y],long_name="Bouyancy flux over North Atlantic",units="N",ncid=ncid)
     enddo
 
     call nc_write(fnm,"fw_bering",   vars%fw_bering,dim1=dim_time,start=[ndat],count=[y],long_name="Bering Strait freshwater transport relative to saln0",units="SV",ncid=ncid)
@@ -3254,13 +3234,13 @@ contains
     call nc_write(fnm,"pe_ross", vars%pe_ross,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in the Ross Sea",units="J",ncid=ncid)
     call nc_write(fnm,"pe_so",   vars%pe_so,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in the Southern Ocean around Antarctica",units="J",ncid=ncid)
 
-    call nc_write(fnm,"buoy_lab",   vars%buoy_lab,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over Labrador Sea",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_irm",   vars%buoy_irm,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over Irminger Sea",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_gin",  vars%buoy_gin,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over the GIN seas",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_bkn",  vars%buoy_bkn,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over the Barents-Kara-Nansen seas",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_wedd", vars%buoy_wedd,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over the Weddel Sea",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_ross", vars%buoy_ross,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over the Ross Sea",units="J",ncid=ncid)
-    call nc_write(fnm,"buoy_so",   vars%buoy_so,dim1=dim_time,start=[ndat],count=[y],long_name="-Buoyancy flux over the Southern Ocean around Antarctica",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_lab",   vars%buoy_lab,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over Labrador Sea",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_irm",   vars%buoy_irm,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over Irminger Sea",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_gin",  vars%buoy_gin,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over the GIN seas",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_bkn",  vars%buoy_bkn,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over the Barents-Kara-Nansen seas",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_wedd", vars%buoy_wedd,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over the Weddel Sea",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_ross", vars%buoy_ross,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over the Ross Sea",units="J",ncid=ncid)
+    call nc_write(fnm,"buoy_so",   vars%buoy_so,dim1=dim_time,start=[ndat],count=[y],long_name="Buoyancy flux over the Southern Ocean around Antarctica",units="J",ncid=ncid)
 
     call nc_write(fnm,"t_atlN50",   vars%t_atlN50,dim1=dim_time,start=[ndat],count=[y],  long_name="Average sea surface temperature in Atlantic >50N",units="degC",ncid=ncid)
     call nc_write(fnm,"t_lab",   vars%t_lab,dim1=dim_time,start=[ndat],count=[y],  long_name="Average sea surface temperature in Labrador Sea",units="degC",ncid=ncid)

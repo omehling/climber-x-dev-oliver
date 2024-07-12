@@ -77,7 +77,6 @@
  !-------------------------------------------------------------------------------------------
  ! diffusion settings
  !-------------------------------------------------------------------------------------------
- i_frac = 1
  i_diff = 1                   ! diffusion schemes:
                               ! 0 = horizontal/vertical diffusion
                               ! 1 = isopycnal/diapycnal diffusion
@@ -232,9 +231,12 @@
  lon_min_noise = -175         ! western longitude bound for noise region 
  lon_max_noise = 175          ! eastern longitude bound for noise region
 
+ !-------------------------------------------------------------------------------------------
+ ! for surface buoyancy flux diagnostics
+ !-------------------------------------------------------------------------------------------
+ i_fwf_buoy = 1
  i_alphabeta = 1
-
- depth_buoy = 0.
+ depth_buoy = 50.
 
  !-------------------------------------------------------------------------------------------
  ! fixed boundary conditions settings

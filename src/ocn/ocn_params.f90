@@ -89,7 +89,6 @@ module ocn_params
      real(wp) :: pe_buoy_coeff, ke_tau_coeff, ke_wind_dec
      integer :: i_eos
      real(wp) :: drhcor_max
-     integer :: i_frac
      integer :: i_diff
      integer :: i_diff_dia
      logical :: l_diff33_impl
@@ -155,6 +154,7 @@ module ocn_params
      real(wp) :: lat_min_flux_adj_atl, lat_max_flux_adj_atl
      real(wp) :: lat_min_flux_adj_pac, lat_max_flux_adj_pac
 
+     integer :: i_fwf_buoy 
      integer :: i_alphabeta
      real(wp) :: depth_buoy
 
@@ -250,7 +250,6 @@ subroutine ocn_par_load(filename)
 
     call nml_read(filename,"ocn_par","i_advection",i_advection)
 
-    call nml_read(filename,"ocn_par","i_frac",i_frac)
     call nml_read(filename,"ocn_par","i_diff",i_diff)
     call nml_read(filename,"ocn_par","i_diff_dia",i_diff_dia)
     call nml_read(filename,"ocn_par","l_diff33_impl",l_diff33_impl)
@@ -353,6 +352,7 @@ subroutine ocn_par_load(filename)
     if (.not.l_flux_adj_pac) flux_adj_pac = 0._wp
     if (.not.l_flux_adj_ant) flux_adj_ant = 0._wp
 
+    call nml_read(filename,"ocn_par","i_fwf_buoy",i_fwf_buoy)
     call nml_read(filename,"ocn_par","i_alphabeta",i_alphabeta)
     call nml_read(filename,"ocn_par","depth_buoy",depth_buoy)
 

@@ -28,5 +28,5 @@ module gitversion
   implicit none
   private
   public git_commit_hash
-  character (len=*), parameter :: git_commit_hash = "$Id: git_commit_hash 4ed2b1f69aa574285fe9a933553168e34afcb5cb$"
+  character (len=*), parameter :: git_commit_hash = "$Id: git_commit_hash 7856c86d1df33caf9f8fcc652e1f60bb7da62813$"
 end module gitversion
