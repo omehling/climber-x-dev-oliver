@@ -517,6 +517,9 @@ contains
         ! ice base elevation 
         ice%z_base = ylmo%tpo%now%z_base 
 
+        ! bedrock elevation 
+        ice%z_bed = ylmo%tpo%now%z_bed
+
         ! basal melt [m(ice)/yr] => [m(ice)/s]
         ! (negativ bc yelmo convention is basal mass balance with melt negative)
         ice%Q_b = -ylmo%tpo%now%bmb*ylmo%tpo%now%f_ice/ylmo%bnd%c%sec_year 
@@ -593,6 +596,8 @@ contains
             ice%z_sur(i,j) = sico%state%zs(j-1,i-1)     ! m
             ! ice base elevation
             ice%z_base(i,j) = sico%state%zb(j-1,i-1)    ! m
+            ! bedrock elevation
+            ice%z_bed(i,j) = sico%state%zl(j-1,i-1)    ! m
             ! basal melt 
             ice%Q_b(i,j) = sico%state%Q_b_apl(j-1,i-1)     ! m(ice)/s
             ! calving

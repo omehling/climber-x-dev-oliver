@@ -2812,8 +2812,6 @@ contains
     ! change in sea level (m)
     geo%d_sea_level = -(V_af-V_af_old)*(rho_i/rho_w)/geo%ocn_area_tot     ! m^3 ice equiv./m^2 -> m water equiv. -> sea level equivalent
 
-    ! write(6,*) "coupler_test", geo%d_sea_level, V_af_old, V_af, V_grounded 
-
     ! save ice volume above floatation
     V_af_old = V_af
 
