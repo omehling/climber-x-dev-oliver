@@ -1680,7 +1680,7 @@ contains
     call nc_write_dim(fnm,dim_x,x=smb%grid%G%x0,dx=smb%grid%G%dx,nx=nx,axis="x",units="m",ncid=ncid)
     call nc_write_dim(fnm,dim_y,x=smb%grid%G%y0,dx=smb%grid%G%dy,nx=ny,axis="y",units="m",ncid=ncid)
     call nc_write_dim(fnm,dim_month,x=1,dx=1,nx=nmon_year,units="mon",ncid=ncid)
-    call nc_write_dim(fnm,dim_depth,x=0,dx=1,nx=nl,axis="z",units="#",ncid=ncid)
+    call nc_write_dim(fnm,dim_depth,x=0,dx=1,nx=nl+1,axis="z",units="#",ncid=ncid)
 
     call nc_write(fnm,"mask_smb", smb%mask_smb, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="mask where to compute surface mass balance",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
