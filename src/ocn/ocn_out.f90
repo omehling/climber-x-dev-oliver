@@ -78,6 +78,7 @@ module ocn_out
   integer :: j_wedd(2), i_wedd(2)
   integer :: j_ross(2), i_ross(2)
   integer :: j_so(2), i_so(2)
+  integer :: j_ibe, i_ibe
   integer, parameter :: nlatv_buoy = 6
   real(wp), dimension(nlatv_buoy) :: latv_buoy = (/40._wp,45._wp,50._wp,55._wp,60._wp,65._wp/)
   integer, parameter :: ilatv_buoy_sel = 4
@@ -119,6 +120,7 @@ module ocn_out
      real(wp) :: buoy_lab, buoy_irm, buoy_gin, buoy_bkn, buoy_wedd, buoy_ross, buoy_so
      real(wp) :: t_atlN50, t_lab, t_irm, t_gin, t_bkn, t_wedd, t_ross, t_so
      real(wp) :: s_atlN50, s_lab, s_irm, s_gin, s_bkn, s_wedd, s_ross, s_so
+     real(wp) :: t_ibe
   end type
 
   type o_out
@@ -178,7 +180,7 @@ contains
     integer :: i, j, k
     real(wp) :: tv1
     real(wp) :: dist_drake, dist_bering, dist_davis, dist_fram, dist_denmark, dist_medi, dist_indo, dist_agulhas
-    real(wp) :: dist_atlN50, dist_lab, dist_irm, dist_gin, dist_bkn, dist_wedd, dist_ross, dist_so
+    real(wp) :: dist_atlN50, dist_lab, dist_irm, dist_gin, dist_bkn, dist_wedd, dist_ross, dist_so, dist_ibe
     real(wp), parameter :: lon_drake=-67.5_wp, lat_drake=-60._wp
     real(wp), parameter :: lon_bering=-167.5_wp, lat_bering=67.5_wp
     real(wp), parameter :: lon_davis=-62.5_wp, lat_davis=67.5_wp
@@ -195,6 +197,7 @@ contains
     real(wp), parameter :: lon_wedd_1=-80_wp, lon_wedd_2=-10._wp, lat_wedd_1=-85._wp , lat_wedd_2=-65._wp
     real(wp), parameter :: lon_ross_1=-180_wp, lon_ross_2=-140._wp, lat_ross_1=-85._wp , lat_ross_2=-65._wp
     real(wp), parameter :: lon_so_1=-180_wp, lon_so_2=180._wp, lat_so_1=-85._wp , lat_so_2=-55._wp
+    real(wp), parameter :: lon_ibe=-7.5_wp, lat_ibe=37.5_wp
 
 
     nout = 0
@@ -772,6 +775,22 @@ contains
        endif
     enddo
 
+    i_ibe = 0
+    dist_ibe = 999.
+    do i=1,maxi
+       if (modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_ibe/180.0)),2.0*pi).lt.dist_ibe) then
+          i_ibe = i
+          dist_ibe = modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_ibe/180.0)),2.0*pi)
+       endif
+    enddo
+    j_ibe = 0
+    dist_ibe = 999.
+    do j=1,maxj
+       if (abs(sv(j)-sin(pi*lat_ibe/180.0)).lt.dist_ibe) then
+          j_ibe = j
+          dist_ibe = abs(sv(j)-sin(pi*lat_ibe/180.0))
+       endif
+    enddo
 
     loc_medi(1) = 0
     dist_medi = 999.
@@ -1882,6 +1901,7 @@ contains
       ann_ts(y)%t_wedd = 0._wp
       ann_ts(y)%t_ross = 0._wp
       ann_ts(y)%t_so = 0._wp
+      ann_ts(y)%t_ibe = 0._wp
       ann_ts(y)%s_atlN50 = 0._wp
       ann_ts(y)%s_lab = 0._wp
       ann_ts(y)%s_irm = 0._wp
@@ -2280,6 +2300,7 @@ contains
     ann_ts(y)%t_wedd = ann_ts(y)%t_wedd + t_wedd * ann_avg
     ann_ts(y)%t_ross = ann_ts(y)%t_ross + t_ross * ann_avg
     ann_ts(y)%t_so   = ann_ts(y)%t_so   + t_sos  * ann_avg
+    ann_ts(y)%t_ibe  = ann_ts(y)%t_ibe  + ocn%ts(i_ibe,j_ibe,maxk,1)  * ann_avg
     ann_ts(y)%s_atlN50   = ann_ts(y)%s_atlN50   + s_atlN50   * ann_avg 
     ann_ts(y)%s_lab   = ann_ts(y)%s_lab   + s_lab   * ann_avg 
     ann_ts(y)%s_irm   = ann_ts(y)%s_irm   + s_irm   * ann_avg 
@@ -3250,6 +3271,7 @@ contains
     call nc_write(fnm,"t_wedd", vars%t_wedd,dim1=dim_time,start=[ndat],count=[y],long_name="Average sea surface temperature in the Weddel Sea",units="degC",ncid=ncid)
     call nc_write(fnm,"t_ross", vars%t_ross,dim1=dim_time,start=[ndat],count=[y],long_name="Average sea surface temperature in the Ross Sea",units="degC",ncid=ncid)
     call nc_write(fnm,"t_so",   vars%t_so,dim1=dim_time,start=[ndat],count=[y],  long_name="Average sea surface temperature in the Southern Ocean around Antarctica",units="degC",ncid=ncid)
+    call nc_write(fnm,"t_ibe",  vars%t_ibe,dim1=dim_time,start=[ndat],count=[y], long_name="Annual mean sea surface temperature at the Iberian margin",units="degC",ncid=ncid)
 
     call nc_write(fnm,"s_atlN50",   vars%s_atlN50,dim1=dim_time,start=[ndat],count=[y],  long_name="Average sea surface salinity in Atlantic >50N",units="degC",ncid=ncid)
     call nc_write(fnm,"s_lab",   vars%s_lab,dim1=dim_time,start=[ndat],count=[y],  long_name="Average sea surface salinity in Labrador Sea",units="degC",ncid=ncid)
