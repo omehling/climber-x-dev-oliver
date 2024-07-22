@@ -38,6 +38,7 @@ module coupler
     use control, only : ico2_rad, ich4_rad, id13c, iD14c, prc_forcing
     use control, only : ocn_restore_temp, ocn_restore_sal, atm_fix_tau
     use control, only : flag_co2, flag_ch4, flag_atm, flag_ocn, flag_bgc, flag_sic, flag_lnd, flag_dust, flag_smb, flag_imo, flag_ice, flag_geo, flag_lakes
+    use control, only : geo_restart
     use control, only : ifake_ice
     use control, only : l_spinup_cc
     use control, only : l_weathering
@@ -2711,8 +2712,8 @@ contains
     type(geo_class) :: geo
 
     integer :: i, j, n
-    real(wp) :: V_grounded, V_gr_redu, V_af
-    real(wp), save :: V_af_old
+    real(wp) :: V_grounded, V_gr_redu, V_ice_af
+    real(wp), save :: V_ice_af_old
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
     type(map_class), save, allocatable, dimension(:) :: map_ice_to_geo
@@ -2806,14 +2807,23 @@ contains
     enddo
 
     ! total ice volume above floatation (which contributes to sea level)
-    V_af    = V_grounded - V_gr_redu
-    if (firstcall) V_af_old = V_af
+    V_ice_af    = V_grounded - V_gr_redu
+
+    if (firstcall) then
+      if (geo_restart) then
+        V_ice_af_old = geo%V_ice_af
+      else
+        V_ice_af_old = V_ice_af
+      endif
+    endif
+
+    geo%V_ice_af = V_ice_af
 
     ! change in sea level (m)
-    geo%d_sea_level = -(V_af-V_af_old)*(rho_i/rho_w)/geo%ocn_area_tot     ! m^3 ice equiv./m^2 -> m water equiv. -> sea level equivalent
+    geo%d_sea_level = -(V_ice_af-V_ice_af_old)*(rho_i/rho_w)/geo%ocn_area_tot     ! m^3 ice equiv./m^2 -> m water equiv. -> sea level equivalent
 
     ! save ice volume above floatation
-    V_af_old = V_af
+    V_ice_af_old = V_ice_af
 
     if (firstcall) firstcall = .false.
 

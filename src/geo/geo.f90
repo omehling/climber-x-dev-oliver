@@ -49,7 +49,7 @@ module geo_mod
   use fill_ocean_mod, only : fill_ocean
   use topo_fill_mod, only : topo_fill
   use topo_filter_mod, only : topo_filter
-  use vilma_model, only : vilma_init, vilma_update, vilma_end
+  use vilma_model, only : vilma_init, vilma_update, vilma_end, vilma_write_restart
   use gia_mod, only : gia_init, gia_update
   use q_geo_mod, only : geo_heat
   use sed_mod, only : sed
@@ -587,9 +587,11 @@ contains
     endif
 
     !-------------------------------------------------------------------
-    ! initialize VILMA, for some reason this is needed even if VILMA is not used later
+    ! initialize VILMA
     !-------------------------------------------------------------------
-    !call vilma_init(geo%hires%grid, geo%hires%z_bed, geo%hires%h_ice) ! fixme, what should the reference topography be? Unloaded? Relaxed?
+    if (flag_geo .and. i_geo.eq.2) then
+      call vilma_init(geo%hires%grid, geo%hires%z_bed_ref, geo%hires%h_ice) 
+    endif
 
     print*
     print*,'======================================================='
@@ -650,16 +652,12 @@ contains
       !-------------------------------------------------------------------
       ! VILMA solid Earth model
 
-      ! initialize VILMA 
-      if (firstcall) then
-        call vilma_init(geo%hires%grid, geo%hires%z_bed, geo%hires%h_ice) ! fixme, what should the reference topography be? Unloaded? Relaxed?
+      if (.not.firstcall) then
+        ! takes current ice load (thickness) as input
+        ! returns relative sea level and new bedrock elevation
+        call vilma_update(geo%hires%grid, geo%hires%h_ice, & ! in
+          geo%hires%rsl, geo%hires%z_bed)    ! out
       endif
-
-      ! call VILMA 
-      ! takes current ice load (thickness) as input
-      ! returns relative sea level and new bedrock elevation
-      call vilma_update(geo%hires%grid, geo%hires%h_ice, & ! in
-        geo%hires%rsl, geo%hires%z_bed)    ! out
 
     endif
     !$ time2 = omp_get_wtime()
@@ -737,13 +735,6 @@ contains
     geo%hires%z_topo_fil)   ! out
   !$ time2 = omp_get_wtime()
   !$ if(l_write_timer) print *,'topo_filter',time2-time1
-
-  if (i_geo==2) then
-    ! derive global mean sea level, diagnostic only
-    ! area-weighted? fixme todo
-    nocn = count(geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3) 
-    geo%sea_level = sum(geo%hires%rsl, geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3) / real(nocn,wp)
-  endif
 
   !-------------------------------------------------------------------
   ! compute ocean fraction of coarse grid and make sure all ocean cells are connected
@@ -934,6 +925,13 @@ contains
   geo%lake_area_tot = sum(area_dp,geo%hires%mask.eq.4)
 
   !-------------------------------------------------------------------
+  ! diagnostic global mean relative sea level 
+  !-------------------------------------------------------------------
+  if (i_geo==2) then
+    geo%sea_level = sum(geo%hires%rsl*area_dp, mask=geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3)/geo%ocn_area_tot
+  endif
+
+  !-------------------------------------------------------------------
   ! compute Bering Strait cross-sectional area
   !-------------------------------------------------------------------
   geo%A_bering = 1.e15_wp
@@ -949,7 +947,6 @@ contains
       geo%A_bering = min(geo%A_bering,A_bering)
     endif
   enddo
-  print *,'A_bering',geo%A_bering
 
   if (firstcall) firstcall = .false.
 
@@ -970,7 +967,7 @@ contains
     type(geo_class) :: geo
 
 
-    if (i_geo==2) then
+    if (flag_geo .and. i_geo==2) then
       ! end VILMA
       call vilma_end
     endif
@@ -1069,10 +1066,11 @@ contains
   ! Function :  g e o _ w r i t e _ r e s t a r t
   ! Purpose  :  Write restart netcdf file 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine geo_write_restart(fnm,geo)
+  subroutine geo_write_restart(dir,fnm,geo)
 
     implicit none
 
+    character (len=*) :: dir
     character (len=*) :: fnm
     type(geo_class) :: geo
 
@@ -1083,6 +1081,7 @@ contains
     call nc_write_dim(fnm,"lat",x=geo%hires%grid%lat(1,:),axis="y")
 
     call nc_write(fnm,"sea_level", geo%sea_level, dim1="g", long_name="sea_level",units="m")
+    call nc_write(fnm,"V_ice_af", geo%V_ice_af, dim1="g", long_name="volume of ice above floatation",units="m3")
 
     call nc_write(fnm,"z_bed ", geo%hires%z_bed , dims=["lon","lat"],long_name="z_bed ",units="m")
     call nc_write(fnm,"z_topo", geo%hires%z_topo, dims=["lon","lat"],long_name="z_topo",units="m") 
@@ -1090,6 +1089,9 @@ contains
     call nc_write(fnm,"rsl   ", geo%hires%rsl   , dims=["lon","lat"],long_name="rsl   ",units="m")
     call nc_write(fnm,"mask  ", geo%hires%mask  , dims=["lon","lat"],long_name="mask  ",units="1")
 
+    if (flag_geo .and. i_geo.eq.2) then
+      call vilma_write_restart(dir)
+    endif
 
    return
 
@@ -1108,6 +1110,7 @@ contains
     type(geo_class) :: geo
 
     call nc_read(fnm,"sea_level", geo%sea_level      )
+    call nc_read(fnm,"V_ice_af",  geo%V_ice_af       )
 
     call nc_read(fnm,"z_bed    ", geo%hires%z_bed    )
     call nc_read(fnm,"z_topo   ", geo%hires%z_topo   ) 
