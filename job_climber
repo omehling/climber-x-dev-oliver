@@ -31,7 +31,7 @@ def usage():
       -s   : slurm option, use this to submit job to the queue;
             default is to run the job as a background process
             
-      -p   : partition to be used (haswell or broadwell)
+      -p   : partition to be used 
             
       -w   : Wall clock time, specify the wall clock limit in the 
             slurm script ( '-w 1' means the job will be killed
@@ -587,7 +587,7 @@ def jobscript(executable,partition,outfldr,username,usergroup,classub,wtime,jobn
 #SBATCH --time=%s:00:00
 #SBATCH --mem=6000
 #SBATCH --no-requeue
-##SBATCH --constraint=%s
+#SBATCH --partition=%s
 
 export GMON_OUT_PREFIX=%s/gmon
 
@@ -614,7 +614,7 @@ def jobscriptvtune(executable,partition,outfldr,username,usergroup,classub,wtime
 #SBATCH --time=%s:00:00
 #SBATCH --mem=6000
 #SBATCH --no-requeue
-##SBATCH --constraint=%s
+#SBATCH --partition=%s
 
 export GMON_OUT_PREFIX=%s/gmon
 
@@ -645,9 +645,9 @@ def jobscriptpar(executable,partition,outfldr,username,usergroup,classub,wtime,t
 #SBATCH --tasks-per-node=1
 #SBATCH --time=%s:00:00
 #SBATCH --no-requeue
-##SBATCH --constraint=%s
+#SBATCH --partition=%s
 
-# 3. this is how many CPUs our task will require (up to 32 on broadwell, 16 on haswell)
+# 3. this is how many CPUs our task will require 
 #SBATCH --cpus-per-task=%s
 
 export LD_LIBRARY_PATH=${NETCDF_FORTRANROOT}/lib:${NETCDF_CROOT}/lib:$LD_LIBRARY_PATH
@@ -703,9 +703,9 @@ def jobscriptparvtune(executable,partition,outfldr,username,usergroup,classub,wt
 #SBATCH --tasks-per-node=1
 #SBATCH --time=%s:00:00
 #SBATCH --no-requeue
-##SBATCH --constraint=%s
+#SBATCH --partition=%s
 
-# 3. this is how many CPUs our task will require (up to 32 on broadwell, 16 on haswell)
+# 3. this is how many CPUs our task will require
 #SBATCH --cpus-per-task=%s
 
 export OMP_PROC_BIND=true # make sure our threads stick to cores
@@ -885,7 +885,7 @@ def makejob(params,out,classub,wtime,executable,partition,jobtype,threads,vtune,
         shutil.copy("nml/ice_grids.nml",outfldr)
         shutil.copy("nml/hyster_ctrl.nml",outfldr)
         shutil.copy(executable, outfldr)
-        copy_tree("restart/vilma/", outfldr+"vilma_restart")
+        #copy_tree("restart/vilma/", outfldr+"vilma_restart")
         # copy source files
         #shutil.copytree("src", outfldr,symlinks=False, ignore=None)
 
@@ -972,7 +972,7 @@ def main():
     classub    = "medium"
     wtime      = "168"           # Default wall clock time is 168 hours
     case       = "none"          # No special simulation case is being run
-    partition  = "haswell"       # partition
+    partition  = "standard"      # partition
     jobtype    = "serial"        # serial is default
     threads    = 2
     vtune      = False           # perform profiling with vtune?
