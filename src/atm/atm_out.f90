@@ -2105,6 +2105,8 @@ contains
         day_a(doy)%tskina  = atm%tskina
         day_a(doy)%lha     = atm%lha
         day_a(doy)%sha     = atm%sha
+        day_a(doy)%weff    = atm%weff
+        day_a(doy)%wcld    = atm%wcld
         day_a(doy)%cld     = atm%cld
         day_a(doy)%hcld    = atm%hcld
         day_a(doy)%clot    = atm%clot
@@ -2935,6 +2937,8 @@ contains
     call nc_write(fnm,"cam        ", sngl(vars%cam       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"lha        ", sngl(vars%lha       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"sha        ", sngl(vars%sha       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
+    call nc_write(fnm,"weff       ", sngl(vars%weff      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
+    call nc_write(fnm,"wcld       ", sngl(vars%wcld      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"cld        ", sngl(vars%cld       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"hcld       ", sngl(vars%hcld      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"clot       ", sngl(vars%clot      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)

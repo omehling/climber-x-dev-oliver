@@ -369,19 +369,22 @@ contains
 
       ! total 3-D wind on T-points, interpolate to levels
 
-      !$omp parallel do collapse(2) private(i,j,k,kpl,ug_b,vg_b,u3k,v3k,u3kp1,v3kp1,faz)
+      !$omp parallel do collapse(2) private(i,j,ipl,k,kpl,ug_b,vg_b,u3k,v3k,u3kp1,v3kp1,faz)
       do j=1,jm
         do i=1,im
 
+          ipl=i+1
+          if (ipl.gt.im) ipl=1
+
           ug_b = ugb(i,j)    
           vg_b = vgb(i,j)
-          u3(i,j,1) = 0.5_wp*(ua(i,j,1)+ua(i+1,j,1)) + ug_b
-          v3(i,j,1) = 0.5_wp*(va(i,j,1)+va(i,j+1,1)) + vg_b
+          u3(i,j,1) = 0.5_wp*(ua(i,j,1)+ua(ipl,j,1)) + ug_b
+          v3(i,j,1) = 0.5_wp*(va(i,j,1)+va(i,min(j+1,jm),1)) + vg_b
           do k=1,km-1     
-            u3k   = 0.5_wp*(ua(i,j,k)+ua(i+1,j,k)) + ug_b + uter(i,j,k)
-            v3k   = 0.5_wp*(va(i,j,k)+va(i,j+1,k)) + vg_b + vter(i,j,k)
-            u3kp1 = 0.5_wp*(ua(i,j,k+1)+ua(i+1,j,k+1)) + ug_b + uter(i,j,k+1)
-            v3kp1 = 0.5_wp*(va(i,j,k+1)+va(i,j+1,k+1)) + vg_b + vter(i,j,k+1)
+            u3k   = 0.5_wp*(ua(i,j,k)+ua(ipl,j,k)) + ug_b + uter(i,j,k)
+            v3k   = 0.5_wp*(va(i,j,k)+va(i,min(j+1,jm),k)) + vg_b + vter(i,j,k)
+            u3kp1 = 0.5_wp*(ua(i,j,k+1)+ua(ipl,j,k+1)) + ug_b + uter(i,j,k+1)
+            v3kp1 = 0.5_wp*(va(i,j,k+1)+va(i,min(j+1,jm),k+1)) + vg_b + vter(i,j,k+1)
             u3(i,j,k+1) = 0.5_wp*(u3k+u3kp1)
             v3(i,j,k+1) = 0.5_wp*(v3k+v3kp1) 
           enddo

@@ -447,12 +447,15 @@ contains
          atm%qam(i,j) = 0.8_wp*fqsat(atm%tam(i,j),p0)
          atm%q2a(i,j) = atm%qam(i,j)
          atm%ram(i,j) = 0.8_wp
+         atm%hqeff(i,j) = 2000._wp
          atm%wcon(i,j) = 1._wp
          atm%prc(i,j) = 0._wp
          atm%prcs(i,j,:) = 0._wp
          atm%prcw(i,j,:) = 0._wp
          atm%evpa(i,j) = 0._wp
          atm%cld(i,j) = 0.5_wp
+         atm%cld_rh(i,j) = 0.5_wp
+         atm%cld_low(i,j) = 0._wp
          atm%hcld(i,j) = 4000._wp
          atm%clot(i,j) = 1._wp
          atm%htrop(i,j) = 12.e3_wp*(1._wp+0.5_wp*cost(j))
@@ -479,7 +482,10 @@ contains
          atm%uab(i,j) = 0._wp
          atm%vab(i,j) = 0._wp
          atm%wsyn(i,j) = 0._wp
+         atm%wcld(i,j) = 0._wp
+         atm%weff(i,j) = 0._wp
          atm%woro(i,j) = 0._wp
+         atm%fweff(i,j) = 0._wp
          atm%uz500(j) = 0._wp
 
          atm%convwtr(i,j) = 0._wp
@@ -514,21 +520,10 @@ contains
          atm%uterf = 0._wp  
          atm%vterf = 0._wp
 
+         call vesta(atm%zsa, atm%tam, atm%gams, atm%gamb, atm%gamt, atm%htrop, atm%ram, atm%hrm, atm%dam, atm%hdust, &  ! in
+           atm%wcon, atm%t3, atm%q3, atm%tp, atm%d3, atm%ttrop)    ! out
+
     endif
-
-    call wvel(atm%w3, atm%wsyn, atm%winda, atm%sigoro, &    ! in   
-      atm%wcld, atm%woro, atm%weff)   ! out
-
-    call clouds(atm%frst, atm%weff, atm%wcld, atm%zsa, atm%t2a, atm%ram, atm%qam, atm%rskina, atm%wcon, atm%htrop, atm%so4, atm%sam2, &    ! in
-      atm%fweff, atm%cld_rh, atm%cld_low, atm%cld, atm%hcld, atm%clot) ! out
-
-    call hscales(atm%frst, atm%f_ice_lake, atm%ra2a, atm%rb_sur, atm%tam, atm%tskin, atm%qam, atm%wcon, atm%wcld, &    ! in
-      atm%had_fi, atm%had_width, &   ! in
-      atm%gams, atm%gamb, atm%gamt, atm%hrm, &  ! inout
-      atm%hqeff, atm%hdust)    ! out
-
-    call vesta(atm%zsa, atm%tam, atm%gams, atm%gamb, atm%gamt, atm%htrop, atm%ram, atm%hrm, atm%dam, atm%hdust, &  ! in
-      atm%wcon, atm%t3, atm%q3, atm%tp, atm%d3, atm%ttrop)    ! out
 
     if (l_feedbacks) then
       call feedback_init(fb)
@@ -540,7 +535,6 @@ contains
     call nc_read("input/era_interim_monthly_eke_1981_2010_5x5.nc","eke_2_6_int",eke_mon(:,jm:1:-1,1:12) )
     eke_mon(:,:,0)   = eke_mon(:,:,12)
     eke_mon(:,:,13)  = eke_mon(:,:,1)
-
 
 
     atm%error = .false.
@@ -1097,9 +1091,12 @@ contains
     call nc_write(fnm,"rskina   ",     atm%rskina   ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"r2       ",     atm%r2       ,     dims=["lon","lat","nm "],long_name="",units="")
     call nc_write(fnm,"r2a      ",     atm%r2a      ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"hqeff    ",     atm%hqeff    ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"wcon     ",     atm%wcon     ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"prc      ",     atm%prc      ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"cld      ",     atm%cld      ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"cld_rh   ",     atm%cld_rh   ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"cld_low  ",     atm%cld_low  ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"hcld     ",     atm%hcld     ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"clot     ",     atm%clot     ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"dam      ",     atm%dam      ,     dims=["lon","lat"],long_name="",units="")
@@ -1107,6 +1104,7 @@ contains
     call nc_write(fnm,"dust_ot  ",     atm%dust_ot  ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"so4      ",     atm%so4      ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"htrop    ",     atm%htrop    ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"ttrop    ",     atm%ttrop    ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"rb_sur   ",     atm%rb_sur   ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"sam      ",     atm%sam      ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"sam2     ",     atm%sam2     ,     dims=["lon","lat"],long_name="",units="")
@@ -1125,6 +1123,9 @@ contains
     call nc_write(fnm,"uz500    ",     atm%uz500    ,     dims=["lat"],long_name="",units="")
     call nc_write(fnm,"wsyn     ",     atm%wsyn     ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"woro     ",     atm%woro     ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"wcld     ",     atm%wcld     ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"weff     ",     atm%weff     ,     dims=["lon","lat"],long_name="",units="")
+    call nc_write(fnm,"fweff    ",     atm%fweff    ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"convdse  ",     atm%convdse  ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"convwtr  ",     atm%convwtr  ,     dims=["lon","lat"],long_name="",units="")
     call nc_write(fnm,"ra2a     ",     atm%ra2a     ,     dims=["lon","lat"],long_name="",units="")
@@ -1137,6 +1138,10 @@ contains
     call nc_write(fnm,"u3      ",     atm%u3      ,     dims=["lon ","lat ","plev"],long_name="",units="")
     call nc_write(fnm,"v3      ",     atm%v3      ,     dims=["lon ","lat ","plev"],long_name="",units="")
     call nc_write(fnm,"w3      ",     atm%w3      ,     dims=["lon  ","lat  ","plevc"],long_name="",units="")
+    call nc_write(fnm,"t3      ",     atm%t3      ,     dims=["lon ","lat ","plev"],long_name="",units="")
+    call nc_write(fnm,"tp      ",     atm%tp      ,     dims=["lon ","lat ","plev"],long_name="",units="")
+    call nc_write(fnm,"q3      ",     atm%q3      ,     dims=["lon ","lat ","plev"],long_name="",units="")
+    call nc_write(fnm,"d3      ",     atm%d3      ,     dims=["lon ","lat ","plev"],long_name="",units="")
 
 
    return
@@ -1177,9 +1182,12 @@ contains
     call nc_read(fnm,"rskina   ",     atm%rskina  ) 
     call nc_read(fnm,"r2       ",     atm%r2      ) 
     call nc_read(fnm,"r2a      ",     atm%r2a     ) 
+    call nc_read(fnm,"hqeff    ",     atm%hqeff   ) 
     call nc_read(fnm,"wcon     ",     atm%wcon    ) 
     call nc_read(fnm,"prc      ",     atm%prc     ) 
     call nc_read(fnm,"cld      ",     atm%cld     ) 
+    call nc_read(fnm,"cld_rh   ",     atm%cld_rh  ) 
+    call nc_read(fnm,"cld_low  ",     atm%cld_low ) 
     call nc_read(fnm,"hcld     ",     atm%hcld    ) 
     call nc_read(fnm,"clot     ",     atm%clot    ) 
     call nc_read(fnm,"dam      ",     atm%dam     ) 
@@ -1187,6 +1195,7 @@ contains
     call nc_read(fnm,"dust_ot  ",     atm%dust_ot ) 
     call nc_read(fnm,"so4      ",     atm%so4     ) 
     call nc_read(fnm,"htrop    ",     atm%htrop   ) 
+    call nc_read(fnm,"ttrop    ",     atm%ttrop   ) 
     call nc_read(fnm,"rb_sur   ",     atm%rb_sur  ) 
     call nc_read(fnm,"sam      ",     atm%sam     ) 
     call nc_read(fnm,"sam2     ",     atm%sam2    ) 
@@ -1205,6 +1214,9 @@ contains
     call nc_read(fnm,"uz500    ",     atm%uz500   ) 
     call nc_read(fnm,"wsyn     ",     atm%wsyn    ) 
     call nc_read(fnm,"woro     ",     atm%woro    ) 
+    call nc_read(fnm,"wcld     ",     atm%wcld    ) 
+    call nc_read(fnm,"weff     ",     atm%weff    ) 
+    call nc_read(fnm,"fweff    ",     atm%fweff   ) 
     call nc_read(fnm,"convdse  ",     atm%convdse ) 
     call nc_read(fnm,"convwtr  ",     atm%convwtr ) 
     call nc_read(fnm,"ra2a     ",     atm%ra2a    ) 
@@ -1217,6 +1229,10 @@ contains
     call nc_read(fnm,"u3       ",     atm%u3      ) 
     call nc_read(fnm,"v3       ",     atm%v3      ) 
     call nc_read(fnm,"w3       ",     atm%w3      ) 
+    call nc_read(fnm,"t3       ",     atm%t3      ) 
+    call nc_read(fnm,"tp       ",     atm%tp      ) 
+    call nc_read(fnm,"q3       ",     atm%q3      ) 
+    call nc_read(fnm,"d3       ",     atm%d3      ) 
 
     print *,'read restart file ',fnm
 
