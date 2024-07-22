@@ -28,7 +28,7 @@ module connect_ocn_mod
   use precision, only : wp
   use constants, only : pi
   use geo_params, only : f_crit, f_crit_eq
-  use geo_params, only : l_close_panama, l_close_bering, l_fix_cell_stab, l_fix_agul
+  use geo_params, only : l_close_panama, l_close_bering, l_fix_cell_stab
   use geo_params, only : l_ocn_below_shelf
   use geo_grid, only : ni, nj, n_topo_sur, i_topo_sur, j_topo_sur, i0_topo, i1_topo, j0_topo, j1_topo
   use fill_ocean_mod, only : fill_ocean_lowres
@@ -105,10 +105,6 @@ contains
       if (l_fix_cell_stab) then
         f_ocn(46,20) = max(0.10001_wp,f_ocn(46,20))
       endif
-      if (l_fix_agul) then
-        f_ocn(41,12) = 0._wp 
-      endif
-!      f_ocn(65,17) = 0.11_wp
 
     enddo
   enddo
