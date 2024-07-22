@@ -1516,8 +1516,6 @@ end subroutine lnd_update
         lnd%l2d(i,j)%z0m(i_bare)  = surf_par%z0m_bare
         lnd%l2d(i,j)%z0m(i_lake)  = surf_par%z0m_lake
         lnd%l2d(i,j)%z0m(i_ice)   = surf_par%z0m_ice
-        lnd%l2d(i,j)%rough_m(:)   = 1.e-3_wp
-        lnd%l2d(i,j)%rough_h(:)   = 1.e-3_wp
       enddo
     enddo
 
@@ -1712,7 +1710,7 @@ end subroutine lnd_update
         allocate(lnd%l2d(i,j)%lambda_int_lake (0:nl_l)) 
         allocate(lnd%l2d(i,j)%cap_lake        (0:nl_l)) 
         allocate(lnd%l2d(i,j)%lambda_int_sublake (0:nl)) 
-        allocate(lnd%l2d(i,j)%cap_sublake        (0:nl)) 
+        allocate(lnd%l2d(i,j)%cap_sublake        (nl)) 
         allocate(lnd%l2d(i,j)%t_soil          (0:nl)) 
         allocate(lnd%l2d(i,j)%t_soil_old      (0:nl)) 
         allocate(lnd%l2d(i,j)%t_soil_max      (0:nl)) 
