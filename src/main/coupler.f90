@@ -2589,6 +2589,7 @@ contains
       elsewhere
         imo%mask_ice_shelf = 0
       endwhere
+      imo%zl_fil = z_bed
       deallocate(h_ice)
       deallocate(z_bed)
 
