@@ -67,7 +67,7 @@ contains
 
     integer :: i, j
     real(wp) :: t_freeze
-    real(wp) :: flx_sic_cut, fw_sic_cut
+    real(wp), dimension(maxi,maxj) :: flx_sic_cut, fw_sic_cut
 
 
     if (time_soy_sic) then
@@ -224,12 +224,12 @@ contains
     endif
     !$omp end parallel sections
 
-    flx_sic_cut = 0._wp
-    fw_sic_cut = 0._wp
-
-    !$omp parallel do collapse(2) private(i,j) reduction(+:flx_sic_cut,fw_sic_cut)    
+    !$omp parallel do collapse(2) private(i,j) 
     do j=1,maxj
       do i=1,maxi
+
+        flx_sic_cut(i,j) = 0._wp
+        fw_sic_cut(i,j) = 0._wp
 
         ! limit sea ice concentration
         sic%f_sic(i,j) = max(0._wp,sic%f_sic(i,j))
@@ -289,8 +289,8 @@ contains
           endif
           ! if sea ice thickness > h_sic_max then remove excess sea ice and update fluxes
           if (sic%h_sic_mean(i,j) .gt. h_sic_max) then
-            flx_sic_cut = flx_sic_cut - (sic%h_sic_mean(i,j)-h_sic_max)*rho_sic*Lf/dt*area(i,j)  ! W
-            fw_sic_cut  = fw_sic_cut  + (sic%h_sic_mean(i,j)-h_sic_max)*rho_sic/dt*area(i,j)   ! kg/s
+            flx_sic_cut(i,j) = - (sic%h_sic_mean(i,j)-h_sic_max)*rho_sic*Lf/dt*area(i,j)  ! W
+            fw_sic_cut(i,j)  =   (sic%h_sic_mean(i,j)-h_sic_max)*rho_sic/dt*area(i,j)   ! kg/s
             sic%h_sic_mean(i,j) = h_sic_max
           endif
           ! if snow thickness < h_snow_min then remove snow and update fluxes
@@ -363,9 +363,9 @@ contains
     !$omp end parallel do
 
     ! distribute heat flux from cutting sea ice/snow over the whole ocean surface
-    sic%flx_ocn(:,:) = sic%flx_ocn(:,:) + flx_sic_cut/sum(area) ! W/m2
+    sic%flx_ocn(:,:) = sic%flx_ocn(:,:) + sum(flx_sic_cut)/sum(area) ! W/m2
     ! distribute freshwater flux from cutting sea ice/snow over the whole ocean surface
-    sic%fw_ocn(:,:)  = sic%fw_ocn(:,:)  + fw_sic_cut/sum(area) ! kg/m2/s
+    sic%fw_ocn(:,:)  = sic%fw_ocn(:,:)  + sum(fw_sic_cut)/sum(area) ! kg/m2/s
 
 
    return
