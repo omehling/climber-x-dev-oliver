@@ -723,7 +723,19 @@ subroutine restart_init(folder)
       exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
 
       if (cstat == 0) then
-        print *, 'mkdir year_'//adjustl(trim(year_now_str))//' with status', estat
+        print *, 'mkdir ',adjustl(trim(rest_dir)),' with status', estat
+      else
+        print *, 'command execution failed with error ', trim(cmsg)
+      end if
+
+      rest_dir = adjustl(trim(folder))//"/restart_out/"//"/year_"//trim(adjustl(year_now_str))//"/vilma"
+
+      ! make directory 
+      call execute_command_line('mkdir -p ' // adjustl(trim(rest_dir)), &
+      exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+
+      if (cstat == 0) then
+        print *, 'mkdir ',adjustl(trim(rest_dir)),' with status', estat
       else
         print *, 'command execution failed with error ', trim(cmsg)
       end if
@@ -760,7 +772,7 @@ subroutine write_restart(restart_out_dir, year_now)
   rest_dir = adjustl(trim(restart_out_dir))//"/year_"//adjustl(trim(year_now_str))
 
   ! write restart files
-  call geo_write_restart(trim(rest_dir)//"/geo_restart.nc",geo)
+  call geo_write_restart(trim(rest_dir),trim(rest_dir)//"/geo_restart.nc",geo)
   if (flag_atm) call atm_write_restart(trim(rest_dir)//"/atm_restart.nc",atm)
   if (flag_ocn) call ocn_write_restart(trim(rest_dir)//"/ocn_restart.nc",ocn)
   if (flag_bgc) call bgc_write_restart(trim(rest_dir)//"/bgc_restart.nc",bgc)

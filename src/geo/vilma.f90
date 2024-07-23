@@ -14,7 +14,7 @@ module vilma_model
 #endif
 
     use timer, only : year_ini, nyears, n_year_geo
-    use control, only : out_dir
+    use control, only : out_dir, geo_restart, restart_in_dir
     use constants, only : rho_i, rho_sw
     use geo_params, only : vilma_grid_file, l_visc_3d, visc_1d_file, visc_3d_file
     use coord, only : grid_class, grid_init
@@ -179,6 +179,9 @@ contains
     character(len=256) :: fnm
     integer :: ncid
 
+    integer :: cstat, estat
+    character(len=256) :: cmsg
+
 #ifdef VILMA
     
     ni = nc_size(trim(vilma_grid_file),"lon")
@@ -232,7 +235,7 @@ contains
     vg%l_envonly=0
     !9. number of timesteps, if =0, whole history // number of integration steps
     !vg%ntime=5000
-    vg%ntime=100000
+    vg%ntime=10000000
     !10. writing out is not each 1 kyr, but epochs are defined in wepochs.inp // defines for which epochs the output fields are written
     vg%l_wepoch=1
 
@@ -248,17 +251,18 @@ contains
     io_wepoch%n  = trim(out_dir)//'wepochs.inp' ! if l_wepochs
     io_hist%n    = trim(out_dir)//'load_hist.inp'  ! units in m_sle (l_grid == 2)
     io_surf%n    = trim(out_dir)//'/vega1.nc' ! if l_wsurf output for spectral displacement field
-    io_deg1%n    = trim(out_dir)//'/vilma_restart/vega_deg1.dat' ! deg1 coefficients and cof_[xyz]
     io_radii%n   = trim(out_dir)//'/radii.dat'  ! output of ascii of considered radial grid lines
     io_nc3out%n  = trim(out_dir)//'/visc3d.nc'  ! output of 3d viscosity file
-    io_oce%n     = trim(out_dir)//'/vilma_restart/vega_oce.dat' ! units in m_sle (l_grid == 2)
-    io_rpt%n     = trim(out_dir)//'/vega_rpt.dat' ! units in m_sle (l_grid == 2) if irot
     io_sliout%n  = trim(out_dir)//'/SLI_data.out' ! units in m_sle (l_grid == 2) if ikmax
     io_hsliout%n = trim(out_dir)//'/hSLI_data.out' ! units in m_sle (l_grid == 2) if ikmax
     io_rsl%n     = trim(out_dir)//'/rsl.nc' ! new io_rsl
     io_dfgl%n    = trim(out_dir)//'/dflag.nc' ! new io_dfgl
     io_rsl_rs%n  = trim(out_dir)//'rsl_rs.nc' ! for restart
     io_dfgl_rs%n = trim(out_dir)//'dflg_rs.nc' ! for restart
+    io_deg1%n    = trim(out_dir)//'vega_deg1.dat' ! deg1 coefficients and cof_[xyz]
+    io_oce%n     = trim(out_dir)//'vega_oce.dat' ! units in m_sle (l_grid == 2)
+    io_rpt%n     = trim(out_dir)//'vega_rpt.dat' ! units in m_sle (l_grid == 2) if irot
+    io_rslog%n   = trim(out_dir)//'restart.log'  ! new io_units for restart
 
     ! delete some netcdf files if already present in output directory (from old run)
     open(unit=1, iostat=stat, file=io_surf%n, status='old')
@@ -268,20 +272,19 @@ contains
     open(unit=1, iostat=stat, file=io_dfgl%n, status='old')
     if (stat == 0) close(1, status='delete')
 
-    io_rslog%n      = trim(out_dir)//'vilma_restart/restart.log'  ! new io_units for restart
-    io_mos_indx%n   = trim(out_dir)//'vilma_restart/mos_indx.nc'  !matrix of Galerkin System
-    io_mos_amtrx%n  = trim(out_dir)//'vilma_restart/mos_amtrx.nc' !matrix of Galerkin System
-    io_mos_acomp%n  = trim(out_dir)//'vilma_restart/mos_acomp.nc' !matrix of Galerkin System
-    io_mos_acompl%n = trim(out_dir)//'vilma_restart/mos_acompl.nc'  !matrix of Galerkin System
-    io_ve_struct%n  = trim(out_dir)//'vilma_restart/ve_struct.nc' !restart array for ve structure
-    io_pjj%n        = trim(out_dir)//'vilma_restart/pjj.nc' !restart array for associated scalar sph
-    io_pefgh%n      = trim(out_dir)//'vilma_restart/pefgh.nc' !restart array for associated tensor sph
-    io_nwl_struct%n = trim(out_dir)//'vilma_restart/nwl_struct.nc'  !restart array for spatial discretisation in lon and lat
-    io_visc3drs%n   = trim(out_dir)//'vilma_restart/visc3d.nc'  !restart array 3d ve structure
-    io_disp%n       = trim(out_dir)//'vilma_restart/disp.nc'  !restart array for spectal displacement field
-    io_stress%n     = trim(out_dir)//'vilma_restart/stress.nc'  !restart array for spatial stress components (3d)
-    io_1dstress%n   = trim(out_dir)//'vilma_restart/ctc_stress.nc'  !restart array for sepctral stress components (1d)
-
+    io_mos_indx%n   = 'restart/'//trim(restart_in_dir)//'/vilma//mos_indx.nc'  !matrix of Galerkin System
+    io_mos_amtrx%n  = 'restart/'//trim(restart_in_dir)//'/vilma//mos_amtrx.nc' !matrix of Galerkin System
+    io_mos_acomp%n  = 'restart/'//trim(restart_in_dir)//'/vilma//mos_acomp.nc' !matrix of Galerkin System
+    io_mos_acompl%n = 'restart/'//trim(restart_in_dir)//'/vilma//mos_acompl.nc'  !matrix of Galerkin System
+    io_ve_struct%n  = 'restart/'//trim(restart_in_dir)//'/vilma//ve_struct.nc' !restart array for ve structure
+    io_pjj%n        = 'restart/'//trim(restart_in_dir)//'/vilma//pjj.nc' !restart array for associated scalar sph
+    io_pefgh%n      = 'restart/'//trim(restart_in_dir)//'/vilma//pefgh.nc' !restart array for associated tensor sph
+    io_nwl_struct%n = 'restart/'//trim(restart_in_dir)//'/vilma//nwl_struct.nc'  !restart array for spatial discretisation in lon and lat
+    io_visc3drs%n   = 'restart/'//trim(restart_in_dir)//'/vilma//visc3d.nc'  !restart array 3d ve structure
+    io_disp%n       = 'restart/'//trim(restart_in_dir)//'/vilma//disp.nc'  !restart array for spectal displacement field
+    io_stress%n     = 'restart/'//trim(restart_in_dir)//'/vilma//stress.nc'  !restart array for spatial stress components (3d)
+    io_1dstress%n   = 'restart/'//trim(restart_in_dir)//'/vilma//ctc_stress.nc'  !restart array for sepctral stress components (1d)
+    
     ! write io.tmp file with parameters, needed for restart capability
     open (1,file=io_tmp%n,form='formatted')
     write(1,fmt=*) vg%jmin, vg%jmax
@@ -309,29 +312,31 @@ contains
 
     ! check where epochs are read from!
 
-    ! read restart files from where they are created
-    ! do I need to clear restart files in between? NO
-
-    ! start from scratch, if from restart the file io.tmp is needed
-    vg%btime = 9999._dp !dble(year_ini*1.d-3)
-    vg%etime = 9999._dp !dble((year_ini+1000._dp)*1.d-3)
-    print *,'btime',vg%btime,vg%etime
-
-    vg%restart = (vg%btime /= 9999.0_dp) 
-
+    if (.not.geo_restart) then
+      ! start from scratch
+      vg%btime = 9999._dp
+      vg%etime = dble(year_ini)*1.d-3
+      vg%restart = .false. !(vg%btime /= 9999.0_dp) 
+    else
+      ! start from restart
+      vg%btime = dble(year_ini)*1.d-3
+      vg%etime = vg%btime !+ dble(n_year_geo)*1.d-3
+      vg%restart = .true.
+    endif
+    print *,'btime, etime: ',vg%btime,vg%etime
 
     ! create specification file for ice load history input
-    nepoch = nyears/n_year_geo
-    allocate(epoch(0:nepoch))
-    epoch(0) = dble(year_ini-n_year_geo)*1.d-3
-    do t=1,nepoch
+    nepoch = nyears/n_year_geo+1
+    allocate(epoch(1:nepoch))
+    epoch(1) = dble(year_ini)*1.d-3
+    do t=2,nepoch
       epoch(t) = epoch(t-1) + dble(n_year_geo)*1.d-3
     enddo
 
     open(1,file=trim(out_dir)//"loadh.inp",form='formatted')
     write(1,fmt=*) nj, ni, 910, 1020
-    write(1,fmt=*) nepoch+1
-    do t=0,nepoch
+    write(1,fmt=*) nepoch
+    do t=1,nepoch
       write(1,fmt=*) epoch(t)
     enddo
     close(1)
@@ -374,7 +379,7 @@ contains
     fnm = trim(out_dir)//"/vilma_z_ref.nc"
     call nc_create(fnm)
     call nc_open(fnm,ncid)
-    call nc_write_dim(fnm,"epoch",x=0._dp, units="ka BP", unlimited=.TRUE.,ncid=ncid)
+    call nc_write_dim(fnm,"epoch",x=1._dp, units="ka BP", unlimited=.TRUE.,ncid=ncid)
     call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
     call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
     call nc_write(fnm,"topo", z_ref, dims=["lon","lat","epoch"],start=[1,1,1],count=[ni,nj,1],long_name="reference topography",units="m",ncid=ncid)
@@ -384,31 +389,34 @@ contains
     fnm = trim(out_dir)//"/vilma_h_ice.nc"
     call nc_create(fnm)
     call nc_open(fnm,ncid)
-    call nc_write_dim(fnm,"epoch",x=epoch(0:), units="ka BP", unlimited=.TRUE.,ncid=ncid)
+    call nc_write_dim(fnm,"epoch",x=epoch(1:), units="ka BP", unlimited=.TRUE.,ncid=ncid)
     call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
     call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
     call nc_write(fnm,"Ice", h_ice, dims=["lon","lat","epoch"],start=[1,1,iepoch],count=[ni,nj,1],long_name="Ice thickness",units="m",ncid=ncid)
     call nc_close(ncid)
-!    fnm = trim(out_dir)//"/vilma_h_ice.nc"
-!    call nc_create(fnm)
-!    call nc_open(fnm,ncid)
-!    call nc_write_dim(fnm,"epoch",x=epoch(0), units="ka BP", unlimited=.TRUE.,ncid=ncid)
-!    call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
-!    call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
-!    call nc_write(fnm,"Ice", h_ice, dims=["lon","lat","epoch"],start=[1,1,iepoch],count=[ni,nj,1],long_name="Ice thickness",units="m",ncid=ncid)
-!    call nc_close(ncid)
 
 
-    ! call vilma subroutines for restart and setup
+    if (vg%restart) then
 
-    call r_restart
+      ! copy some files from vilma restart directory to output directory
+      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_deg1.dat '//trim(out_dir)//'/', &
+        exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_oce.dat '//trim(out_dir)//'/', &
+        exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_rpt.dat '//trim(out_dir)//'/', &
+        exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/restart.log '//trim(out_dir)//'/', &
+        exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
 
-    call setup
+      ! read restart
+      call r_restart        ! reads restart.log and checks for consistency between new btime and old etime
 
+    else
 
-    vg%etime = (year_ini-n_year_geo)*1.d-3
+      call setup
 
-
+    endif
+    
     print*
     print*,'======================================================='
     print*,' Initialisation of VILMA complete'
@@ -432,14 +440,9 @@ contains
 
 
 #ifdef VILMA
-    ! write restart
-    call w_restart
-
 
     call close_evolution
 
-
-    ! Deallocate 
 #endif
 
     return
@@ -451,19 +454,45 @@ contains
   ! Function :  v i l m a _ w r i t e _ r e s t a r t
   ! Purpose  :  Write restart netcdf file 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine vilma_write_restart(fnm)
+  subroutine vilma_write_restart(dir)
 
     implicit none
 
-    character (len=*) :: fnm
+    character (len=*) :: dir
 
+    integer :: cstat, estat
+    character(len=256) :: cmsg
 
-    call nc_create(fnm)
-    !call nc_write_dim(fnm,"lon",x=lon,axis="x")
-    !call nc_write_dim(fnm,"lat",x=lat,axis="y")
+#ifdef VILMA
+    
+    ! rename restart files for restart output writing location
+    io_mos_indx%n   = trim(dir)//'/vilma/mos_indx.nc'  !matrix of Galerkin System
+    io_mos_amtrx%n  = trim(dir)//'/vilma/mos_amtrx.nc' !matrix of Galerkin System
+    io_mos_acomp%n  = trim(dir)//'/vilma/mos_acomp.nc' !matrix of Galerkin System
+    io_mos_acompl%n = trim(dir)//'/vilma/mos_acompl.nc'  !matrix of Galerkin System
+    io_ve_struct%n  = trim(dir)//'/vilma/ve_struct.nc' !restart array for ve structure
+    io_pjj%n        = trim(dir)//'/vilma/pjj.nc' !restart array for associated scalar sph
+    io_pefgh%n      = trim(dir)//'/vilma/pefgh.nc' !restart array for associated tensor sph
+    io_nwl_struct%n = trim(dir)//'/vilma/nwl_struct.nc'  !restart array for spatial discretisation in lon and lat
+    io_visc3drs%n   = trim(dir)//'/vilma/visc3d.nc'  !restart array 3d ve structure
+    io_disp%n       = trim(dir)//'/vilma/disp.nc'  !restart array for spectal displacement field
+    io_stress%n     = trim(dir)//'/vilma/stress.nc'  !restart array for spatial stress components (3d)
+    io_1dstress%n   = trim(dir)//'/vilma/ctc_stress.nc'  !restart array for sepctral stress components (1d)
 
-    !call nc_write(fnm,"uc",     sic%uc,     dims=["lon","lat"],long_name="zonal sea ice drift velocity",units="m/s")
+    ! write restart
+    call w_restart
 
+    ! copy some files to vilma restart directory
+    call execute_command_line('cp ' // adjustl(trim(out_dir))//'vega_deg1.dat '//trim(dir)//'/vilma/', &
+      exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+    call execute_command_line('cp ' // adjustl(trim(out_dir))//'vega_oce.dat '//trim(dir)//'/vilma/', &
+      exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+    call execute_command_line('cp ' // adjustl(trim(out_dir))//'vega_rpt.dat '//trim(dir)//'/vilma/', &
+      exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+    call execute_command_line('cp ' // adjustl(trim(out_dir))//'restart.log '//trim(dir)//'/vilma/', &
+      exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
+
+#endif
 
    return
 
