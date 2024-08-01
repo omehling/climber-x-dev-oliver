@@ -33,8 +33,9 @@ module vilma_model
     real(wp), dimension(:), allocatable :: epoch
     real(wp), dimension(:), allocatable :: lon, lat
     real(wp), dimension(:,:), allocatable :: tmp(:,:)
-    real(wp), dimension(:,:), allocatable :: z_ref(:,:)
-    real(wp), dimension(:,:), allocatable :: z_ref_g(:,:)
+    real(wp), dimension(:,:), allocatable :: z_bed_ref(:,:)
+    real(wp), dimension(:,:), allocatable :: z_bed_ref_g(:,:)
+    real(wp), dimension(:,:), allocatable :: h_ice_ref(:,:)
     real(wp), dimension(:,:), allocatable :: h_ice(:,:)
 
     type(grid_class) :: vilma_grid
@@ -132,7 +133,7 @@ contains
     endif
 
     ! update bedrock elevation
-    z_bed_g = z_ref_g - rsl_g
+    z_bed_g = z_bed_ref_g - rsl_g
 
     !fnm = trim(out_dir)//"/test.nc"
     !call nc_create(fnm)
@@ -164,12 +165,13 @@ contains
   ! Function :  v i l m a _ i n i t
   ! Purpose  :  initialize solid Earth
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine vilma_init(geo_grid, z_ref_in, h_ice_g)
+  subroutine vilma_init(geo_grid, z_bed_ref_in, h_ice_ref_g, h_ice_g)
 
     implicit none
 
     type(grid_class), intent(in) :: geo_grid
-    real(wp), intent(in) :: z_ref_in(:,:)
+    real(wp), intent(in) :: z_bed_ref_in(:,:)
+    real(wp), intent(in) :: h_ice_ref_g(:,:)
     real(wp), intent(in) :: h_ice_g(:,:)
 
     real(wp), allocatable, dimension(:,:) :: mask_ice_g
@@ -192,8 +194,9 @@ contains
     call nc_read(trim(vilma_grid_file),"lat",lat)
    
     allocate(tmp(ni,nj))
-    allocate(z_ref(ni,nj))
-    allocate(z_ref_g(geo_grid%G%nx,geo_grid%G%ny))
+    allocate(z_bed_ref(ni,nj))
+    allocate(z_bed_ref_g(geo_grid%G%nx,geo_grid%G%ny))
+    allocate(h_ice_ref(ni,nj))
     allocate(h_ice(ni,nj))
 
     ! generate grid object
@@ -303,7 +306,7 @@ contains
     open (1,file=io_hist%n,form='formatted')
     write(1,fmt='(A)')trim(out_dir)//"loadh.inp"
     write(1,fmt='(A)')trim(out_dir)//"vilma_h_ice.nc"
-    write(1,fmt='(A)',advance='no')trim(out_dir)//"vilma_z_ref.nc"//" "//trim(out_dir)//"vilma_h_ice.nc"
+    write(1,fmt='(A)',advance='no')trim(out_dir)//"vilma_z_bed_ref.nc"//" "//trim(out_dir)//"vilma_h_ice_ref.nc"
     close(1)
 
     ! epoch read from loadh.inp, then it knows which time slice in the netcdf in
@@ -350,18 +353,30 @@ contains
     iepoch = 1
 
 
-    z_ref_g = z_ref_in
-    ! interpolate z_ref and h_ice to vilma grid
+    z_bed_ref_g = z_bed_ref_in
+    ! interpolate z_bed_ref and h_ice to vilma grid
     if (i_map==1) then
-      call map_field(map_geo_to_vilma,"zref",z_ref_g,z_ref,method="nn") 
+      call map_field(map_geo_to_vilma,"zref",z_bed_ref_g,z_bed_ref,method="nn") 
+      call map_field(map_geo_to_vilma,"hice",h_ice_ref_g,h_ice_ref,method="nn") 
       call map_field(map_geo_to_vilma,"hice",h_ice_g,h_ice,method="nn") 
     else if (i_map==2) then
-      call map_scrip_field(maps_geo_to_vilma,"zref",z_ref_g,z_ref,method="mean",missing_value=-9999._dp, &
+      call map_scrip_field(maps_geo_to_vilma,"zref",z_bed_ref_g,z_bed_ref,method="mean",missing_value=-9999._dp, &
+        filt_method="none")
+      call map_scrip_field(maps_geo_to_vilma,"hice",h_ice_ref_g,h_ice_ref,method="mean",missing_value=-9999._dp, &
         filt_method="none")
       call map_scrip_field(maps_geo_to_vilma,"hice",h_ice_g,h_ice,method="mean",missing_value=-9999._dp, &
         filt_method="none")
       allocate(mask_ice_g(geo_grid%G%nx,geo_grid%G%ny))
       allocate(mask_ice(vilma_grid%G%nx,vilma_grid%G%ny))
+      where (h_ice_ref_g>0._wp) 
+        mask_ice_g = 1.
+      elsewhere
+        mask_ice_g = 0.
+      endwhere
+      mask_ice = 1.
+      call map_scrip_field(maps_geo_to_vilma,"mask",mask_ice_g,mask_ice,method="mean",missing_value=-9999._dp, &
+        filt_method="none",filt_par=[5.0*geo_grid%G%dx,geo_grid%G%dx])
+      where (mask_ice<0.5) h_ice_ref = 0._wp
       where (h_ice_g>0._wp) 
         mask_ice_g = 1.
       elsewhere
@@ -376,13 +391,23 @@ contains
     endif
 
     ! write reference topography to netcdf file
-    fnm = trim(out_dir)//"/vilma_z_ref.nc"
+    fnm = trim(out_dir)//"/vilma_z_bed_ref.nc"
     call nc_create(fnm)
     call nc_open(fnm,ncid)
     call nc_write_dim(fnm,"epoch",x=1._dp, units="ka BP", unlimited=.TRUE.,ncid=ncid)
     call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
     call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
-    call nc_write(fnm,"topo", z_ref, dims=["lon","lat","epoch"],start=[1,1,1],count=[ni,nj,1],long_name="reference topography",units="m",ncid=ncid)
+    call nc_write(fnm,"topo", z_bed_ref, dims=["lon","lat","epoch"],start=[1,1,1],count=[ni,nj,1],long_name="reference topography",units="m",ncid=ncid)
+    call nc_close(ncid)
+
+    ! write reference ice thickness to netcdf file
+    fnm = trim(out_dir)//"/vilma_h_ice_ref.nc"
+    call nc_create(fnm)
+    call nc_open(fnm,ncid)
+    call nc_write_dim(fnm,"epoch",x=1._dp, units="ka BP", unlimited=.TRUE.,ncid=ncid)
+    call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
+    call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
+    call nc_write(fnm,"Ice", h_ice_ref, dims=["lon","lat","epoch"],start=[1,1,1],count=[ni,nj,1],long_name="reference ice thickness",units="m",ncid=ncid)
     call nc_close(ncid)
 
     ! write h_ice to netcdf file

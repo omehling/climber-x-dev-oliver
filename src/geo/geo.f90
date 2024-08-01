@@ -190,6 +190,7 @@ contains
     !-------------------------------------------------------------------
 
     call nc_read(trim(geo_ref_file),"bedrock_topography",geo%hires%z_bed_ref)
+    call nc_read(trim(geo_ref_file),"ice_thickness",geo%hires%h_ice_ref)
 
     ! interpolate reference bedrock topography to bnd%geo grid resolution
 
@@ -590,7 +591,7 @@ contains
     ! initialize VILMA
     !-------------------------------------------------------------------
     if (flag_geo .and. i_geo.eq.2) then
-      call vilma_init(geo%hires%grid, geo%hires%z_bed_ref, geo%hires%h_ice) 
+      call vilma_init(geo%hires%grid, geo%hires%z_bed_ref, geo%hires%h_ice_ref, geo%hires%h_ice) 
     endif
 
     print*
