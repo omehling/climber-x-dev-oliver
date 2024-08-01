@@ -9,4 +9,12 @@ src/utils/fftw*
 src/utils/lis*
 src/yelmo*
 src/vilma
-
+bench
+matlab
+restart/*
+!restart/restart_pi/
+!restart/restart_pi_cc_open/
+!restart/restart_lgm/
+*.sh
+!run_bench_cx.sh
+!run_bench.sh
