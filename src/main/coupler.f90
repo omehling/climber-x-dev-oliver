@@ -2349,8 +2349,6 @@ contains
       elsewhere
         smb%mask_ice = 0
       endwhere
-      ! mask of maximum ice extent
-      smb%mask_maxice = ice%mask_extent
     endif
 
     return
