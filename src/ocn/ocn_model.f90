@@ -419,7 +419,7 @@ contains
     error = ocn%error
     if (error) then
       dt = 0.5_wp*dt
-!      ocn%error = .false.
+      ocn%error = .false.
     endif
 
     !print *
