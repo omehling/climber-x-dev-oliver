@@ -1029,6 +1029,10 @@ def main():
     elif classub == 'long' and wtime == '168':
       wtime = 720
 
+    # Adjust partition to job class type
+    if classub == 'priority' or classub == 'standby':
+      partition = "priority"
+
     # Get the batch parameter sets from the arguments
     # (returns an empty set if no parameters should be changed)
     batch = parse_args(args,force=force)
