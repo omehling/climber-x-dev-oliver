@@ -1217,6 +1217,7 @@ end subroutine lnd_update
           lnd%l2d(i,j)%mask_snow      = 0._wp  
           lnd%l2d(i,j)%h_snow         = 0._wp  
           lnd%l2d(i,j)%w_snow         = 0._wp  
+          lnd%l2d(i,j)%w_snow_max     = 0._wp  
           lnd%l2d(i,j)%npp_ann         = 0._wp 
           lnd%l2d(i,j)%npp13_ann       = 0._wp 
           lnd%l2d(i,j)%npp14_ann       = 0._wp 
@@ -1380,7 +1381,6 @@ end subroutine lnd_update
         lnd%l2d(i,j)%alb_snow_vis_dif  = 0._wp
         lnd%l2d(i,j)%alb_snow_nir_dir  = 0._wp
         lnd%l2d(i,j)%alb_snow_nir_dif  = 0._wp
-        lnd%l2d(i,j)%w_snow_max     = 0._wp  
         lnd%l2d(i,j)%w_snow_old     = 0._wp  
         lnd%l2d(i,j)%snowmelt       = 0._wp  
         lnd%l2d(i,j)%icemelt        = 0._wp  

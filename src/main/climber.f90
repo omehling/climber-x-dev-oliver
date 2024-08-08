@@ -328,12 +328,12 @@ program climber
     if (flag_ocn) call ocn_to_cmn(ocn,cmn)
     if (flag_sic) call sic_to_cmn(sic,cmn) 
     if (flag_bgc) call bgc_to_cmn(bgc,cmn,ocn)
-    if (flag_lnd) call lnd_to_cmn(lnd,cmn)
     if (flag_smb) then
       do n=1,n_ice_domain
         call smb_to_cmn(smb(n),cmn)
       enddo
     endif
+    if (flag_lnd) call lnd_to_cmn(lnd,cmn)
     if (flag_imo) then
       do n=1,n_ice_domain
         call imo_to_cmn(imo(n),cmn)

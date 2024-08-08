@@ -1364,10 +1364,6 @@ contains
     smb%wind             = 0._wp 
     smb%cod              = 0._wp 
     smb%albedo           = 0._wp 
-    smb%alb_vis_dir = 0._wp 
-    smb%alb_nir_dir = 0._wp 
-    smb%alb_vis_dif = 0._wp 
-    smb%alb_nir_dif = 0._wp 
     smb%alb_snow_vis_dir = 0._wp 
     smb%alb_snow_nir_dir = 0._wp 
     smb%alb_snow_vis_dif = 0._wp 
@@ -1482,8 +1478,24 @@ contains
       smb%dust_con         = 0._wp 
 
       smb%alb_ice = surf_par%alb_firn
+      smb%alb_vis_dir = 0._wp 
+      smb%alb_nir_dir = 0._wp 
+      smb%alb_vis_dif = 0._wp 
+      smb%alb_nir_dif = 0._wp 
 
     endif
+
+    ! count number of ice sheet cells in each climate model coarse grid cell
+    smb%grid_smb_to_cmn%ncells_ice(:,:) = 0
+    do i = 1,smb%grid%G%nx
+      do j = 1,smb%grid%G%ny
+        if (smb%mask_ice(i,j).eq.1) then
+          ii = smb%grid_smb_to_cmn%i_lowres(i,j) 
+          jj = smb%grid_smb_to_cmn%j_lowres(i,j) 
+          smb%grid_smb_to_cmn%ncells_ice(ii,jj) = smb%grid_smb_to_cmn%ncells_ice(ii,jj)+1
+        endif
+      enddo
+    enddo
 
     print*
     print*,'======================================================='
@@ -1850,6 +1862,18 @@ contains
     call nc_write(fnm,"alb_ice", smb%alb_ice, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="ice albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
 
+    call nc_write(fnm,"alb_vis_dir", smb%alb_vis_dir, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="clear-sky visible albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_nir_dir", smb%alb_nir_dir, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="clear-sky near-infrared albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_vis_dif", smb%alb_vis_dif, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="diffuse visible albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_nir_dif", smb%alb_nir_dif, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="diffuse near-infrared albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
     call nc_close(ncid)
 
 
@@ -1910,6 +1934,11 @@ contains
     call nc_read(fnm,"dust_con", smb%dust_con)
 
     call nc_read(fnm,"alb_ice", smb%alb_ice)
+
+    call nc_read(fnm,"alb_vis_dir", smb%alb_vis_dir)
+    call nc_read(fnm,"alb_vis_dif", smb%alb_vis_dif)
+    call nc_read(fnm,"alb_nir_dir", smb%alb_nir_dir)
+    call nc_read(fnm,"alb_nir_dif", smb%alb_nir_dif)
 
 
     return
