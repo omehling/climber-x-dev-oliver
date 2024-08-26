@@ -2262,6 +2262,7 @@ contains
       do ii=1,smb%grid%G%nx
         do jj=1,smb%grid%G%ny
           if (smb%mask_ice(ii,jj).eq.1) then
+          !if (smb%mask_ice(ii,jj).eq.1 .and. smb%h_ice(ii,jj).gt.h_ice_min) then
             i = smb%grid_smb_to_cmn%i_lowres(ii,jj)
             j = smb%grid_smb_to_cmn%j_lowres(ii,jj)
             runoff_ice_i_mon(i,j,:) = runoff_ice_i_mon(i,j,:) + smb%mon_runoff(ii,jj,:)*smb%grid%area(ii,jj)*1.e6_wp  ! kg/m2/s * m2 -> kg/s 
@@ -2424,6 +2425,9 @@ contains
     type(smb_class) :: smb
     type(ice_class) :: ice
 
+    integer :: i, j, ii, jj, i_f, j_f, nx, ny, n_filter
+    real(wp) :: sigma_filter, dx, dy, dist, weigh, sum_weigh
+    real(wp), dimension(:,:), allocatable :: z_bed_std
 
     ! annual surface mass balance
     ice%smb = smb%ann_smb/sec_year / rho_i ! kg/m2 -> m(ice equivalent)/s
@@ -2439,6 +2443,37 @@ contains
     ice%z_sur_std = smb%z_sur_std ! m
     ! standard deviation of bedrock topography
     ice%z_bed_std = smb%z_bed_std ! m
+    ! filter z_bed_std
+    nx = smb%grid%G%nx
+    ny = smb%grid%G%ny
+    allocate(z_bed_std(1:nx,1:ny))
+    z_bed_std = ice%z_bed_std
+    dx = smb%grid%G%dx ! km
+    dy = smb%grid%G%ny ! km
+    sigma_filter = 100._wp/dx   ! half span of filtered area, in grid points
+    n_filter     = ceiling(2.0_wp*sigma_filter)
+    do j=1,ny 
+      do i=1,nx
+        sum_weigh = 0.0_wp
+        ice%z_bed_std(i,j) = 0._wp
+        do ii=-n_filter, n_filter
+          do jj=-n_filter, n_filter
+            i_f = i+ii
+            j_f = j+jj
+            if (i_f <  1) i_f = 1
+            if (i_f > nx) i_f = nx
+            if (j_f <  1) j_f = 1
+            if (j_f > ny) j_f = ny
+            dist      = sqrt(real(ii,wp)**2+real(jj,wp)**2)
+            weigh     = exp(-(dist/sigma_filter)**2)
+            sum_weigh = sum_weigh + weigh
+            ice%z_bed_std(i,j) = ice%z_bed_std(i,j) + weigh*z_bed_std(i_f,j_f)
+          end do
+        end do
+        ice%z_bed_std(i,j) = ice%z_bed_std(i,j)/sum_weigh
+      end do
+    end do
+    deallocate(z_bed_std)
 
 
     return
