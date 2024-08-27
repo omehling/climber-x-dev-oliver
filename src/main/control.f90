@@ -170,7 +170,7 @@ module control
   integer :: ifake_ice
   character (len=256) :: fake_ice_const_file, fake_ice_var_file
   integer :: ifake_geo
-  character (len=256) :: fake_geo_const_file, fake_geo_var_file
+  character (len=256) :: fake_geo_const_file, fake_geo_var_file, fake_geo_ref_file
 
   logical :: check_energy, check_water, check_carbon
 
@@ -355,6 +355,7 @@ contains
     call nml_read(filename,"control","ifake_geo",ifake_geo)
     call nml_read(filename,"control","fake_geo_const_file",fake_geo_const_file)
     call nml_read(filename,"control","fake_geo_var_file",fake_geo_var_file)
+    call nml_read(filename,"control","fake_geo_ref_file",fake_geo_ref_file)
  
     call nml_read(filename,"control","prc_forcing",prc_forcing)
 

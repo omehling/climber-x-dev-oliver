@@ -3065,7 +3065,8 @@ contains
     ! if solid Earth model not active, derive bedrock elevation anomaly from bnd
     if (.not.flag_geo) then
       if (l_samegrid_geo_bndgeo) then
-        geo%hires%z_bed = geo%hires%z_bed_ref + bnd%geo%z_bed-bnd%geo%z_bed_ref
+        geo%hires%z_bed = bnd%geo%z_bed
+        bnd%geo%z_bed_ref = bnd%geo%z_bed
       else
         ! map bedrock topography to geo
         if (i_map==1) then

@@ -187,8 +187,7 @@ program climber
 
     ! Initialise geography 
     call geo_init(geo, &
-      bnd%geo%grid, bnd%geo%z_bed, bnd%ice%grid, bnd%ice%h_ice, &  ! used only if not from restart
-      bnd%geo%z_bed_ref)    ! out
+      bnd%geo%grid, bnd%geo%z_bed, bnd%geo%z_bed_ref, bnd%ice%grid, bnd%ice%h_ice)  ! used only if not from restart
     call geo_diag_init(geo)
 
     ! define ice grid object for all domains, if required

@@ -73,17 +73,16 @@ contains
   ! Function :  g e o _ i n i t
   ! Purpose  :  initialize geo
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine geo_init(geo, bnd_geo_grid, z_bed, bnd_ice_grid, h_ice, &
-                      z_bed_ref)
+  subroutine geo_init(geo, bnd_geo_grid, z_bed, z_bed_ref, bnd_ice_grid, h_ice)
 
     implicit none
 
     type(geo_class) :: geo 
     type(grid_class), intent(in) :: bnd_geo_grid
     real(wp), dimension(:,:), intent(in) :: z_bed
+    real(wp), dimension(:,:), intent(in) :: z_bed_ref
     type(grid_class), intent(in) :: bnd_ice_grid
     real(wp), dimension(:,:), intent(in) :: h_ice
-    real(wp), dimension(:,:), intent(out) :: z_bed_ref
 
     integer :: i, j, nocn
     integer :: ni_rel, nj_rel
@@ -96,7 +95,6 @@ contains
     real(wp), dimension(:), allocatable :: lat_rel
     integer, dimension(:), allocatable :: mask_cell
     real(wp), dimension(:,:), allocatable :: tmp
-    integer :: ni_bnd, nj_bnd, ni_geo, nj_geo
     real(wp), dimension(:,:), allocatable :: z_bed_anom
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
@@ -105,12 +103,10 @@ contains
     type(map_class) :: map_rel_to_geo
     type(map_class) :: map_bndgeo_to_geo
     type(map_class) :: map_bndice_to_geo
-    type(map_class) :: map_geo_to_bndgeo
     type(map_scrip_class) :: maps_hires_to_lowres
     type(map_scrip_class) :: maps_rel_to_geo
     type(map_scrip_class) :: maps_bndgeo_to_geo
     type(map_scrip_class) :: maps_bndice_to_geo
-    type(map_scrip_class) :: maps_geo_to_bndgeo
 
 
     ! read geo parameters
@@ -191,38 +187,6 @@ contains
 
     call nc_read(trim(geo_ref_file),"bedrock_topography",geo%hires%z_bed_ref)
     call nc_read(trim(geo_ref_file),"ice_thickness",geo%hires%h_ice_ref)
-
-    ! interpolate reference bedrock topography to bnd%geo grid resolution
-
-    ni_bnd = bnd_geo_grid%G%nx
-    nj_bnd = bnd_geo_grid%G%ny
-    ni_geo = geo%hires%grid%G%nx
-    nj_geo = geo%hires%grid%G%ny
-
-    if (bnd_geo_grid%name==geo%hires%grid%name) then
-      ! grids are equal, use geo%hires as reference
-      z_bed_ref = geo%hires%z_bed_ref
-    else
-
-      if (i_map==1) then
-
-        ! initialize map
-        call map_init(map_geo_to_bndgeo,geo%hires%grid,bnd_geo_grid, &
-          lat_lim=10._dp*(geo%hires%grid%lat(1,2)-geo%hires%grid%lat(1,1)),dist_max=1.e6_dp,max_neighbors=10)
-        ! map reference topography to fake_geo domain
-        call map_field(map_geo_to_bndgeo,"zbedref",geo%hires%z_bed_ref,z_bed_ref,method="radius")
-
-      else if (i_map==2) then
-
-        ! SCRIP mapping initialization
-        call map_scrip_init(maps_geo_to_bndgeo,geo%hires%grid,bnd_geo_grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
-        ! map reference topography to fake_geo domain
-        call map_scrip_field(maps_geo_to_bndgeo,"zbedref",geo%hires%z_bed_ref,z_bed_ref,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[5._dp*bnd_geo_grid%G%dx,bnd_geo_grid%G%dx])
-
-      endif
-
-    endif
 
     !------------------------------------------------------------------------
     ! restart 
@@ -403,10 +367,6 @@ contains
     !-------------------------------------------------------------------
     ! reference present day topography and fractions
     !-------------------------------------------------------------------
-
-    ! read bedrock elevation and ice thickness
-    call nc_read(trim(geo_ref_file),"bedrock_topography",geo%hires%z_bed_ref)
-    call nc_read(trim(geo_ref_file),"ice_thickness",geo%hires%h_ice_ref)
 
     ! derive mask and topography
     ! initially land everywhere

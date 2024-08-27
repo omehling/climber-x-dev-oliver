@@ -27,7 +27,7 @@ module fake_geo_mod
 
   use precision, only : wp, dp
   use ncio
-  use control, only : ifake_geo, fake_geo_const_file, fake_geo_var_file
+  use control, only : ifake_geo, fake_geo_const_file, fake_geo_var_file, fake_geo_ref_file
   use coord, only : grid_class, grid_init
 
   implicit none
@@ -70,6 +70,7 @@ contains
   integer :: imin
   integer :: ppos, spos
   integer :: i, j, ii, jj
+  integer :: ni_geo_ref, nj_geo_ref
   real(wp) :: lon1, lon2, lat1, lat2, dlon_sur, dlat_sur
   real(wp) :: w0, w1
   real(wp) :: dlon_geo, dlat_geo
@@ -89,12 +90,22 @@ contains
   allocate( lat_geo(nj_geo) )
 
   allocate(fake_geo%z_bed(ni_geo,nj_geo))
-  allocate(fake_geo%z_bed_ref(ni_geo,nj_geo))
 
   call nc_read(trim(fnm),"lon",lon_geo)
   call nc_read(trim(fnm),"lat",lat_geo)
   dlon_geo = lon_geo(2)-lon_geo(1)
   dlat_geo = lat_geo(2)-lat_geo(1)
+
+  ! read reference bedrock topography file 
+  ! used to compute anomalies to be added on top of the high-resolution reference geo bedrock topography
+  ni_geo_ref = nc_size(trim(fake_geo_ref_file),"lon")
+  nj_geo_ref = nc_size(trim(fake_geo_ref_file),"lat")
+  if (ni_geo_ref.ne.ni_geo .or. nj_geo_ref.ne.nj_geo) then
+    print *,'WARNING: dimensions of fake_geo_ref_file does not match those in fake_geo_const/var_file'
+    print *,'This warning can be safely ignored if fake_geo_ref_file==geo_ref_file'
+  endif
+  allocate(fake_geo%z_bed_ref(ni_geo_ref,nj_geo_ref))
+  call nc_read(trim(fake_geo_ref_file),"bedrock_topography",fake_geo%z_bed_ref)
 
   if (ifake_geo.eq.0) then
     ! constant topography
