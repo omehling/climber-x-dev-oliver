@@ -845,6 +845,12 @@ contains
       endif
     enddo
 
+    if (i_racan.eq.3) then
+      do n=1,npft
+        r_a_can(n) = r_a(i_bare)
+      enddo
+    endif
+
     return
 
   end subroutine resist_aer
@@ -874,11 +880,20 @@ contains
     ! bare soil, use resistance OR beta factor
     r_s(i_bare) = 0._wp
     beta_snow = 1._wp
-    ! CLM, Lee and Pielke 1992 
-    if( theta_w(1) .lt. hydro_par%theta_crit_evp ) then
-      beta_soil = 0.25_wp * (1._wp - cos(pi * theta_w(1) / hydro_par%theta_crit_evp))**2
-    else
-      beta_soil = 1._wp
+    if (hydro_par%i_evp_soil.eq.1) then
+      ! CLM, Lee and Pielke 1992 
+      if( theta_w(1) .lt. hydro_par%theta_crit_evp ) then
+        beta_soil = 0.25_wp * (1._wp - cos(pi * theta_w(1) / hydro_par%theta_crit_evp))**2
+      else
+        beta_soil = 1._wp
+      endif
+    else if (hydro_par%i_evp_soil.eq.2) then
+      ! CLIMBER-2
+      if( theta_w(1) .lt. hydro_par%theta_crit_evp ) then
+        beta_soil = (theta_w(1) / hydro_par%theta_crit_evp)**2
+      else
+        beta_soil = 1._wp
+      endif
     endif
 !    if (w_snow(is_veg).gt.snow_par%w_snow_crit) then
 !      beta_s(i_bare) = beta_snow

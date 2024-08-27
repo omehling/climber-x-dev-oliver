@@ -92,6 +92,7 @@ module lnd_params
     logical :: l_prc_intercept
     integer :: i_runoff
     logical :: l_runoff_icemelt
+    integer :: i_evp_soil
     real(wp) :: theta_crit_evp
     real(wp) :: p_psi_min
     real(wp) :: p_psi_max
@@ -734,6 +735,7 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","i_cond_theta",hydro_par%i_cond_theta)
     call nml_read(filename,"lnd_par","i_wtab",hydro_par%i_wtab)
     call nml_read(filename,"lnd_par","i_fwet",hydro_par%i_fwet)
+    call nml_read(filename,"lnd_par","i_evp_soil",hydro_par%i_evp_soil)
     call nml_read(filename,"lnd_par","theta_crit_evp",hydro_par%theta_crit_evp)
     call nml_read(filename,"lnd_par","p_psi_min",hydro_par%p_psi_min)
     call nml_read(filename,"lnd_par","p_psi_max",hydro_par%p_psi_max)
