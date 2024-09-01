@@ -89,7 +89,7 @@ contains
     integer :: i, j, k, n, k_mix, n_mix
     logical :: flag_brines
     real(wp) :: tau
-    real(wp) :: vsf_saln0, vsf_saloc, dvsf
+    real(wp) :: vsf_saln0, vsf_saloc
     logical :: error, error_eq, error_noneq
     real(wp) :: avg
 
@@ -247,7 +247,9 @@ contains
     if (i_fw.eq.2) then
       vsf_saln0 = sum(ocn%fw_corr(:,:)*ocn_area(:,:))*saln0/rho0 / ocn_area_tot  ! kg/m2/s * m2 * psu * m3/kg /m2
       vsf_saloc = sum(ocn%fw_corr(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn_area_tot
-      dvsf = vsf_saln0-vsf_saloc        ! m/s*psu
+      ocn%dvsf = vsf_saln0-vsf_saloc        ! m/s*psu
+    else
+      ocn%dvsf = 0._wp
     endif
 
     do j=1,maxj
@@ -291,7 +293,7 @@ contains
               ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + dvsf  ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
             else if (i_fw.eq.3) then
               ! virtual salinity flux using local salinity
               ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0   ! kg/m2/s -> m/s*psu 
@@ -328,7 +330,7 @@ contains
               ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
-              ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)/rho0 + dvsf  ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
             else if (i_fw.eq.3) then
               ! virtual salinity flux using local salinity
               ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)/rho0   ! kg/m2/s -> m/s*psu 

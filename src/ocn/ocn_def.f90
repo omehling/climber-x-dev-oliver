@@ -62,6 +62,7 @@ module ocn_def
      type(grid_class) :: grid
      real(wp) :: fw_glob                  !!  annual net freshwater flux to ocean [kg/m2/s]
      real(wp) :: fw_glob_tmp                  !! annual global integral net freshwater flux to ocean [kg]
+     real(wp) :: dvsf
      real(wp) :: cfc11_atm                  !! atmospheric cfc11 [ppt]
      real(wp) :: cfc12_atm                  !! atmospheric cfc12 [ppt]
      real(wp) :: hosing                 !! freshwater hosing flux [Sv]

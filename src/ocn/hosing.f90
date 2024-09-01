@@ -252,11 +252,11 @@ end if
     do i=2,maxi
      ! western boundary
      if ((lon(i-1).le.lon_min_hosing) .and. (lon(i).ge.lon_min_hosing)) then
-        i_hosing_1 = i
+        i_hosing_1 = i-1
      endif
      ! eastern boundary
      if ((lon(i-1).le.lon_max_hosing) .and. (lon(i).ge.lon_max_hosing)) then
-        i_hosing_2 = i-1
+        i_hosing_2 = i
      endif
     enddo
 
@@ -264,11 +264,11 @@ end if
     do i=2,maxi
      ! western boundary
      if ((lon(i-1).le.lon_min_hosing_comp) .and. (lon(i).ge.lon_min_hosing_comp)) then
-        i_hosing_comp_1 = i
+        i_hosing_comp_1 = i-1
      endif
      ! eastern boundary
      if ((lon(i-1).le.lon_max_hosing_comp) .and. (lon(i).ge.lon_max_hosing_comp)) then
-        i_hosing_comp_2 = i-1
+        i_hosing_comp_2 = i
      endif
     enddo
 
