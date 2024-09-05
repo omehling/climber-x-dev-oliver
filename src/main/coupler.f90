@@ -72,7 +72,7 @@ module coupler
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, tau_sst, tau_sss
     use ocn_params, only : l_ocn_input_fix, l_ocn_fix_wind, l_ocn_fix_fw, l_ocn_fix_flx, i_ocn_input_fix
     use ocn_params, only : n_cells_dist_runoff, n_cells_dist_calving, n_cells_dist_weath
-    use ocn_params, only : relax_run, relax_calv, relax_bmelt, scale_runoff_ice, f_ice_runoff_melt
+    use ocn_params, only : relax_run, relax_calv, relax_bmelt, scale_runoff_ice
     use ocn_grid, only : maxi, maxj, maxk, k1_shelf, ocn_area_tot
     use lnd_params, only : dt_lnd => dt, l_ice_albedo_semi
     use lnd_grid, only : is_veg, is_ice, nl
@@ -3652,7 +3652,7 @@ contains
 
         if (cmn%mask_smb(i,j).eq.0) then
           ! grid cell not covered by smb model domain(s), use runoff computed in the land model + melt from prescribed ice sheet changes (if applicable)
-          cmn%runoff_ice(i,j) = cmn%runoff_ice_l(i,j) + scale_runoff_ice*f_ice_runoff_melt*cmn%melt_ice_i_mon(i,j,mon)
+          cmn%runoff_ice(i,j) = cmn%runoff_ice_l(i,j) + scale_runoff_ice*cmn%melt_ice_i_mon(i,j,mon)
         else
           ! grid cell covered by smb model domain(s), use monthly runoff computed by smb 
           cmn%runoff_ice(i,j)  = scale_runoff_ice*cmn%runoff_ice_i_mon(i,j,mon)
@@ -3662,7 +3662,7 @@ contains
           ! grid cell not covered by ice sheet model domain(s), use calving computed in the land model, no basal melt
           ! substract ice accumulation from prescribed ice sheet changes (if applicable)
           !cmn%calving_ice(i,j) = cmn%calving_ice_l(i,j)
-          cmn%calving_ice(i,j) = max(0._wp, cmn%calving_ice_l(i,j) - cmn%acc_ice_i_mon(i,j,mon)) + (1._wp-f_ice_runoff_melt)*cmn%melt_ice_i_mon(i,j,mon)
+          cmn%calving_ice(i,j) = max(0._wp, cmn%calving_ice_l(i,j) - cmn%acc_ice_i_mon(i,j,mon)) 
           cmn%bmelt_grd(i,j) = 0._wp
           cmn%bmelt_flt(i,j) = 0._wp
         else 
