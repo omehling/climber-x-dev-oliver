@@ -39,7 +39,7 @@ module ocn_model
     use ocn_grid, only : grid_class, ocn_grid_init, ocn_grid_update
     use ocn_grid, only : maxi, maxj, maxk, maxisles, c, dzz, zw, zro, dz, dza, mask_ocn, k1, k1_pot, k_mix_brines, ocn_area, ocn_area_tot, ocn_vol
     use ocn_params, only : ocn_params_init, i_init, dbl
-    use ocn_params, only : dt, rho0, init3_peak, init3_bg, saln0, i_fw, l_fw_corr, i_brines
+    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, n_tracers_bgc, idx_tracers_trans, age_tracer, dye_tracer, cons_tracer, l_cfc
     use ocn_params, only : i_age, i_dye, i_cons, i_cfc11, i_cfc12
     use ocn_params, only : l_mld, l_hosing, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
@@ -114,6 +114,11 @@ contains
       ! update flux adjustment to account for changes in ocean fraction
       if (l_flux_adj_atl .or. l_flux_adj_ant .or. l_flux_adj_pac) then
         call flux_adj_update(ocn%f_ocn, ocn%fw_flux_adj)
+      endif
+
+      if (i_saln0.eq.2) then
+        ! compute average salinity to be used as reference for virtual salinity flux
+        ocn%saln0 = sum(ocn%ts(:,:,:,2)*ocn%grid%ocn_vol(:,:,:))/ocn%grid%ocn_vol_tot ! psu
       endif
 
     endif
@@ -245,7 +250,7 @@ contains
     ocn%flx_bot = 0._wp  ! by default no input flux for tracers
 
     if (i_fw.eq.2) then
-      vsf_saln0 = sum(ocn%fw_corr(:,:)*ocn_area(:,:))*saln0/rho0 / ocn_area_tot  ! kg/m2/s * m2 * psu * m3/kg /m2
+      vsf_saln0 = sum(ocn%fw_corr(:,:)*ocn_area(:,:))*ocn%saln0/rho0 / ocn_area_tot  ! kg/m2/s * m2 * psu * m3/kg /m2
       vsf_saloc = sum(ocn%fw_corr(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn_area_tot
       ocn%dvsf = vsf_saln0-vsf_saloc        ! m/s*psu
     else
@@ -290,7 +295,7 @@ contains
             ! flux without brines
             if (i_fw.eq.1) then
               ! virtual salinity flux using reference saln0, could be bad (e.g. Yin 2010)
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*saln0/rho0   ! kg/m2/s -> m/s*psu
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
               ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
@@ -304,7 +309,7 @@ contains
             n_mix = maxk-k_mix+1
             do k=k_mix,maxk
               if (i_fw.eq.1) then
-                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
+                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
               else if (i_fw.eq.2) then
                 ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
               else if (i_fw.eq.3) then
@@ -315,7 +320,7 @@ contains
             ! put brines at ocean bottom
             !k = k1(i,j)
             !if (i_fw.eq.1) then
-            !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
             !else if (i_fw.eq.2) then
             !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
             !else if (i_fw.eq.3) then
@@ -327,7 +332,7 @@ contains
 
             if (i_fw.eq.1) then
               ! virtual salinity flux using reference saln0, could be bad (e.g. Yin 2010)
-              ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*saln0/rho0   ! kg/m2/s -> m/s*psu
+              ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*ocn%saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
               ocn%flx_sur(i,j,2) = ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
@@ -464,7 +469,7 @@ contains
     ! parameterisation for Bering Strait throughflow 
     !------------------------------------------------------------------------
     if (l_bering_flow) then
-      call bering(ocn%A_bering, ocn%f_ocn, ocn%ssh, &
+      call bering(ocn%A_bering, ocn%f_ocn, ocn%ssh, ocn%saln0, &
                   ocn%ts(:,:,:,2), ocn%bering_tf, ocn%bering_fw)
     endif
 
@@ -632,13 +637,13 @@ contains
             !enddo
           enddo
         !enddo
-        ocn%ts(:,:,:,2) = saln0
+        ocn%ts(:,:,:,2) = saln0_const
 
       else if (i_init.eq.2) then
         ! initialize using present day observations
 
         ocn%ts(:,:,:,1) = 0._wp
-        ocn%ts(:,:,:,2) = saln0
+        ocn%ts(:,:,:,2) = saln0_const
 
         ! initialize 3D temperature and salinity from World Ocean Atlas 2013 data, annual mean
         fnm = "input/WOA13_5x5.nc"
@@ -678,10 +683,10 @@ contains
                 if (tmp_cnt.gt.0._wp) then
                   ocn%ts(i,j,k,2) = tmp_sum/tmp_cnt
                 else
-                  ocn%ts(i,j,k,2) = saln0
+                  ocn%ts(i,j,k,2) = saln0_const
                 endif
               else ! outside of domain
-                ocn%ts(i,j,k,2) = saln0
+                ocn%ts(i,j,k,2) = saln0_const
               endif
             enddo
           enddo
@@ -711,7 +716,7 @@ contains
                !enddo
             enddo
          enddo
-         ocn%ts(:,:,:,2) = saln0 ! 34.7_wp
+         ocn%ts(:,:,:,2) = saln0_const
 
       else
          print *,'Error: unknow value for &ocn_par/i_init', i_init
@@ -754,7 +759,12 @@ contains
 
     endif
 
-
+    if (i_saln0.eq.1) then
+      ocn%saln0 = saln0_const
+    else if (i_saln0.eq.2) then
+      ocn%saln0 = sum(ocn%ts(:,:,:,2)*ocn%grid%ocn_vol(:,:,:))/ocn%grid%ocn_vol_tot ! psu
+    endif
+    
     ocn%sst_min = ocn%ts(:,:,maxk,1)-1._wp
     ocn%sst_max = ocn%ts(:,:,maxk,1)+1._wp
 

@@ -114,7 +114,8 @@ module ocn_params
      ! peak and background temperatures for i_init option 3
      real(wp) :: init3_peak = 25.0_wp
      real(wp) :: init3_bg   = 15.0_wp
-     real(wp) :: saln0
+     integer :: i_saln0
+     real(wp) :: saln0_const
      logical :: l_salinity_restore
      real(wp) :: shelf_depth
      logical :: age_tracer
@@ -291,7 +292,8 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","i_fw",i_fw)
     call nml_read(filename,"ocn_par","init3_peak",init3_peak)
     call nml_read(filename,"ocn_par","init3_bg",init3_bg)
-    call nml_read(filename,"ocn_par","saln0",saln0)
+    call nml_read(filename,"ocn_par","i_saln0",i_saln0)
+    call nml_read(filename,"ocn_par","saln0_const",saln0_const)
     call nml_read(filename,"ocn_par","l_salinity_restore",l_salinity_restore)
     call nml_read(filename,"ocn_par","i_brines",i_brines)
     call nml_read(filename,"ocn_par","z_mix_brines",z_mix_brines)

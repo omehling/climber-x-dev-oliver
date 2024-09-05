@@ -60,7 +60,8 @@ module ocn_def
      type(daily_input_save_class) :: daily_input_save
 
      type(grid_class) :: grid
-     real(wp) :: fw_glob                  !!  annual net freshwater flux to ocean [kg/m2/s]
+     real(wp) :: saln0                    !! reference salinity [psu]
+     real(wp) :: fw_glob                  !! annual net freshwater flux to ocean [kg/m2/s]
      real(wp) :: fw_glob_tmp                  !! annual global integral net freshwater flux to ocean [kg]
      real(wp) :: dvsf
      real(wp) :: cfc11_atm                  !! atmospheric cfc11 [ppt]

@@ -75,7 +75,7 @@ contains
     dven  = 0._wp
 
     if (i_conv_shuffle.eq.1 .or. (i_conv_shuffle.eq.2 .and. mask_coast.eq.1)) then
-      ! Mueliler convection scheme from Bern3D after Müller et al 
+      ! Mueller convection scheme from Bern3D after Müller et al 
       ! 'ventilation time scales in an efficient 3-d ocean model'
       ! first apply coshuffle to mix directly down to density level
       ! don't comment out the call without ensuring kven is initialised
