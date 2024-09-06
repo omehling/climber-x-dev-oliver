@@ -57,7 +57,7 @@
  !-------------------------------------------------------------------------------------------
  adrag = 4.                   ! days, inverse minimum drag
  drag_topo_n = 2.             ! drag increase in shallow water regions. 0 = no increase; 1 = in 2x2 neighbours; 2 = in 2x2 and 4x4 neighbours
- drag_topo_fac = 2.5          ! factor by which to increase drag in shallow water
+ drag_topo_fac = 3.           ! factor by which to increase drag in shallow water
  drag_topo_scale_eq = 0.
  z_drag_shallow = 1000.       ! m, depth of shallow water regions below which to increase adrag by factor drag_topo_fac
  drag_frac_fac = 0.           ! factor by which to increase drag where small ocean fraction
@@ -91,7 +91,7 @@
                               ! 4 = vertical profile dependent on roughness at the ocean floor, Decloedt and Luther 2010
  diff_dia_zref = 1000.        ! m2/s, diapycnal/vertical diffusivity (value at 2500m depth if not uniform)
  diff_dia_ref = 2e-5          ! m2/s, reference diapycnal diffusivity, used only if l_diff_dia_strat==T
- diff_dia_min = 1e-5          ! m2/s, minimum (surface) diapycnal diffusivity, used only if i_diff_dia==0,3,4
+ diff_dia_min = 1.e-5         ! m2/s, minimum (surface) diapycnal diffusivity, used only if i_diff_dia==0,3,4
  diff_dia_max = 1.5e-4        ! m2/s, maximum (deep ocean) diapycnal diffusivity, used only if i_diff_dia==3
  diff_dia_bgc_min = 1e-5      ! m2/s, minimum diapycnal diffusivity for DIC tracers
  l_diff_dia_strat = F         ! use stratification dependent vertical diffusivity? Added on top of the reference profile set by i_diff_dia
@@ -151,7 +151,10 @@
                               ! 1 = virtual salinity flux using reference saln0
                               ! 2 = virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
                               ! 3 = virtual salinity flux using local salinity
- saln0 = 34.7                 ! psu, reference salinity
+ i_saln0 = 1                  ! treatment of reference salinity:
+                              ! 1 = use constant value saln0_const             
+                              ! 2 = use volume averaged salinity
+ saln0_const = 34.7           ! psu, reference salinity, used only if i_saln0==1
  l_salinity_restore = F       ! restore salinity to globally integrated value saln0?
  i_brines = 0                 ! treatment of brines during sea ice formation
                               ! 0 = no special treatment of brine rejection
