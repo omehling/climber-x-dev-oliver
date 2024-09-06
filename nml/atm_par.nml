@@ -157,8 +157,8 @@
   c_diffx_dse = 0.5             ! factor by which to reduce zonal diffusivity for dry static energy, needed for numerical stability
   c_diffx_wtr = 1.              ! factor by which to reduce zonal diffusivity for moisture, needed for numerical stability
   c_diff_dse = 2.e5             ! m, factor for macro-diffusion of dry static energy
-  i_diff_wtr = 1                ! 
-  c_diff_wtr = 2.e4             ! s, factor for macro-diffusion of moisture
+  i_diff_wtr = 3                ! 
+  c_diff_wtr = 1.5e4            ! s, factor for macro-diffusion of moisture
   i_diff_dst = 2                !
 
   !-----------------------------------------------------------
