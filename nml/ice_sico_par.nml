@@ -408,7 +408,7 @@
 !                         1 : old 
 !                         2 : new
 
-    zl_std_crit_disc = 1. !300.
+    zl_std_crit_disc = 300.
 !                         Discharge parameter: critical surface roughness (in m)
 !                         (only for i_disc>0)
 
@@ -428,7 +428,7 @@
 !                         Power of temperature
 !                         (only for i_disc>0)
 
-    tau_dmb = 50.0       
+    tau_dmb = 20.0       
 !                         time scale for discharge parameterisation (years)
 
     r_mar_eff = 500.0
