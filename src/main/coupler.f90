@@ -3662,7 +3662,7 @@ contains
           ! grid cell not covered by ice sheet model domain(s), use calving computed in the land model, no basal melt
           ! substract ice accumulation from prescribed ice sheet changes (if applicable)
           !cmn%calving_ice(i,j) = cmn%calving_ice_l(i,j)
-          cmn%calving_ice(i,j) = max(0._wp, cmn%calving_ice_l(i,j) - cmn%acc_ice_i_mon(i,j,mon)) 
+          cmn%calving_ice(i,j) = max(0._wp, cmn%calving_ice_l(i,j) - scale_runoff_ice*cmn%acc_ice_i_mon(i,j,mon)) 
           cmn%bmelt_grd(i,j) = 0._wp
           cmn%bmelt_flt(i,j) = 0._wp
         else 
