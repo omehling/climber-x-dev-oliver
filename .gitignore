@@ -11,6 +11,7 @@ src/yelmo*
 src/vilma
 bench
 matlab
+data
 restart/*
 !restart/restart_pi/
 !restart/restart_pi_cc_open/
@@ -22,3 +23,4 @@ restart/restart_lgm/geo_restart.nc
 !run_bench_cx.sh
 !run_bench.sh
 *.nc
+TODO
