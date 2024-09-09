@@ -39,7 +39,7 @@ module co2_out
       real(wp) :: co2       !! atmospheric CO2 concentration [ppm]
       real(wp) :: Catm      !! atmospheric carbon content [GtC]
       real(wp) :: C13atm      !! atmospheric carbon 13 content [GtC]
-      real(wp) :: C14atm      !! atmospheric carbon 14 content [GtC]
+      real(wp) :: C14atm      !! atmospheric carbon 14 content [kgC]
       real(wp) :: d13C
       real(wp) :: D14C
       real(wp) :: dCocn_dt
@@ -63,6 +63,7 @@ module co2_out
       real(wp) :: dCvolc_dt
       real(wp) :: dCvolc_cum
       real(wp) :: dC13volc_dt
+      real(wp) :: dC14dec_dt
       real(wp) :: dC14prod_dt
       real(wp) :: dCH4_dt
   end type
@@ -123,20 +124,20 @@ contains
     ann_ts(y)%co2        = co2%co2           
     ann_ts(y)%Catm       = co2%Catm    * 1.e-12_wp     ! GtC
     ann_ts(y)%C13atm     = co2%C13atm  * 1.e-12_wp     ! GtC
-    ann_ts(y)%C14atm     = co2%C14atm  * 1.e-12_wp     ! GtC
+    ann_ts(y)%C14atm     = co2%C14atm       ! kgC
     ann_ts(y)%d13C       = (co2%c13_c12/c13_c12_std - 1._wp) * 1000._wp
     ann_ts(y)%D14C       = (co2%c14_c*(0.975_wp/(1._wp+max(-999._wp,ann_ts(y)%d13C)/1000._wp))**2 / c14_c_std - 1._wp) * 1000._wp
     ann_ts(y)%dCocn_dt   = -co2%dCocn_dt * 1.e-12_wp    ! GtC/yr, positive into the atmosphere
     dCocn_cum  = dCocn_cum - co2%dCocn_dt * 1.e-12_wp ! GtC
     ann_ts(y)%dCocn_cum  = dCocn_cum 
     ann_ts(y)%dC13ocn_dt = -co2%dC13ocn_dt * 1.e-12_wp ! GtC
-    ann_ts(y)%dC14ocn_dt = -co2%dC14ocn_dt * 1.e-12_wp ! GtC
+    ann_ts(y)%dC14ocn_dt = -co2%dC14ocn_dt ! kgC
     ann_ts(y)%d13C_ocn   = ((co2%dC13ocn_dt/co2%dCocn_dt)/c13_c12_std - 1._wp) * 1000._wp
     ann_ts(y)%dClnd_dt   = -co2%dClnd_dt * 1.e-12_wp    ! GtC/yr, positive into the atmosphere
     dClnd_cum  = dClnd_cum - co2%dClnd_dt * 1.e-12_wp ! GtC
     ann_ts(y)%dClnd_cum  = dClnd_cum 
     ann_ts(y)%dC13lnd_dt = -co2%dC13lnd_dt * 1.e-12_wp ! GtC
-    ann_ts(y)%dC14lnd_dt = -co2%dC14lnd_dt * 1.e-12_wp ! GtC 
+    ann_ts(y)%dC14lnd_dt = -co2%dC14lnd_dt  ! kgC 
     ann_ts(y)%d13C_lnd   = ((co2%dC13lnd_dt/co2%dClnd_dt)/c13_c12_std - 1._wp) * 1000._wp
     ann_ts(y)%dCemis_dt  = co2%dCemis_dt * 1.e-12_wp    ! GtC/yr, positive into the atmosphere
     dCemis_cum  = dCemis_cum + co2%dCemis_dt * 1.e-12_wp ! GtC
@@ -148,12 +149,13 @@ contains
     dCweath_cum  = dCweath_cum - co2%dCweath_dt * 1.e-12_wp ! GtC
     ann_ts(y)%dCweath_cum  = dCweath_cum 
     ann_ts(y)%dC13weath_dt = -co2%dC13weath_dt * 1.e-12_wp ! GtC
-    ann_ts(y)%dC14weath_dt = -co2%dC14weath_dt * 1.e-12_wp ! GtC
+    ann_ts(y)%dC14weath_dt = -co2%dC14weath_dt  ! kgC
     ann_ts(y)%dCvolc_dt   = co2%dCvolc_dt * 1.e-12_wp    ! GtC/yr, positive into the atmosphere
     dCvolc_cum  = dCvolc_cum + co2%dCvolc_dt * 1.e-12_wp ! GtC
     ann_ts(y)%dCvolc_cum  = dCvolc_cum 
     ann_ts(y)%dC13volc_dt = co2%dC13volc_dt * 1.e-12_wp ! GtC
-    ann_ts(y)%dC14prod_dt = co2%dC14prod_dt * 1.e-12_wp ! GtC 
+    ann_ts(y)%dC14dec_dt = co2%dC14dec_dt ! kgC 
+    ann_ts(y)%dC14prod_dt = co2%dC14prod_dt ! kgC 
     ann_ts(y)%dCH4_dt   = co2%dCH4_dt * 1.e-12_wp    ! GtC/yr, positive into the atmosphere
 
 
@@ -219,18 +221,18 @@ contains
     call nc_write(fnm,"co2", vars%co2, dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric co2 concentration",units="ppm",ncid=ncid) 
     call nc_write(fnm,"Catm      ",  vars%Catm      , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric carbon",units="GtC",ncid=ncid)  
     call nc_write(fnm,"C13atm    ",  vars%C13atm    , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric carbon 13",units="GtC",ncid=ncid)  
-    call nc_write(fnm,"C14atm    ",  vars%C14atm    , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric carbon 14",units="GtC",ncid=ncid)  
+    call nc_write(fnm,"C14atm    ",  vars%C14atm    , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric carbon 14",units="kgC",ncid=ncid)  
     call nc_write(fnm,"d13C      ",  vars%d13C      , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric delta 13 C",units="permil",ncid=ncid)  
     call nc_write(fnm,"D14C      ",  vars%D14C      , dim1=dim_time,start=[ndat],count=[y],long_name="atmospheric Delta 14 C",units="permil",ncid=ncid)  
     call nc_write(fnm,"dCocn_dt  ",  vars%dCocn_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="net ocean carbon flux to atmosphere",units="GtC/yr",ncid=ncid)  
     call nc_write(fnm,"dCocn_cum ",  vars%dCocn_cum , dim1=dim_time,start=[ndat],count=[y],long_name="cumulative net ocean carbon flux to atmosphere",units="GtC",ncid=ncid)  
     call nc_write(fnm,"dC13ocn_dt",  vars%dC13ocn_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net ocean carbon 13 flux to atmosphere",units="GtC/yr",ncid=ncid)  
-    call nc_write(fnm,"dC14ocn_dt",  vars%dC14ocn_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net ocean carbon 14 flux to atmosphere",units="GtC/yr",ncid=ncid)  
+    call nc_write(fnm,"dC14ocn_dt",  vars%dC14ocn_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net ocean carbon 14 flux to atmosphere",units="kgC/yr",ncid=ncid)  
     call nc_write(fnm,"d13C_ocn  ",  vars%d13C_ocn  , dim1=dim_time,start=[ndat],count=[y],long_name="delta 13 C of ocean-atmosphere flux",units="permil",ncid=ncid)  
     call nc_write(fnm,"dClnd_dt  ",  vars%dClnd_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="net land carbon flux to atmosphere",units="GtC/yr",ncid=ncid)  
     call nc_write(fnm,"dClnd_cum ",  vars%dClnd_cum , dim1=dim_time,start=[ndat],count=[y],long_name="cumulative net land carbon flux to atmosphere ",units="GtC",ncid=ncid)  
     call nc_write(fnm,"dC13lnd_dt",  vars%dC13lnd_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net land carbon 13 flux to atmosphere",units="GtC/yr",ncid=ncid)  
-    call nc_write(fnm,"dC14lnd_dt",  vars%dC14lnd_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net land carbon 14 flux to atmosphere",units="GtC/yr",ncid=ncid)  
+    call nc_write(fnm,"dC14lnd_dt",  vars%dC14lnd_dt, dim1=dim_time,start=[ndat],count=[y],long_name="net land carbon 14 flux to atmosphere",units="kgC/yr",ncid=ncid)  
     call nc_write(fnm,"d13C_lnd  ",  vars%d13C_lnd  , dim1=dim_time,start=[ndat],count=[y],long_name="delta 13 C of land-atmosphere flux",units="permil",ncid=ncid)  
     call nc_write(fnm,"dCemis_dt ",  vars%dCemis_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="carbon emissions to atmosphere",units="GtC/yr",ncid=ncid)  
     call nc_write(fnm,"dCemis_cum",  vars%dCemis_cum , dim1=dim_time,start=[ndat],count=[y],long_name="cumulative carbon emissions to atmosphere",units="GtC",ncid=ncid)  
@@ -239,11 +241,12 @@ contains
     call nc_write(fnm,"dCweath_dt  ",  vars%dCweath_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="CO2 consumption by weathering",units="GtC/yr",ncid=ncid)  
     call nc_write(fnm,"dCweath_cum ",  vars%dCweath_cum , dim1=dim_time,start=[ndat],count=[y],long_name="cumulative CO2 consumption by weathering",units="GtC",ncid=ncid)  
     call nc_write(fnm,"dC13weath_dt",  vars%dC13weath_dt, dim1=dim_time,start=[ndat],count=[y],long_name="CO2 13 consumption by weathering",units="GtC/yr",ncid=ncid)  
-    call nc_write(fnm,"dC14weath_dt",  vars%dC14weath_dt, dim1=dim_time,start=[ndat],count=[y],long_name="CO2 14 consumption by weathering",units="GtC/yr",ncid=ncid)  
+    call nc_write(fnm,"dC14weath_dt",  vars%dC14weath_dt, dim1=dim_time,start=[ndat],count=[y],long_name="CO2 14 consumption by weathering",units="kgC/yr",ncid=ncid)  
     call nc_write(fnm,"dCvolc_dt  ",  vars%dCvolc_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="volcanic CO2 degassing",units="GtC/yr",ncid=ncid)  
     call nc_write(fnm,"dCvolc_cum ",  vars%dCvolc_cum , dim1=dim_time,start=[ndat],count=[y],long_name="cumulative volcanic CO2 degassing",units="GtC",ncid=ncid)  
     call nc_write(fnm,"dC13volc_dt",  vars%dC13volc_dt, dim1=dim_time,start=[ndat],count=[y],long_name="volcaninc CO2 13 degassing",units="GtC/yr",ncid=ncid)  
-    call nc_write(fnm,"dC14prod_dt",  vars%dC14prod_dt, dim1=dim_time,start=[ndat],count=[y],long_name="C14 production rate",units="GtC/yr",ncid=ncid)  
+    call nc_write(fnm,"dC14dec_dt",  vars%dC14dec_dt, dim1=dim_time,start=[ndat],count=[y],long_name="C14 decay",units="kgC/yr",ncid=ncid)  
+    call nc_write(fnm,"dC14prod_dt",  vars%dC14prod_dt, dim1=dim_time,start=[ndat],count=[y],long_name="C14 production rate",units="kgC/yr",ncid=ncid)  
     call nc_write(fnm,"dCH4_dt  ",  vars%dCH4_dt  , dim1=dim_time,start=[ndat],count=[y],long_name="carbon flux to atmosphere due to oxidation of anthropogenic CH4",units="GtC/yr",ncid=ncid)  
     call nc_close(ncid)
 

@@ -132,7 +132,7 @@
  iC14_production = 0                ! C14 production:
                                     ! 0 = constant (C14_production_const)
                                     ! 1 = prescribed C14 production from file (C14_production_file)
- C14_production_const = 1.74        ! atoms/cm2/s, constant C14_production, used only if iC14_production == 0
+ C14_production_const = 1.5         ! atoms/cm2/s, constant C14_production, used only if iC14_production == 0
  C14_production_file  = "input/C14_production.nc" 
 
  !-------------------------------------------------------

@@ -50,8 +50,9 @@ module co2_model
     ! So 1 ppm carbon dioxide = 1.7773e14 mol * 12.01 g/mol = 2.134 Pg of carbon.
     ! 2.12 PgC per ppm used in IPCC (Prather et al., 2012)
 
-    real(wp), parameter :: conv_prod = sec_year*510.1e12_wp*1.e4_wp * 14._wp*1.660540199e-27_wp  ! conversion factor from atoms/cm2/s -> kgC14/yr
-                                       ! atoms/cm2/s * s/yr * m2 * cm2/m2 * u/atom * kg/u = kg/yr
+    ! conversion factor from atoms/cm2/s -> kgC14/yr, see also Roth and Joos 2013 (1 atoms/cm2/s = 267 mol/yr)
+    real(wp), parameter :: conv_prod = sec_year*510.1e12_wp*1.e4_wp / 6.022e23_wp * 12._wp/1000._wp   ! atoms/cm2/s -> kgC14/yr
+                                       ! atoms/cm2/s * s/yr * m2 * cm2/m2 * mol/atoms * g/mol * kg/g = kg/yr
 
     real(wp), dimension(:), allocatable :: C14_production_time, C14_production_data
     real(wp), dimension(:), allocatable :: co2_degas_time, co2_degas_data
@@ -259,10 +260,15 @@ contains
       co2%dC14lnd_dt = 0._wp
     endif
 
+    ! radiocarbon decay
+    if (l_c14) then
+      co2%dC14dec_dt = c14_tdec*sec_year*co2%C14atm
+    endif
+
     ! add fluxes from ocean, land, weathering, volcanic degassing, emissions, CH4 oxidation, production and decay
     co2%Catm   = co2%Catm - co2%dCocn_dt - co2%dClnd_dt + co2%dCemis_dt + co2%dCH4_dt + co2%dCvolc_dt - co2%dCweath_dt + co2%dCemis_extra_dt ! kgC
     if (l_c13) co2%C13atm = co2%C13atm - co2%dC13ocn_dt - co2%dC13lnd_dt + co2%dC13emis_dt + co2%dC13volc_dt - co2%dC13weath_dt    ! kgC13
-    if (l_c14) co2%C14atm = co2%C14atm - co2%dC14ocn_dt - co2%dC14lnd_dt - co2%dC14weath_dt - c14_tdec*sec_year*co2%C14atm + co2%dC14prod_dt
+    if (l_c14) co2%C14atm = co2%C14atm - co2%dC14ocn_dt - co2%dC14lnd_dt - co2%dC14weath_dt - co2%dC14dec_dt + co2%dC14prod_dt
 
     ! isotopic ratios
     co2%c13_c12 = co2%C13atm / co2%Catm
