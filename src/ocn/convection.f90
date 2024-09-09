@@ -35,7 +35,7 @@ module convection_mod
 
   use precision, only : wp
   use ocn_grid
-  use ocn_params, only : i_conv_shuffle, l_conv_shuffle_bgc, l_mix_bgc_all, n_tracers_tot, n_tracers_ocn
+  use ocn_params, only : i_conv_shuffle, l_conv_shuffle_passive, l_mix_bgc_all, n_tracers_tot, n_tracers_ocn
   use eos_mod
 
   implicit none
@@ -223,10 +223,10 @@ contains
     real(wp) :: ts_top, rho_top, rho_k
 
 
-    if (l_conv_shuffle_bgc) then
+    if (l_conv_shuffle_passive) then
       n_tracers_mix = n_tracers_tot
     else
-      n_tracers_mix = n_tracers_ocn
+      n_tracers_mix = 2 ! only active tracers (temperature and salinity)
     endif
 
     maxpass = maxk

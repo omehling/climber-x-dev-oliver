@@ -106,7 +106,7 @@
                               ! 0 = no shuffle convection applied
                               ! 1 = shuffle convection applied everywhere
                               ! 2 = shuffle convection applied only along the coast
- l_conv_shuffle_bgc = F       ! apply shuffle convection also to bgc tracers? Used only if i_conv_shuffle>0
+ l_conv_shuffle_passive = F   ! apply shuffle convection also to passive (including bgc) tracers? Used only if i_conv_shuffle>0
  l_mix_bgc_all = T            ! apply vertical mixing to ALL bgc tracers (convection+mixed layer)?
 
  !-------------------------------------------------------------------------------------------

@@ -83,7 +83,7 @@ module ocn_params
 
      integer :: i_advection
      integer :: i_conv_shuffle
-     logical :: l_conv_shuffle_bgc
+     logical :: l_conv_shuffle_passive
      logical :: l_mix_bgc_all
      logical :: l_mld
      real(wp) :: pe_buoy_coeff, ke_tau_coeff, ke_wind_dec
@@ -267,7 +267,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","diff_gm",diff_gm)
 
     call nml_read(filename,"ocn_par","i_conv_shuffle",i_conv_shuffle)
-    call nml_read(filename,"ocn_par","l_conv_shuffle_bgc",l_conv_shuffle_bgc)
+    call nml_read(filename,"ocn_par","l_conv_shuffle_passive",l_conv_shuffle_passive)
     call nml_read(filename,"ocn_par","l_mix_bgc_all",l_mix_bgc_all)
 
     call nml_read(filename,"ocn_par","l_mld",l_mld)
