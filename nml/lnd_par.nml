@@ -103,7 +103,8 @@
     alb_ice = 0.5               ! bare ice sheet albedo
     l_fsnow_orog = T            ! reduce snow cover fraction over rough topography?
     c_fsnow = 12.               ! parameter in snow cover fraction parameterisation
-    c_fsnow_orog = 3e-4         ! parameter in snow cover fraction parameterisation
+    c_fsnow_orog = 3e-4         ! parameter in snow cover fraction parameterisation, used only if l_fsnow_orog==T
+    z_veg_std_min = 0.          ! m, minimum standard deviation of sub-grid topography, used only if l_fsnow_orog==T
     l_ice_albedo_semi = T       ! use ice sheet albedo computed in SEMI also in climate model?
 
     !------------------------------------------------------------------------------------

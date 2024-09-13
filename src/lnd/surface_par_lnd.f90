@@ -559,7 +559,7 @@ contains
       ! orography factor for snow cover fraction 
       if (snow_par%l_fsnow_orog) then
         ! reduce snow cover fraction over rough topography following Roesch 2001, eq. 7
-        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*z_veg_std+eps)
+        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*max(snow_par%z_veg_std_min,z_veg_std)+eps)
       else
         f_snow_fac_orog = 1._wp
       endif
@@ -588,7 +588,7 @@ contains
       ! orography factor for snow cover fraction 
       if (snow_par%l_fsnow_orog) then
         ! reduce snow cover fraction over rough topography following Roesch 2001, eq. 7
-        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*z_veg_std+eps)
+        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*max(snow_par%z_veg_std_min,z_veg_std)+eps)
       else
         f_snow_fac_orog = 1._wp
       endif
@@ -634,7 +634,7 @@ contains
       ! orography factor for snow cover fraction 
       if (snow_par%l_fsnow_orog) then
         ! reduce snow cover fraction over rough topography following Roesch 2001, eq. 7
-        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*z_veg_std+eps)
+        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*max(snow_par%z_veg_std_min,z_veg_std)+eps)
       else
         f_snow_fac_orog = 1._wp
       endif
@@ -678,7 +678,7 @@ contains
       ! orography factor for snow cover fraction 
       if (snow_par%l_fsnow_orog) then
         ! reduce snow cover fraction over rough topography following Roesch 2001, eq. 7
-        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*z_veg_std+eps)
+        f_snow_fac_orog = h_snow(is_veg)/(h_snow(is_veg)+snow_par%c_fsnow_orog*max(snow_par%z_veg_std_min,z_veg_std)+eps)
       else
         f_snow_fac_orog = 1._wp
       endif
