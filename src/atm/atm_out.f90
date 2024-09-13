@@ -75,6 +75,8 @@ module atm_out
     real(wp) :: tgrl1
     real(wp) :: tnatl
     real(wp) :: tant    
+    real(wp) :: dust_grl
+    real(wp) :: dust_wais
     real(wp) :: q2m    
     real(wp) :: r2m    
     real(wp) :: tam
@@ -1039,6 +1041,8 @@ contains
       ann_ts(y)%tgrl1=0
       ann_ts(y)%tnatl=0
       ann_ts(y)%tant=0
+      ann_ts(y)%dust_grl=0
+      ann_ts(y)%dust_wais=0
       ann_ts(y)%q2m=0
       ann_ts(y)%r2m=0
       ann_ts(y)%tam=0
@@ -1285,6 +1289,8 @@ contains
     ann_ts(y)%tnatl         = ann_ts(y)%tnatl         + sum(atm%t2(i_natl_1:i_natl_2,j_natl_2:j_natl_1,:)*atm%frst(i_natl_1:i_natl_2,j_natl_2:j_natl_1,:)) &
                                                       / size(atm%frst(i_natl_1:i_natl_2,j_natl_2:j_natl_1,1))* ann_avg
     ann_ts(y)%tant          = ann_ts(y)%tant          + sum(atm%t2(i_ant,j_ant,:)*atm%frst(i_ant,j_ant,:)) * ann_avg 
+    ann_ts(y)%dust_grl      = ann_ts(y)%dust_grl      + atm%dust_dep(i_grl,j_grl) * ann_avg 
+    ann_ts(y)%dust_wais     = ann_ts(y)%dust_wais     + atm%dust_dep(i_wais,j_wais) * ann_avg 
     ann_ts(y)%q2m           = ann_ts(y)%q2m           + ann_q2m        
     ann_ts(y)%r2m           = ann_ts(y)%r2m           + ann_r2m        
     ann_ts(y)%tskin         = ann_ts(y)%tskin         + ann_tskin      
@@ -2272,6 +2278,8 @@ contains
     call nc_write(fnm,"tgrl1   ", vars%tgrl1   , dims=[dim_time],start=[nout],count=[y],long_name="Greenland surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tnatl   ", vars%tnatl   , dims=[dim_time],start=[nout],count=[y],long_name="North Atlantic surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tant    ", vars%tant    , dims=[dim_time],start=[nout],count=[y],long_name="Antarctica surface air temperature",units="degC",ncid=ncid)
+    call nc_write(fnm,"dust_grl", vars%dust_grl, dims=[dim_time],start=[nout],count=[y],long_name="Greenland dust deposition",units="kg/m2/s",ncid=ncid)
+    call nc_write(fnm,"dust_wais", vars%dust_wais , dims=[dim_time],start=[nout],count=[y],long_name="WAIS dust deposition",units="kg/m2/s",ncid=ncid)
     call nc_write(fnm,"tam     ", vars%tam     , dims=[dim_time],start=[nout],count=[y],long_name="temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tskin   ", vars%tskin   , dims=[dim_time],start=[nout],count=[y],long_name="skin temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"q2      ", vars%q2m     , dims=[dim_time],start=[nout],count=[y],long_name="surface air humidity",units="kg/kg",ncid=ncid)
