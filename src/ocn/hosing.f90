@@ -431,7 +431,7 @@ end if
     hosing_trend = hosing_trend/(1.e3_wp*sec_year)
 
     ! read hosing forcing from file, if required
-    if (i_hosing.eq.2) then
+    if (i_hosing.eq.1) then
       ntime = nc_size(trim(hosing_file),"time")
       allocate( hosing_time_tmp(ntime) )
       allocate( hosing_time(ntime) )
