@@ -6,8 +6,10 @@ module hosing_mod
   use climber_grid, only : lat, lon, basin_mask, i_atlantic, i_pacific, i_southern
   use ocn_grid, only : maxi, maxj, dx, dy
   use ocn_params, only: dt, rho0, i_hosing, hosing_basin, hosing_ini, hosing_trend, hosing_sigma
+  use ocn_params, only : hosing_file
   use ocn_params, only : year_hosing_ini, year_hosing_end, year_hosing_ramp, lat_min_hosing, lat_max_hosing, lon_min_hosing, lon_max_hosing
   use ocn_params, only : hosing_comp_basin, lat_min_hosing_comp, lat_max_hosing_comp, lon_min_hosing_comp, lon_max_hosing_comp
+  use ncio
 
 !  use hyster 
   
@@ -18,6 +20,9 @@ module hosing_mod
   integer , allocatable :: j_hosing(:,:)
   integer , allocatable :: j_hosing_comp(:,:)
   real(wp), allocatable :: rhosing(:,:)
+
+  real(wp), allocatable :: hosing_time(:)
+  real(wp), allocatable :: hosing_data(:)
 
 !  type(hyster_class) :: hyst1 
 
@@ -40,7 +45,8 @@ contains
     real(wp), intent(out) :: hosing
     real(wp), dimension(:,:), intent(inout) :: fw_hosing
 
-    integer :: i, j 
+    integer :: i, j, i0, i1, imin
+    real(wp) :: w0, w1
     real(wp) :: area_hosing
     real(wp) :: area_hosing_comp
     real(wp), dimension(2) :: xx
@@ -158,6 +164,32 @@ if (.true.) then
       endif
 
     else if (i_hosing.eq.1) then
+      ! from file
+
+      ! interpolate from hosing_data to current year
+      if (time.le.year_hosing_ini) then
+        hosing = 0._wp 
+      elseif (time.ge.hosing_time(ubound(hosing_time,1))) then
+        hosing = hosing_data(ubound(hosing_data,1))
+      else
+        imin = minloc(abs(hosing_time-time),1) 
+        if (hosing_time(imin).lt.time) then
+          i0 = imin
+          i1 = imin+1
+        else
+          i0 = imin-1
+          i1 = imin
+        endif
+        if (hosing_time(i1)-hosing_time(i0).eq.0._wp) then
+          w0 = 1._wp
+        else
+          w0 = 1._wp - abs(hosing_time(i0)-time)/(hosing_time(i1)-hosing_time(i0))
+        endif
+        w1 = 1._wp - w0
+        hosing = w0*hosing_data(i0) + w1*hosing_data(i1)
+      endif
+
+    else if (i_hosing.eq.2) then
 
       if (time.lt.year_hosing_ini) then
         hosing = 0._wp
@@ -169,7 +201,7 @@ if (.true.) then
         hosing = 0._wp
       endif
 
-    else if (i_hosing.eq.2) then
+    else if (i_hosing.eq.3) then
 
       if (time.lt.year_hosing_ini) then
         hosing = 0._wp
@@ -181,7 +213,7 @@ if (.true.) then
         hosing = 0._wp
       endif
 
-    else if (i_hosing.eq.3) then
+    else if (i_hosing.eq.4) then
 
       if (time.lt.year_hosing_ini) then
         hosing = 0._wp
@@ -193,7 +225,7 @@ if (.true.) then
         hosing = 0._wp
       endif
 
-    else if (i_hosing.eq.4) then
+    else if (i_hosing.eq.5) then
 
       if (time.lt.year_hosing_ini) then
         hosing = 0._wp
@@ -238,10 +270,12 @@ end if
     real(wp), intent(in) :: f_ocn(:,:)
     real(wp), intent(in) :: time
 
-    integer :: i, j
+    integer :: i, j, ntime
     logical :: flag
     real(wp) :: area_hosing
     real(wp) :: area_hosing_comp
+  
+    real(wp), allocatable :: hosing_time_tmp(:)
 
 
     allocate(rhosing(maxi,maxj))
@@ -396,6 +430,16 @@ end if
     ! convert hosing_trend from Sv/ky to Sv/s
     hosing_trend = hosing_trend/(1.e3_wp*sec_year)
 
+    ! read hosing forcing from file, if required
+    if (i_hosing.eq.2) then
+      ntime = nc_size(trim(hosing_file),"time")
+      allocate( hosing_time_tmp(ntime) )
+      allocate( hosing_time(ntime) )
+      allocate( hosing_data(ntime) )
+      call nc_read(trim(hosing_file),"time",hosing_time_tmp)    
+      call nc_read(trim(hosing_file),"fwf",hosing_data) 
+      hosing_time = hosing_time_tmp - hosing_time_tmp(1) + 1._wp + year_hosing_ini  
+    endif
     
 !    ! Initialize hysteresis module for transient forcing experiments 
 !    call hyster_init(hyst1,"hyster_ctrl.nml",real(time,sp),"hosing") 

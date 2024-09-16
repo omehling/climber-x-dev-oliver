@@ -191,13 +191,15 @@
  lon_max_hosing_comp = 175    ! eastern longitude bound for region of freshwater flux compensation (used only if hosing_comp_basin>0)
  i_hosing = 0                 ! hosing flux settings:
                               ! 0..using hosing_ini and hosing_trend
-                              ! >=1..hosing flux evolution from code in hosing.f90
+                              ! 1..read hosing time series from hosing_file
+                              ! >=2..hosing flux evolution from code in hosing.f90
  hosing_ini = 0               ! Sv, inital/constant value of hosing flux
  hosing_trend = 0.            ! Sv/kyr, rate at which hosing flux is increased/decreased
  hosing_sigma = 0.            ! Sv, standard deviation of Gaussian white noise added to hosing
  year_hosing_ini = 0          ! years, initial time for hosing
  year_hosing_end = 1e6        ! years, final time for hosing
  year_hosing_ramp = 0         ! years, ramp-up time for hosing
+ hosing_file = input/Calov_Heinrich.nc  ! hosing time series input file, used only if i_hosing==1
 
  !-------------------------------------------------------------------------------------------
  ! freshwater adjustment settings

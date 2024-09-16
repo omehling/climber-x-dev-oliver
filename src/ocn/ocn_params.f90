@@ -135,6 +135,7 @@ module ocn_params
      integer :: hosing_comp_basin
      real(wp) :: lat_min_hosing_comp, lat_max_hosing_comp
      real(wp) :: lon_min_hosing_comp, lon_max_hosing_comp
+     character (len=256) :: hosing_file
      logical :: l_noise_fw 
      logical :: is_fw_noise_Sv
      logical :: l_noise_flx 
@@ -322,6 +323,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","year_hosing_ini",year_hosing_ini)
     call nml_read(filename,"ocn_par","year_hosing_end",year_hosing_end)
     call nml_read(filename,"ocn_par","year_hosing_ramp",year_hosing_ramp)
+    call nml_read(filename,"ocn_par","hosing_file",hosing_file)
 
     call nml_read(filename,"ocn_par","l_noise_fw   ",l_noise_fw   )
     call nml_read(filename,"ocn_par","is_fw_noise_Sv",is_fw_noise_Sv)
