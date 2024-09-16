@@ -39,7 +39,7 @@ module ocn_model
     use ocn_grid, only : grid_class, ocn_grid_init, ocn_grid_update
     use ocn_grid, only : maxi, maxj, maxk, maxisles, c, dzz, zw, zro, dz, dza, mask_ocn, k1, k1_pot, k_mix_brines, ocn_area, ocn_area_tot, ocn_vol
     use ocn_params, only : ocn_params_init, i_init, dbl
-    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines
+    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines, frac_brines
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, n_tracers_bgc, idx_tracers_trans, age_tracer, dye_tracer, cons_tracer, l_cfc
     use ocn_params, only : i_age, i_dye, i_cons, i_cfc11, i_cfc12
     use ocn_params, only : l_mld, l_hosing, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
@@ -287,6 +287,13 @@ contains
             else
               flag_brines = .false.
             endif
+          else if (i_brines.eq.4) then
+            ! brines only in SH and along coast
+            if (ocn%mask_coast(i,j).eq.1 .and. j.le.maxj/2) then
+              flag_brines = .true.
+            else
+              flag_brines = .false.
+            endif
           endif
 
           if (flag_brines) then
@@ -295,37 +302,24 @@ contains
             ! flux without brines
             if (i_fw.eq.1) then
               ! virtual salinity flux using reference saln0, could be bad (e.g. Yin 2010)
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%saln0/rho0   ! kg/m2/s -> m/s*psu
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
             else if (i_fw.eq.3) then
               ! virtual salinity flux using local salinity
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0   ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0   ! kg/m2/s -> m/s*psu 
             endif
 
-            ! distribute freshwater flux from brine rejection over several layers and update salinity
-            k_mix = max(k1(i,j),k_mix_brines)
-            n_mix = maxk-k_mix+1
-            do k=k_mix,maxk
-              if (i_fw.eq.1) then
-                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
-              else if (i_fw.eq.2) then
-                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
-              else if (i_fw.eq.3) then
-                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)/n_mix*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg * s -> psu 
-              endif
-            enddo
-
             ! put brines at ocean bottom
-            !k = k1(i,j)
-            !if (i_fw.eq.1) then
-            !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
-            !else if (i_fw.eq.2) then
-            !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
-            !else if (i_fw.eq.3) then
-            !  ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
-            !endif
+            k = k1(i,j)
+            if (i_fw.eq.1) then
+              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            else if (i_fw.eq.2) then
+              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            else if (i_fw.eq.3) then
+              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            endif
 
           else
             ! no special treatment of brines

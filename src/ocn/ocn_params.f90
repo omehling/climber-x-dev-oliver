@@ -106,6 +106,7 @@ module ocn_params
      logical :: l_fw_corr
      integer :: i_fw
      integer :: i_brines
+     real(wp) :: frac_brines
      real(wp) :: z_mix_brines
      real(wp) :: relax_run
      real(wp) :: relax_calv
@@ -296,6 +297,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","saln0_const",saln0_const)
     call nml_read(filename,"ocn_par","l_salinity_restore",l_salinity_restore)
     call nml_read(filename,"ocn_par","i_brines",i_brines)
+    call nml_read(filename,"ocn_par","frac_brines",frac_brines)
     call nml_read(filename,"ocn_par","z_mix_brines",z_mix_brines)
     call nml_read(filename,"ocn_par","relax_run",relax_run)
     call nml_read(filename,"ocn_par","relax_calv",relax_calv)
