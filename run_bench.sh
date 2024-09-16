@@ -16,7 +16,7 @@ outdir=bench_v1.3
 #           + do manual copy of LGM restart files into restart/restart_lgm/
 #           + compute 2m temperature bias from the hist_biascorr run using the matlab script in matlab/t2m_bias/t2mb.m and copy to input/ directory
 # step=3    : all simulations with carbon cycle and interactive ice sheets 
-step=4
+step=3
 
 # Specify carbon cycle setup: 'close' or 'open'
 cc_setup='close'
@@ -72,9 +72,9 @@ if [ $step -eq 2 ]
 then
 
 # preindustrial equilibrium with ocean biogeochemistry, closed carbon cycle setup
-./job_climber -s -f -o output/$outdir/preind_cc_close -c medium -w 60 -j parallel -n 32 \&control="nyears=10000 flag_bgc=T bgc_restart=F i_write_restart=1" bgc_par="l_spinup_bgc=F l_spinup_sed=F l_sediments=F" lnd_par="l_river_export=F" bgc_par="l_c14=T"
+./job_climber -s -f -o output/$outdir/preind_cc_close -c medium -w 60 -j parallel -n 32 \&control="nyears=10000 flag_bgc=T bgc_restart=F i_write_restart=1" bgc_par="l_spinup_bgc=F l_spinup_sed=F l_sediments=F" lnd_par="l_river_export=F"
 # preindustrial equilibrium with ocean biogeochemistry, open carbon cycle setup
-./job_climber -s -f -o output/$outdir/preind_cc_open -c medium -j parallel -n 32 \&control="nyears=100000 flag_bgc=T l_spinup_cc=T nyears_spinup_bgc=5000 year_start_offline=7000 bgc_restart=F l_weathering=T i_write_restart=1" bgc_par="l_spinup_bgc=T l_spinup_sed=T" "${cc_string_open_bgc}" "${cc_string_open_lnd}"
+./job_climber -s -f -o output/$outdir/preind_cc_open -c long -w 220 -j parallel -n 32 \&control="nyears=100000 flag_bgc=T l_spinup_cc=T nyears_spinup_bgc=5000 year_start_offline=1000000 bgc_restart=F l_weathering=T i_write_restart=1" bgc_par="l_spinup_bgc=T l_spinup_sed=T" "${cc_string_open_bgc}" "${cc_string_open_lnd}"
 
 # historical with annual atm output to compute T2m anomalies needed for anomaly approach in SEMI
 ./job_climber -s -f -o output/$outdir/hist_biascorr -c short -w 10 -j parallel -n 32 \&control="nyears=220 year_ini=-200 iorbit=1 ico2=1 ich4=1 in2o=1 icfc=1 io3=2 iso4=1 iluc=2 isol=1 ivolc=1 year_out_start=-19 nyout_atm=1"
@@ -135,8 +135,9 @@ then
 
 # LGM
 ./job_climber -s -f -o output/$outdir/lgm -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42  fake_geo_const_file=input/geo_ice_tarasov_lgm.nc fake_ice_const_file=input/geo_ice_tarasov_lgm.nc co2_const=190 ch4_const=375 n2o_const=200" lnd_par="lithology_uhh_file=input/Lithology_lgm_UHH.nc"
+#./job_climber -s -f -o output/bench_v1.3/lgm_deglac -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42  fake_geo_const_file=input/geo_ice_tarasov_deglac_21ka.nc fake_geo_ref_file=input/geo_ice_tarasov_deglac_0ka.nc fake_ice_const_file=input/geo_ice_tarasov_deglac_21ka.nc co2_const=190 ch4_const=375 n2o_const=200" lnd_par="lithology_uhh_file=input/Lithology_lgm_UHH.nc"
 ./job_climber -s -f -o output/$outdir/lgm_fixveg -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42  fake_geo_const_file=input/geo_ice_tarasov_lgm.nc fake_ice_const_file=input/geo_ice_tarasov_lgm.nc co2_const=190 ch4_const=375 n2o_const=200" lnd_par="l_dynveg=F l_co2_fert_lim=T l_fixlai=T"
-./job_climber -s -f -o output/$outdir/lgm_peltier -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42  fake_geo_const_file=input/geo_ice_peltier_lgm.nc fake_ice_const_file=input/geo_ice_peltier_lgm.nc co2_const=190 ch4_const=375 n2o_const=200" 
+./job_climber -s -f -o output/$outdir/lgm_peltier -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42  fake_geo_const_file=input/geo_ice_peltier_lgm.nc fake_geo_ref_file=input/geo_ice_peltier_deglac_0ka.nc fake_ice_const_file=input/geo_ice_peltier_lgm.nc co2_const=190 ch4_const=375 n2o_const=200" 
 
 # hysteresis
 ./job_climber -s -f -o output/$outdir/hyst2050/up   -c medium -w 60 -j parallel -n 32 \&control="nyears=30000" ocn_par="l_hosing=T hosing_ini=-0.3 hosing_trend=0.02 lat_min_hosing=20 lat_max_hosing=50"
@@ -145,7 +146,7 @@ then
 ./job_climber -s -f -o output/$outdir/hyst5070/down -c medium -w 60 -j parallel -n 32 \&control="nyears=30000" ocn_par="l_hosing=T hosing_ini=0.3 hosing_trend=-0.02 lat_min_hosing=50 lat_max_hosing=70"
 
 # PaleoDEM
-./job_climber -s -f -o output/$outdir/pliomip -c short -w 24 -j parallel -n 32 \&control="nyears=5000 fake_geo_const_file=input/geo_Pliomip2.nc fake_ice_const_file=input/geo_Pliomip2.nc co2_const=400"
+./job_climber -s -f -o output/$outdir/pliomip -c short -w 24 -j parallel -n 32 \&control="nyears=5000 fake_geo_const_file=input/geo_Pliomip2.nc fake_ice_const_file=input/geo_Pliomip2.nc co2_const=400" geo_par="geo_ref_file=input/geo_Pliomip2.nc"
 ./job_climber -s -f -o output/$outdir/65Ma -c short -w 24 -j parallel -n 32 \&control="nyears=5000 fake_geo_const_file=input/topog_065Ma_climberX.nc fake_ice_const_file=input/topog_065Ma_climberX.nc atm_restart=F ocn_restart=F sic_restart=F lnd_restart=F dt_day_ocn=1" ocn_par="i_isl=0 i_init=1" geo_par="l_close_panama=F geo_ref_file=input/topog_065Ma_climberX.nc" 
 ./job_climber -s -f -o output/$outdir/250Ma -c short -w 24 -j parallel -n 32 \&control="nyears=5000 fake_geo_const_file=input/topog_250Ma_climberX.nc fake_ice_const_file=input/topog_250Ma_climberX.nc atm_restart=F ocn_restart=F sic_restart=F lnd_restart=F dt_day_ocn=1" ocn_par="i_isl=0 i_init=1" geo_par="l_close_panama=F geo_ref_file=input/topog_250Ma_climberX.nc" 
 fi
@@ -199,18 +200,22 @@ then
 ./job_climber -s -f -o output/$outdir/lgm_co2_close_Cicenobur -c short -w 24 -j parallel -n 32 \&control="nyears=10000 iorbit=1 ecc_const=0.018994 obl_const=22.949 per_const=114.42 flag_co2=T flag_bgc=T fake_geo_const_file=input/geo_ice_tarasov_lgm.nc fake_ice_const_file=input/geo_ice_tarasov_lgm.nc ico2_rad=1 co2_rad_const=190 ch4_const=375 n2o_const=200" lnd_par="k_ice=1e6" "${cc_string_close_bgc}" "${cc_string_close_lnd}"
 
 # deglaciation
-./job_climber -s -f -o output/$outdir/deglac_tarasov -c medium -j parallel -n 32 \&control="nyears=21000 year_ini=-21000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_tarasov_deglac.nc fake_ice_var_file=input/geo_ice_tarasov_deglac.nc n_year_geo=100 nyout_atm=100 nyout_ocn=100 nyout_sic=100 nyout_lnd=100 nyout_geo=100 restart_in_dir=restart_lgm"
-./job_climber -s -f -o output/$outdir/deglac_peltier -c medium -j parallel -n 32 \&control="nyears=21000 year_ini=-21000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_peltier_deglac.nc fake_ice_var_file=input/geo_ice_peltier_deglac.nc n_year_geo=100 nyout_atm=100 nyout_ocn=100 nyout_sic=100 nyout_lnd=100 nyout_geo=100 restart_in_dir=restart_lgm_peltier"
+#./job_climber -s -f -o output/$outdir/deglac_tarasov -c medium -j parallel -n 32 \&control="nyears=21000 year_ini=-21000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_tarasov_lgc.nc fake_ice_var_file=input/geo_ice_tarasov_lgc.nc n_year_geo=100 nyout_atm=100 nyout_ocn=100 nyout_sic=100 nyout_lnd=100 nyout_geo=100 restart_in_dir=restart_lgm"
+#./job_climber -s -f -o output/$outdir/deglac_peltier -c medium -j parallel -n 32 \&control="nyears=21000 year_ini=-21000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_peltier_deglac.nc fake_geo_ref_file=input/geo_ice_peltier_deglac_0ka.nc fake_ice_var_file=input/geo_ice_peltier_deglac.nc n_year_geo=100 nyout_atm=100 nyout_ocn=100 nyout_sic=100 nyout_lnd=100 nyout_geo=100 restart_in_dir=restart_lgm_peltier"
+#./job_climber -s -f -o output/$outdir/deglac_gowan -c medium -j parallel -n 32 \&control="nyears=21000 year_ini=-21000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_gowan.nc fake_geo_ref_file=input/geo_ice_gowan_0ka.nc fake_ice_var_file=input/geo_ice_gowan.nc n_year_geo=100 nyout_atm=100 nyout_ocn=100 nyout_sic=100 nyout_lnd=100 nyout_geo=100 restart_in_dir=restart_lgm"
+
+# last glacial cycle with prescribed ice sheets
+./job_climber -s -f -o output/$outdir/lgc_tarasov -c long -w 240 -j parallel -n 32 \&control="nyears=125000 year_ini=-125000 ifake_ice=1 ifake_geo=1 ico2=1 ich4=1 in2o=1 iorbit=2 fake_geo_var_file=input/geo_ice_tarasov_lgc.nc fake_ice_var_file=input/geo_ice_tarasov_lgc.nc n_year_geo=100" #ocn_par="l_noise_fw=T noise_amp_fw=0,0.5 scale_runoff_ice=0,1"
 
 # last glacial cycle with interactive ice sheets
-./job_climber -s -f -o output/$outdir/lgc_ice_sico -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=1 ice_model_name=sico" 
-./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc2 -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=2 ice_model_name=sico" 
-./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc5 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=5 ice_model_name=sico" 
-./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc10 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=10 ice_model_name=sico" 
-./job_climber -s -f -o output/$outdir/lgc_ice_yelmo -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=1 ice_model_name=yelmo" 
-./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc2 -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=2 ice_model_name=yelmo" 
-./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc5 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=5 ice_model_name=yelmo" 
-./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc10 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=10 ice_model_name=yelmo" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_sico -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=1 ice_model_name=sico" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc2 -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=2 ice_model_name=sico" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc5 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=5 ice_model_name=sico" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_sico_acc10 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=10 ice_model_name=sico" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_yelmo -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=1 ice_model_name=yelmo" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc2 -c long -w 500 -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=2 ice_model_name=yelmo" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc5 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=5 ice_model_name=yelmo" 
+#./job_climber -s -f -o output/$outdir/lgc_ice_yelmo_acc10 -c medium -j parallel -n 32 \&control="year_ini=-125000 nyears=125000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=10 ice_model_name=yelmo" 
 
 #
 #./job_climber -s -f -o output/$outdir/deglac_ice_acc10_itempinit1 -c standby -j parallel -n 32 \&control="year_ini=-30000 nyears=30000 iorbit=2 ico2=1 ich4=1 in2o=1 ice_domain_name=NH-32KM flag_geo=T flag_ice=T flag_smb=T flag_imo=T n_accel=10 ifake_ice=2 ifake_geo=2" ice_sico_par="i_temp_init=1"
@@ -220,19 +225,6 @@ then
 #./job_climber -s -f -o output/$outdir/preind_ice_nh -c standby -j parallel -n 32 \&control="nyears=100000 n_accel=10 n_year_smb=10 flag_geo=T flag_ice=T flag_smb=T flag_imo=T ice_domain_name=NH-32KM"
 ## MIS11 with interactive ice sheets
 #./job_climber -s -f -o output/$outdir/mis11_ice_nh -c standby -j parallel -n 32 \&control="year_ini=-398000 nyears=100000 n_accel=10 n_year_smb=10 flag_geo=T flag_ice=T flag_smb=T flag_imo=T ice_domain_name=NH-32KM"
-
-fi
-
-####################
-# step 4
-if [ $step -eq 4 ]
-then
-
-# continue preindustrial spinup with open carbon cycle, now with radiocarbon tracer
-#./job_climber -s -f -o output/$outdir/preind_cc_open_cont -c medium -j parallel -n 32 \&control="nyears=100000 flag_bgc=T bgc_restart=T restart_in_dir=restart_pi_cc_open i_write_restart=1 l_weathering=T" "${cc_string_open_bgc}" "${cc_string_open_lnd}"
-
-# continue LIG spinup with open carbon cycle
-./job_climber -s -f -o output/$outdir/lig125k_cc_open_cont -c medium  -j parallel -n 32 \&control="year_ini=-125000 nyears=100000 flag_bgc=T co2_const=278 ch4_const=640 n2o_const=260 bgc_restart=T restart_in_dir=restart_lig_cc_open l_weathering=T i_write_restart=1" "${cc_string_open_bgc}" "${cc_string_open_lnd}" 
 
 fi
 
