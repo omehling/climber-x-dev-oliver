@@ -141,6 +141,8 @@ module atm_out
     real(wp) :: lnettop_l   
     real(wp) :: lnetsur_l 
     real(wp) :: itcz
+    real(wp) :: itcz_min
+    real(wp) :: itcz_max
     real(wp) :: had_width
   end type
 
@@ -1020,8 +1022,6 @@ contains
     real(wp) :: ann_snetsur_l 
     real(wp) :: ann_lnettop_l
     real(wp) :: ann_lnetsur_l
-    real(wp) :: itcz
-    real(wp) :: had_width
 
     real(wp), allocatable, dimension(:,:) :: xz
     real(wp), allocatable, dimension(:,:) :: faxcpt
@@ -1111,6 +1111,8 @@ contains
       ann_ts(y)%lnettop_l =0
       ann_ts(y)%lnetsur_l =0
       ann_ts(y)%itcz =0
+      ann_ts(y)%itcz_min =0
+      ann_ts(y)%itcz_max =0
       ann_ts(y)%had_width =0
     endif
 
@@ -1368,6 +1370,8 @@ contains
     ann_ts(y)%lnettop_l     = ann_ts(y)%lnettop_l     + ann_lnettop_l 
     ann_ts(y)%lnetsur_l     = ann_ts(y)%lnetsur_l     + ann_lnetsur_l 
     ann_ts(y)%itcz          = ann_ts(y)%itcz          + atm%had_fi*180./pi * ann_avg
+    ann_ts(y)%itcz_min      = min(ann_ts(y)%itcz_min, atm%had_fi*180./pi)
+    ann_ts(y)%itcz_max      = max(ann_ts(y)%itcz_max, atm%had_fi*180./pi)
     ann_ts(y)%had_width     = ann_ts(y)%had_width     + atm%had_width*180./pi * ann_avg
 
     if( time_eoy_atm ) then
@@ -2346,6 +2350,8 @@ contains
     call nc_write(fnm,"fw_pac_atl", vars%fw_pac_atl , dims=[dim_time],start=[nout],count=[y],long_name="water vapor transport from Pacific to Atlantic",units="Sv",ncid=ncid)
     call nc_write(fnm,"fw_atl_indpac", vars%fw_atl_indpac , dims=[dim_time],start=[nout],count=[y],long_name="water vapor transport from Atlantic to Indo-Pacific",units="Sv",ncid=ncid)
     call nc_write(fnm,"itcz", vars%itcz , dims=[dim_time],start=[nout],count=[y],long_name="Latitude of the ITCZ (annual average)",units="deg",ncid=ncid)
+    call nc_write(fnm,"itcz_min", vars%itcz_min , dims=[dim_time],start=[nout],count=[y],long_name="Min latitude of the ITCZ",units="deg",ncid=ncid)
+    call nc_write(fnm,"itcz_max", vars%itcz_max , dims=[dim_time],start=[nout],count=[y],long_name="Max latitude of the ITCZ",units="deg",ncid=ncid)
     call nc_write(fnm,"had_width", vars%had_width , dims=[dim_time],start=[nout],count=[y],long_name="Width of the Hadley cells (annual average)",units="deg",ncid=ncid)
 
     call nc_write(fnm,"tg_l      ", vars%t2m_l     , dims=[dim_time],start=[nout],count=[y],long_name="temperature",units="degC",ncid=ncid)
