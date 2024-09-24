@@ -37,7 +37,8 @@ module ocn_out
   use constants, only : pi, cap_w, g
   use control, only: out_dir
   use climber_grid, only : lon, lat, lonu, latv, basin_mask, i_atlantic, i_pacific, i_indian, i_southern
-  use ocn_grid, only: mask_c, mask_v, k1, k1_shelf, topo, bathy ,maxi, maxj, maxk, zro, zw, dx, dy, dz, dxv, ocn_area, ocn_area_tot, ocn_vol, ocn_vol_tot, rdy, dphi, phi0, s, sv
+  use ocn_grid, only: mask_c, mask_v, k1, k1_shelf, k1_1000, k1_3000, topo, bathy ,maxi, maxj, maxk
+  use ocn_grid, only : zro, zw, dx, dy, dz, dxv, ocn_area, ocn_area_tot, ocn_vol, ocn_vol_tot, rdy, dphi, phi0, s, sv
   use ocn_grid, only: maxisles, n_isles
   use ocn_grid, only : map_isles, map_edge
   use ocn_params, only : l_daily_output, l_output_extended
@@ -70,6 +71,7 @@ module ocn_out
   integer, dimension(2) :: loc_drake, loc_bering, loc_davis, loc_medi, loc_indo, loc_agulhas
   integer :: j_fram, i_fram(2)
   integer :: j_denmark, i_denmark(2)
+  integer :: j_atlN(2), i_atlN(2)
   integer :: j_atlN50(2), i_atlN50(2)
   integer :: j_lab(2), i_lab(2)
   integer :: j_irm(2), i_irm(2)
@@ -117,7 +119,7 @@ module ocn_out
      real(wp) :: sl_steric
      real(wp) :: mld_atlN50, mld_lab, mld_irm, mld_gin, mld_bkn, mld_wedd, mld_ross, mld_so
      real(wp) :: mldst_atlN50, mldst_lab, mldst_irm, mldst_gin, mldst_bkn, mldst_wedd, mldst_ross, mldst_so
-     real(wp) :: pe_atlN50, pe_lab, pe_irm, pe_gin, pe_bkn, pe_wedd, pe_ross, pe_so
+     real(wp) :: pe_atlN, pe_atlN50, pe_lab, pe_irm, pe_gin, pe_bkn, pe_wedd, pe_ross, pe_so
      real(wp) :: buoy_lab, buoy_irm, buoy_gin, buoy_bkn, buoy_wedd, buoy_ross, buoy_so
      real(wp) :: t_atlN50, t_lab, t_irm, t_gin, t_bkn, t_wedd, t_ross, t_so
      real(wp) :: s_atlN50, s_lab, s_irm, s_gin, s_bkn, s_wedd, s_ross, s_so
@@ -137,6 +139,8 @@ module ocn_out
      real(wp), dimension(:,:), allocatable :: drag
      real(wp), dimension(:,:), allocatable :: drag_bcl
      real(wp), dimension(:,:,:), allocatable :: t, s, age, dye, cons, rho, rho2, u, v, w
+     real(wp), dimension(:,:), allocatable :: sst, tbot
+     real(wp), dimension(:,:), allocatable :: sss, sbot
      real(wp), dimension(:,:,:), allocatable :: fdx, fdy, fdz
      real(wp), dimension(:,:), allocatable :: taux, tauy
      real(wp), dimension(:,:,:), allocatable :: cfc11, cfc12
@@ -146,6 +150,7 @@ module ocn_out
      real(wp), dimension(:,:), allocatable :: a_atl, a_pac, a_ind, a_so
      real(wp), dimension(:,:), allocatable :: d_atl, d_pac, d_ind, d_so
      real(wp), dimension(:,:), allocatable :: rho_atl, rho_pac, rho_ind, rho_so
+     real(wp), dimension(:,:), allocatable :: drho_0_1000, drho_0_3000
      real(wp), dimension(:,:), allocatable :: ub, vb, psi
      real(wp), dimension(:,:,:), allocatable :: ubisl, vbisl
      real(wp), dimension(:,:), allocatable :: opsi, opsia, opsip, opsii
@@ -182,7 +187,7 @@ contains
     integer :: i, j, k
     real(wp) :: tv1
     real(wp) :: dist_drake, dist_bering, dist_davis, dist_fram, dist_denmark, dist_medi, dist_indo, dist_agulhas
-    real(wp) :: dist_atlN50, dist_lab, dist_irm, dist_gin, dist_bkn, dist_wedd, dist_ross, dist_so, dist_ibe
+    real(wp) :: dist_atlN, dist_atlN50, dist_lab, dist_irm, dist_gin, dist_bkn, dist_wedd, dist_ross, dist_so, dist_ibe
     real(wp), parameter :: lon_drake=-67.5_wp, lat_drake=-60._wp
     real(wp), parameter :: lon_bering=-167.5_wp, lat_bering=67.5_wp
     real(wp), parameter :: lon_davis=-62.5_wp, lat_davis=67.5_wp
@@ -191,6 +196,7 @@ contains
     real(wp), parameter :: lon_medi=-2.5_wp, lat_medi=37.5_wp
     real(wp), parameter :: lon_fram_1 = -30., lon_fram_2 = 15., lat_fram = 80.
     real(wp), parameter :: lon_denmark_1 = -47.5, lon_denmark_2 = -17.5, lat_denmark = 67.5
+    real(wp), parameter :: lon_atlN_1=-100_wp, lon_atlN_2=100._wp, lat_atlN_1=50._wp , lat_atlN_2=90._wp
     real(wp), parameter :: lon_atlN50_1=-100_wp, lon_atlN50_2=100._wp, lat_atlN50_1=50._wp , lat_atlN50_2=90._wp
     real(wp), parameter :: lon_lab_1=-65_wp, lon_lab_2=-40._wp, lat_lab_1=55._wp , lat_lab_2=70._wp
     real(wp), parameter :: lon_irm_1=-40_wp, lon_irm_2=-20._wp, lat_irm_1=55._wp , lat_irm_2=70._wp
@@ -220,6 +226,8 @@ contains
     allocate(ann_o%map_edge(maxi,maxj,maxisles))
     allocate(ann_o%vol(maxi,maxj,maxk))
     allocate(ann_o%t(maxi,maxj,maxk))
+    allocate(ann_o%sst(maxi,maxj))
+    allocate(ann_o%tbot(maxi,maxj))
     allocate(ann_o%t_atl(maxj,maxk))
     allocate(ann_o%t_pac(maxj,maxk))
     allocate(ann_o%t_ind(maxj,maxk))
@@ -229,6 +237,8 @@ contains
     allocate(ann_o%s_pac(maxj,maxk))
     allocate(ann_o%s_ind(maxj,maxk))
     allocate(ann_o%s_so(maxj,maxk))
+    allocate(ann_o%sss(maxi,maxj))
+    allocate(ann_o%sbot(maxi,maxj))
     allocate(ann_o%a_atl(maxj,maxk))
     allocate(ann_o%a_pac(maxj,maxk))
     allocate(ann_o%a_ind(maxj,maxk))
@@ -241,6 +251,8 @@ contains
     allocate(ann_o%drho_dx(maxi,maxj,maxk))
     allocate(ann_o%drho_dy(maxi,maxj,maxk))
     allocate(ann_o%drho_dz(maxi,maxj,maxk))
+    allocate(ann_o%drho_0_1000(maxi,maxj))
+    allocate(ann_o%drho_0_3000(maxi,maxj))
     allocate(ann_o%Ri(maxi,maxj,maxk))
     allocate(ann_o%age(maxi,maxj,maxk))
     allocate(ann_o%dye(maxi,maxj,maxk))
@@ -309,11 +321,15 @@ contains
 
     do k=1,nmon_year
      allocate(mon_o(k)%t(maxi,maxj,maxk))
+     allocate(mon_o(k)%sst(maxi,maxj))
+     allocate(mon_o(k)%tbot(maxi,maxj))
      allocate(mon_o(k)%t_atl(maxj,maxk))
      allocate(mon_o(k)%t_pac(maxj,maxk))
      allocate(mon_o(k)%t_ind(maxj,maxk))
      allocate(mon_o(k)%t_so(maxj,maxk))
      allocate(mon_o(k)%s(maxi,maxj,maxk))
+     allocate(mon_o(k)%sss(maxi,maxj))
+     allocate(mon_o(k)%sbot(maxi,maxj))
      allocate(mon_o(k)%s_atl(maxj,maxk))
      allocate(mon_o(k)%s_pac(maxj,maxk))
      allocate(mon_o(k)%s_ind(maxj,maxk))
@@ -322,6 +338,8 @@ contains
      allocate(mon_o(k)%drho_dx(maxi,maxj,maxk))
      allocate(mon_o(k)%drho_dy(maxi,maxj,maxk))
      allocate(mon_o(k)%drho_dz(maxi,maxj,maxk))
+     allocate(mon_o(k)%drho_0_1000(maxi,maxj))
+     allocate(mon_o(k)%drho_0_3000(maxi,maxj))
      allocate(mon_o(k)%Ri(maxi,maxj,maxk))
      allocate(mon_o(k)%rho(maxi,maxj,maxk))
      allocate(mon_o(k)%rho2(maxi,maxj,maxk))
@@ -530,6 +548,39 @@ contains
        if (abs(sv(j)-sin(pi*lat_denmark/180.0)).lt.dist_denmark) then
           j_denmark = j
           dist_denmark = abs(sv(j)-sin(pi*lat_denmark/180.0))
+       endif
+    enddo
+
+    i_atlN(1) = 0
+    dist_atlN = 999.
+    do i=1,maxi
+       if (modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_atlN_1/180.0)),2.0*pi).lt.dist_atlN) then
+          i_atlN(1) = i
+          dist_atlN = modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_atlN_1/180.0)),2.0*pi)
+       endif
+    enddo
+    i_atlN(2) = 0
+    dist_atlN = 999.
+    do i=1,maxi
+       if (modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_atlN_2/180.0)),2.0*pi).lt.dist_atlN) then
+          i_atlN(2) = i
+          dist_atlN = modulo(abs(phi0+(i-0.5)*dphi-(pi*lon_atlN_2/180.0)),2.0*pi)
+       endif
+    enddo
+    j_atlN(1) = 0
+    dist_atlN = 999.
+    do j=1,maxj
+       if (abs(sv(j)-sin(pi*lat_atlN_1/180.0)).lt.dist_atlN) then
+          j_atlN(1) = j
+          dist_atlN = abs(sv(j)-sin(pi*lat_atlN_1/180.0))
+       endif
+    enddo
+    j_atlN(2) = 0
+    dist_atlN = 999.
+    do j=1,maxj
+       if (abs(sv(j)-sin(pi*lat_atlN_2/180.0)).lt.dist_atlN) then
+          j_atlN(2) = j
+          dist_atlN = abs(sv(j)-sin(pi*lat_atlN_2/180.0))
        endif
     enddo
 
@@ -961,7 +1012,7 @@ contains
     real(wp) :: mldst, rho_k, rho_maxk
     real(wp) :: mld_atlN50, mld_lab, mld_irm, mld_gin, mld_bkn, mld_wedd, mld_ross, mld_so
     real(wp) :: mldst_atlN50, mldst_lab, mldst_irm, mldst_gin, mldst_bkn, mldst_wedd, mldst_ross, mldst_so
-    real(wp) :: pe_atlN50, pe_lab, pe_irm, pe_gin, pe_bkn, pe_wedd, pe_ross, pe_so
+    real(wp) :: pe_atlN, pe_atlN50, pe_lab, pe_irm, pe_gin, pe_bkn, pe_wedd, pe_ross, pe_so
     real(wp) :: buoy_lab, buoy_irm, buoy_gin, buoy_bkn, buoy_wedd, buoy_ross, buoy_so
     real(wp) :: t_atlN50, t_lab, t_irm, t_gin, t_bkn, t_wedd, t_ross, t_sos
     real(wp) :: s_atlN50, s_lab, s_irm, s_gin, s_bkn, s_wedd, s_ross, s_sos
@@ -1888,6 +1939,7 @@ contains
       ann_ts(y)%mldst_wedd = 0._wp
       ann_ts(y)%mldst_ross = 0._wp
       ann_ts(y)%mldst_so = 0._wp
+      ann_ts(y)%pe_atlN = 0._wp
       ann_ts(y)%pe_atlN50 = 0._wp
       ann_ts(y)%pe_lab = 0._wp
       ann_ts(y)%pe_irm = 0._wp
@@ -2002,6 +2054,15 @@ contains
 
     ann_o%hfa(1:3,:) = ann_o%hfa(1:3,:) + hfa*1e-15 * ann_avg ! PW
     ann_o%fwa(1:3,:) = ann_o%fwa(1:3,:) + fwa*1e-6 * ann_avg  ! Sv
+
+    pe_atlN = 0._wp
+    do i=i_atlN(1),i_atlN(2)
+      do j=j_atlN(1),j_atlN(2)
+        if (ocn%f_ocn(i,j).gt.0._wp) then
+          pe_atlN = pe_atlN + ocn%conv_pe(i,j)*ocn%grid%ocn_area(i,j)   ! J/m2*m2=J
+        endif
+      enddo
+    enddo
 
     mld_atlN50 = 0._wp
     mldst_atlN50 = 0._wp
@@ -2289,6 +2350,7 @@ contains
     ann_ts(y)%mldst_wedd = max(ann_ts(y)%mldst_wedd,mldst_wedd)
     ann_ts(y)%mldst_ross = max(ann_ts(y)%mldst_ross,mldst_ross)
     ann_ts(y)%mldst_so   = max(ann_ts(y)%mldst_so,mldst_so)
+    ann_ts(y)%pe_atlN   = ann_ts(y)%pe_atlN   + pe_atlN    
     ann_ts(y)%pe_atlN50   = ann_ts(y)%pe_atlN50   + pe_atlN50    
     ann_ts(y)%pe_lab   = ann_ts(y)%pe_lab   + pe_lab    
     ann_ts(y)%pe_irm   = ann_ts(y)%pe_irm   + pe_irm
@@ -2470,10 +2532,14 @@ contains
           mon_o(m)%fdx   = 0._wp
           mon_o(m)%fdy   = 0._wp
           mon_o(m)%fdz   = 0._wp
+          mon_o(m)%sst   = 0._wp
+          mon_o(m)%tbot  = 0._wp
           mon_o(m)%t_atl = 0._wp
           mon_o(m)%t_pac = 0._wp
           mon_o(m)%t_ind = 0._wp
           mon_o(m)%t_so  = 0._wp
+          mon_o(m)%sss   = 0._wp
+          mon_o(m)%sbot  = 0._wp
           mon_o(m)%s_atl = 0._wp
           mon_o(m)%s_pac = 0._wp
           mon_o(m)%s_ind = 0._wp
@@ -2482,6 +2548,8 @@ contains
           mon_o(m)%rho_pac = 0._wp
           mon_o(m)%rho_ind = 0._wp
           mon_o(m)%rho_so  = 0._wp
+          mon_o(m)%drho_0_1000 = 0._wp
+          mon_o(m)%drho_0_3000 = 0._wp
           mon_o(m)%psi   = 0._wp
           mon_o(m)%opsi  = 0._wp
           mon_o(m)%opsia = 0._wp
@@ -2572,6 +2640,22 @@ contains
            enddo
          enddo
        enddo
+
+    ! density difference between surface and different depths
+    do j=1,maxj
+      do i=1,maxi
+        if (mask_c(i,j,k1_1000).eq.1) then
+          mon_o(mon)%drho_0_1000(i,j) = mon_o(mon)%drho_0_1000(i,j) + (rho(i,j,maxk)-rho(i,j,k1_1000)) * mon_avg
+        else
+          mon_o(mon)%drho_0_1000(i,j) = missing_value
+        endif
+        if (mask_c(i,j,k1_3000).eq.1) then
+          mon_o(mon)%drho_0_3000(i,j) = mon_o(mon)%drho_0_3000(i,j) + (rho(i,j,maxk)-rho(i,j,k1_3000)) * mon_avg
+        else
+          mon_o(mon)%drho_0_3000(i,j) = missing_value
+        endif
+      enddo
+    enddo
 
     ! zonal basin averages
     do j=1,maxj
@@ -2814,6 +2898,8 @@ contains
     mon_o(mon)%ub    = mon_o(mon)%ub    + ocn%ub(1,1:maxi,1:maxj) * mon_avg ! m/s
     mon_o(mon)%vb    = mon_o(mon)%vb    + ocn%ub(2,1:maxi,1:maxj) * mon_avg ! m/s
     where (ocn%f_ocn.gt.0._wp) 
+      mon_o(mon)%sst   = mon_o(mon)%sst   + ocn%ts(:,:,maxk,1) * mon_avg ! °C
+      mon_o(mon)%sss   = mon_o(mon)%sss   + ocn%ts(:,:,maxk,2) * mon_avg ! psu
       mon_o(mon)%psi   = mon_o(mon)%psi   + ocn%psi(1:maxi,1:maxj)/rho0*1.e-6_wp * mon_avg ! Sv
       mon_o(mon)%flx   = mon_o(mon)%flx   + ocn%flx                              * mon_avg ! W/m2
       mon_o(mon)%fw    = mon_o(mon)%fw    + (ocn%p_e_sic+ocn%runoff+ocn%calving+ocn%bmelt+ocn%fw_hosing+ocn%fw_flux_adj)*sec_day         * mon_avg ! kg/m2/day
@@ -2826,7 +2912,7 @@ contains
       mon_o(mon)%bmelt = mon_o(mon)%bmelt + ocn%bmelt*sec_day         * mon_avg ! kg/m2/day
       mon_o(mon)%fw_hosing = mon_o(mon)%fw_hosing + ocn%fw_hosing*sec_day        * mon_avg ! kg/m2/day
       mon_o(mon)%fw_flux_adj = mon_o(mon)%fw_flux_adj + ocn%fw_flux_adj*sec_day  * mon_avg ! kg/m2/day
-      mon_o(mon)%fw_noise = mon_o(mon)%fw_noise + ocn%fw_noise*sec_day        * mon_avg ! kg/m2/day
+      mon_o(mon)%fw_noise = mon_o(mon)%fw_noise + ocn%fw_noise*sec_day       * mon_avg ! kg/m2/day
       mon_o(mon)%flx_noise = mon_o(mon)%flx_noise + ocn%flx_noise        * mon_avg ! W/m2
       mon_o(mon)%nconv = mon_o(mon)%nconv + real(ocn%nconv,wp)                   * mon_avg 
       mon_o(mon)%kven  = mon_o(mon)%kven  + real(ocn%kven,wp)                    * mon_avg
@@ -2834,10 +2920,46 @@ contains
       mon_o(mon)%dven  = mon_o(mon)%dven  + ocn%dven                             * mon_avg
       mon_o(mon)%mld   = mon_o(mon)%mld   + (-ocn%mld)                           * mon_avg
       mon_o(mon)%ke_tau = mon_o(mon)%ke_tau   + ocn%ke_tau/dt*1000._wp     * mon_avg ! mW/m2
+    elsewhere
+      mon_o(mon)%sst         = missing_value 
+      mon_o(mon)%sss         = missing_value 
+      mon_o(mon)%psi         = missing_value 
+      mon_o(mon)%flx         = missing_value 
+      mon_o(mon)%fw          = missing_value 
+      mon_o(mon)%vsf         = missing_value 
+      mon_o(mon)%p_e         = missing_value 
+      mon_o(mon)%runoff      = missing_value 
+      mon_o(mon)%runoffSv    = missing_value 
+      mon_o(mon)%runoffSv_ice= missing_value 
+      mon_o(mon)%calving     = missing_value 
+      mon_o(mon)%bmelt       = missing_value 
+      mon_o(mon)%fw_hosing   = missing_value 
+      mon_o(mon)%fw_flux_adj = missing_value 
+      mon_o(mon)%fw_noise    = missing_value 
+      mon_o(mon)%flx_noise   = missing_value 
+      mon_o(mon)%nconv       = missing_value 
+      mon_o(mon)%kven        = missing_value 
+      mon_o(mon)%dconv       = missing_value 
+      mon_o(mon)%dven        = missing_value 
+      mon_o(mon)%mld         = missing_value 
+      mon_o(mon)%ke_tau      = missing_value 
     endwhere
     do n=1,n_isles
       mon_o(mon)%ubisl(:,:,n) = mon_o(mon)%ubisl(:,:,n) + ocn%ub_isl(1,1:maxi,1:maxj,n)         * mon_avg ! m/s
       mon_o(mon)%vbisl(:,:,n) = mon_o(mon)%vbisl(:,:,n) + ocn%ub_isl(2,1:maxi,1:maxj,n)         * mon_avg ! m/s
+    enddo
+
+    ! bottom ocean temperature and salinity
+    do j=1,maxj
+      do i=1,maxi
+        if (ocn%f_ocn(i,j).gt.0._wp) then
+          mon_o(mon)%tbot(i,j) = mon_o(mon)%tbot(i,j) + ocn%ts(i,j,k1(i,j),1) * mon_avg ! °C
+          mon_o(mon)%sbot(i,j) = mon_o(mon)%sbot(i,j) + ocn%ts(i,j,k1(i,j),2) * mon_avg ! °C
+        else
+          mon_o(mon)%tbot(i,j) = missing_value
+          mon_o(mon)%sbot(i,j) = missing_value 
+        endif
+      enddo
     enddo
 
     ! buoyancy
@@ -3278,6 +3400,7 @@ contains
     call nc_write(fnm,"mldst_ross", vars%mldst_ross,dim1=dim_time,start=[ndat],count=[y],long_name="Maximum mixed layer depth based on sigma-t in the Ross Sea",units="m",ncid=ncid)
     call nc_write(fnm,"mldst_so", vars%mldst_so,dim1=dim_time,start=[ndat],count=[y],long_name="Maximum mixed layer depth based on sigma-t in the Southern Ocean around Antarctica",units="m",ncid=ncid)
 
+    call nc_write(fnm,"pe_atlN",   vars%pe_atlN,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in North Atlantic",units="J",ncid=ncid)
     call nc_write(fnm,"pe_atlN50",   vars%pe_atlN50,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in Atlantic >50N",units="J",ncid=ncid)
     call nc_write(fnm,"pe_lab",   vars%pe_lab,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in Labrador Sea",units="J",ncid=ncid)
     call nc_write(fnm,"pe_irm",   vars%pe_irm,dim1=dim_time,start=[ndat],count=[y],long_name="Potential energy released by convection in Irminger Sea",units="J",ncid=ncid)
@@ -3383,11 +3506,15 @@ contains
     call nc_write(fnm,"mldmax",    sngl(vars%mldmax),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[maxi,maxj,1],long_name="maximum mixed layer depth from mixed layer scheme",units="m",missing_value=missing_value,ncid=ncid)
     endif
     call nc_write(fnm,"t",        sngl(vars%t),  dims=[dim_lon,dim_lat,"lev",dim_month,dim_time],start=[1,1,1,ndat,nout],count=[maxi,maxj,maxk,1,1],long_name="potential temperature",units="C",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"sst", sngl(vars%sst),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="sea surface temperature",units="C",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"tbot", sngl(vars%tbot),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="bottom ocean potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"t_atl",    sngl(vars%t_atl),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Atlantic potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"t_pac",    sngl(vars%t_pac),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Pacific potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"t_ind",    sngl(vars%t_ind),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Indian Ocean potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"t_so",    sngl(vars%t_so),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Southern Ocean potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"s",        sngl(vars%s),  dims=[dim_lon,dim_lat,"lev",dim_month,dim_time],start=[1,1,1,ndat,nout],count=[maxi,maxj,maxk,1,1],long_name="salinity",units="psu",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"sss", sngl(vars%sss),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="sea surface salinity",units="psu",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"sbot", sngl(vars%sbot),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="bottom ocean salinity",units="psu",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"s_atl",    sngl(vars%s_atl),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Atlantic salinity",units="psu",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"s_pac",    sngl(vars%s_pac),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Pacific salinity",units="psu",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"s_ind",    sngl(vars%s_ind),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Indian Ocean salinity",units="psu",missing_value=missing_value,ncid=ncid)
@@ -3414,6 +3541,8 @@ contains
     call nc_write(fnm,"cfc12", sngl(vars%cfc12),dims=[dim_lon,dim_lat,"lev",dim_time],start=[1,1,1,nout],count=[maxi,maxj,maxk,1],long_name="CFC12",units="pmol/l",missing_value=missing_value,ncid=ncid)
     endif
     call nc_write(fnm,"rho",      sngl(vars%rho),dims=[dim_lon,dim_lat,"lev",dim_month,dim_time],start=[1,1,1,ndat,nout],count=[maxi,maxj,maxk,1,1],long_name="in-situ density",units="kg/m3",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"drho_0_1000", sngl(vars%drho_0_1000),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="density difference between the surface and 1000 m depth",units="kg/m3",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"drho_0_3000", sngl(vars%drho_0_3000),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="density difference between the surface and 3000 m depth",units="kg/m3",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"rho2",      sngl(vars%rho2),dims=[dim_lon,dim_lat,"lev",dim_month,dim_time],start=[1,1,1,ndat,nout],count=[maxi,maxj,maxk,1,1],long_name="density",units="kg/m3",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"rho_atl",    sngl(vars%rho_atl),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Atlantic in-situ density",units="kg/m3",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"rho_pac",    sngl(vars%rho_pac),  dims=[dim_lat,"lev",dim_month,dim_time],start=[1,1,ndat,nout],count=[maxj,maxk,1,1],long_name="Zonal mean Pacific in-situ density",units="kg/m3",missing_value=missing_value,ncid=ncid)
@@ -3568,17 +3697,23 @@ contains
 
     ! Set all values to zero
     ave%t     = 0._wp
+    ave%sst   = 0._wp
+    ave%tbot  = 0._wp
     ave%t_atl = 0._wp
     ave%t_pac = 0._wp
     ave%t_ind = 0._wp
     ave%t_so  = 0._wp
     ave%s     = 0._wp
+    ave%sss   = 0._wp
+    ave%sbot  = 0._wp
     ave%s_atl = 0._wp
     ave%s_pac = 0._wp
     ave%s_ind = 0._wp
     ave%s_so  = 0._wp
     ave%diffdia  = 0._wp
     ave%rho   = 0._wp
+    ave%drho_0_1000 = 0._wp
+    ave%drho_0_3000 = 0._wp
     ave%rho2  = 0._wp
     ave%rho_atl = 0._wp
     ave%rho_pac = 0._wp
@@ -3641,11 +3776,15 @@ contains
     ! Loop over the time indices to sum up and average (if necessary)
     do k = 1, n
        ave%t       = ave%t        + d(k)%t        / div
+       ave%sst     = ave%sst      + d(k)%sst      / div
+       ave%tbot    = ave%tbot     + d(k)%tbot     / div
        ave%t_atl   = ave%t_atl    + d(k)%t_atl    / div
        ave%t_pac   = ave%t_pac    + d(k)%t_pac    / div
        ave%t_ind   = ave%t_ind    + d(k)%t_ind    / div
        ave%t_so    = ave%t_so     + d(k)%t_so     / div
        ave%s       = ave%s        + d(k)%s        / div
+       ave%sss     = ave%sss      + d(k)%sss      / div
+       ave%sbot    = ave%sbot     + d(k)%sbot     / div
        ave%s_atl   = ave%s_atl    + d(k)%s_atl    / div
        ave%s_pac   = ave%s_pac    + d(k)%s_pac    / div
        ave%s_ind   = ave%s_ind    + d(k)%s_ind    / div
@@ -3656,6 +3795,8 @@ contains
        ave%drho_dz = ave%drho_dz  + d(k)%drho_dz  / div
        ave%Ri      = ave%Ri       + d(k)%Ri       / div
        ave%rho     = ave%rho      + d(k)%rho      / div
+       ave%drho_0_1000 = ave%drho_0_1000 + d(k)%drho_0_1000 / div
+       ave%drho_0_3000 = ave%drho_0_3000 + d(k)%drho_0_3000 / div
        ave%rho2    = ave%rho2     + d(k)%rho2     / div
        ave%rho_atl = ave%rho_atl  + d(k)%rho_atl  / div
        ave%rho_pac = ave%rho_pac  + d(k)%rho_pac  / div
