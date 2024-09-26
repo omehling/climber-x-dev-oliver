@@ -16,7 +16,7 @@
  flag_smb         = F        ! use surface mass balance model?
  flag_imo         = F        ! use floating ice melt by ocean model?
  flag_ice         = F        ! use ice sheet model?
- ice_model_name   = 'yelmo'  ! select which ice sheet model to use, 'sico' or 'yelmo'
+ ice_model_name   = 'sico'   ! select which ice sheet model to use, 'sico' or 'yelmo'
  ice_domain_name  = 'NH-32KM' !'ANT-32KM'      ! name of ice sheet domanin(s) to be used
 
  !-------------------------------------------------------
