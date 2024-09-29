@@ -2374,7 +2374,7 @@ contains
     ann_ts(y)%t_wedd = ann_ts(y)%t_wedd + t_wedd * ann_avg
     ann_ts(y)%t_ross = ann_ts(y)%t_ross + t_ross * ann_avg
     ann_ts(y)%t_so   = ann_ts(y)%t_so   + t_sos  * ann_avg
-    ann_ts(y)%t_ibe  = ann_ts(y)%t_ibe  + ocn%ts(i_ibe,j_ibe,maxk,1)  * ann_avg
+    ann_ts(y)%t_ibe  = ann_ts(y)%t_ibe  + 0.5_wp*(ocn%ts(i_ibe,j_ibe,maxk,1)+ocn%ts(i_ibe-1,j_ibe,maxk,1))  * ann_avg
     ann_ts(y)%s_atlN50   = ann_ts(y)%s_atlN50   + s_atlN50   * ann_avg 
     ann_ts(y)%s_lab   = ann_ts(y)%s_lab   + s_lab   * ann_avg 
     ann_ts(y)%s_irm   = ann_ts(y)%s_irm   + s_irm   * ann_avg 
