@@ -36,7 +36,7 @@ module ocn_out
   use timer, only : n_accel, year, year_clim, year_now, mon, doy, nyears, sec_day, nday_year
   use constants, only : pi, cap_w, g
   use control, only: out_dir
-  use climber_grid, only : lon, lat, lonu, latv, basin_mask, i_atlantic, i_pacific, i_indian, i_southern
+  use climber_grid, only : lon, lat, lonu, latv, basin_mask, basin_mask2, i_atlantic, i_pacific, i_indian, i_southern
   use ocn_grid, only: mask_c, mask_v, k1, k1_shelf, k1_1000, k1_3000, topo, bathy ,maxi, maxj, maxk
   use ocn_grid, only : zro, zw, dx, dy, dz, dxv, ocn_area, ocn_area_tot, ocn_vol, ocn_vol_tot, rdy, dphi, phi0, s, sv
   use ocn_grid, only: maxisles, n_isles
@@ -2660,31 +2660,31 @@ contains
     ! zonal basin averages
     do j=1,maxj
        do k=1,maxk
-          ntot = count(basin_mask(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j))
+          ntot = count(basin_mask2(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j))
           if (ntot.gt.0) then
-            t_atl(j,k) = sum(ocn%ts(:,j,k,1), basin_mask(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
-            s_atl(j,k) = sum(ocn%ts(:,j,k,2), basin_mask(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
-            rho_atl(j,k) = sum(rho(:,j,k), basin_mask(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
+            t_atl(j,k) = sum(ocn%ts(:,j,k,1), basin_mask2(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
+            s_atl(j,k) = sum(ocn%ts(:,j,k,2), basin_mask2(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
+            rho_atl(j,k) = sum(rho(:,j,k), basin_mask2(:,j).eq.i_atlantic .and. k.ge.k1(1:maxi,j)) / ntot
           else
             t_atl(j,k) = missing_value
             s_atl(j,k) = missing_value
             rho_atl(j,k) = missing_value
           endif
-          ntot = count(basin_mask(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j))
+          ntot = count(basin_mask2(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j))
           if (ntot.gt.0) then
-            t_pac(j,k) = sum(ocn%ts(:,j,k,1), basin_mask(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
-            s_pac(j,k) = sum(ocn%ts(:,j,k,2), basin_mask(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
-            rho_pac(j,k) = sum(rho(:,j,k), basin_mask(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
+            t_pac(j,k) = sum(ocn%ts(:,j,k,1), basin_mask2(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
+            s_pac(j,k) = sum(ocn%ts(:,j,k,2), basin_mask2(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
+            rho_pac(j,k) = sum(rho(:,j,k), basin_mask2(:,j).eq.i_pacific .and. k.ge.k1(1:maxi,j)) / ntot
           else
             t_pac(j,k) = missing_value
             s_pac(j,k) = missing_value
             rho_pac(j,k) = missing_value
           endif
-          ntot = count(basin_mask(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j))
+          ntot = count(basin_mask2(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j))
           if (ntot.gt.0) then
-            t_ind(j,k) = sum(ocn%ts(:,j,k,1), basin_mask(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
-            s_ind(j,k) = sum(ocn%ts(:,j,k,2), basin_mask(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
-            rho_ind(j,k) = sum(rho(:,j,k), basin_mask(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
+            t_ind(j,k) = sum(ocn%ts(:,j,k,1), basin_mask2(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
+            s_ind(j,k) = sum(ocn%ts(:,j,k,2), basin_mask2(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
+            rho_ind(j,k) = sum(rho(:,j,k), basin_mask2(:,j).eq.i_indian .and. k.ge.k1(1:maxi,j)) / ntot
           else
             t_ind(j,k) = missing_value
             s_ind(j,k) = missing_value
@@ -3076,26 +3076,26 @@ contains
              endif
            endif
          enddo
-         ntot = count(basin_mask(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j))
+         ntot = count(basin_mask2(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j))
          if (ntot.gt.0) then
-           if (age_tracer) ann_o%a_atl(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j)) / ntot
-           if (dye_tracer) ann_o%d_atl(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (age_tracer) ann_o%a_atl(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask2(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (dye_tracer) ann_o%d_atl(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask2(:,j).eq.i_atlantic .and. kr.ge.k1(1:maxi,j)) / ntot
          else
            if (age_tracer) ann_o%a_atl(j,k) = missing_value
            if (dye_tracer) ann_o%d_atl(j,k) = missing_value
          endif
-         ntot = count(basin_mask(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j))
+         ntot = count(basin_mask2(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j))
          if (ntot.gt.0) then
-           if (age_tracer) ann_o%a_pac(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j)) / ntot
-           if (dye_tracer) ann_o%d_pac(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (age_tracer) ann_o%a_pac(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask2(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (dye_tracer) ann_o%d_pac(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask2(:,j).eq.i_pacific .and. kr.ge.k1(1:maxi,j)) / ntot
          else
            if (age_tracer) ann_o%a_pac(j,k) = missing_value
            if (dye_tracer) ann_o%d_pac(j,k) = missing_value
          endif
-         ntot = count(basin_mask(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j))
+         ntot = count(basin_mask2(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j))
          if (ntot.gt.0) then
-           if (age_tracer) ann_o%a_ind(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j)) / ntot
-           if (dye_tracer) ann_o%d_ind(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (age_tracer) ann_o%a_ind(j,k) = sum(ocn%ts(:,j,kr,i_age), basin_mask2(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j)) / ntot
+           if (dye_tracer) ann_o%d_ind(j,k) = sum(ocn%ts(:,j,kr,i_dye), basin_mask2(:,j).eq.i_indian .and. kr.ge.k1(1:maxi,j)) / ntot
          else
            if (age_tracer) ann_o%a_ind(j,k) = missing_value
            if (dye_tracer) ann_o%d_ind(j,k) = missing_value
