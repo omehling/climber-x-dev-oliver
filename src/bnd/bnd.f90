@@ -79,6 +79,9 @@ module bnd_mod
     implicit none 
 
     type bnd_class 
+     real(wp) :: eccentricity
+     real(wp) :: precession
+     real(wp) :: obliquity
      real(wp), dimension(:,:,:), allocatable :: solar
      real(wp), dimension(:,:), allocatable :: solarm
      real(wp), dimension(:,:), allocatable :: solarmin
@@ -160,7 +163,7 @@ contains
           year_orb = real(year_ini,kind=wp)
         endif
         call sinsol(sol, year_orb, lat, &
-          bnd%solar, bnd%solarm, bnd%solarmin, bnd%solarmax, bnd%cosz, bnd%coszm)
+          bnd%eccentricity, bnd%precession, bnd%obliquity, bnd%solar, bnd%solarm, bnd%solarmin, bnd%solarmax, bnd%cosz, bnd%coszm)
         call day_length(lat,bnd%daylength)
       endif
 
@@ -319,7 +322,7 @@ contains
     call ini_sinsol(orbit_file)
     ! get initial insolation quantities
     call sinsol(bnd%sol, real(year_ini,kind=wp),lat, &
-        bnd%solar, bnd%solarm, bnd%solarmin, bnd%solarmax, bnd%cosz, bnd%coszm)
+        bnd%eccentricity, bnd%precession, bnd%obliquity, bnd%solar, bnd%solarm, bnd%solarmin, bnd%solarmax, bnd%cosz, bnd%coszm)
     call day_length(lat,bnd%daylength)
 
     ! initialize sea level

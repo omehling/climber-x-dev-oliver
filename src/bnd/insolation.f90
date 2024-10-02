@@ -79,13 +79,16 @@ contains
   ! Purpose    :  compute solar insolation from orbital parameters
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   subroutine sinsol(s0, btime, lat, &
-                   solar, solarm, solarmin, solarmax, cosz, coszm)
+                   eccentricity, precession, obliquity, solar, solarm, solarmin, solarmax, cosz, coszm)
 
     implicit none
 
     real(wp), intent(in) :: s0      ! solar 'constant'
     real(wp), intent(in) :: btime   ! astronomical time, present day 1950 = 0.0
     real(wp), intent(in) :: lat(:)  ! array of latitude values, in radians!
+    real(wp), intent(out) :: eccentricity
+    real(wp), intent(out) :: precession
+    real(wp), intent(out) :: obliquity
     real(wp), dimension(:,:,:), intent(out) :: solar   ! solar radiation at the top of the atmosphere (with diurnal cycle)
     real(wp), dimension(:,:), intent(out) :: solarm    ! daily mean solar radiation at the top of the atmosphere 
     real(wp), dimension(:,:), intent(out) :: solarmin  ! daily minimum solar radiation at the top of the atmosphere 
@@ -119,6 +122,10 @@ contains
       ecc = 0._wp
       xob = 0._wp
     endif
+
+    eccentricity = ecc
+    precession = sin(per*pi/180._wp)
+    obliquity = xob
 
 !...1) Berger program calculates orbital parameters
 !   ===========================================   

@@ -57,6 +57,9 @@ module atm_out
   integer :: i_wais, j_wais
 
   type ts_out
+    real(wp) :: eccentricity
+    real(wp) :: precession
+    real(wp) :: obliquity
     real(wp) :: Smax65N
     real(wp) :: Smax65S
     real(wp) :: Smax30N
@@ -1376,6 +1379,10 @@ contains
 
     if( time_eoy_atm ) then
 
+      ann_ts(y)%eccentricity = atm%eccentricity
+      ann_ts(y)%precession   = atm%eccentricity*atm%precession
+      ann_ts(y)%obliquity    = atm%obliquity
+
       ann_ts(y)%Smax65N = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat-65._wp)))+atm%solarm(:,minloc(abs(-lat-65._wp),back=.true.))))
       ann_ts(y)%Smax65S = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat+65._wp)))+atm%solarm(:,minloc(abs(-lat+65._wp),back=.true.))))
       ann_ts(y)%Smax30N = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat-30._wp)))+atm%solarm(:,minloc(abs(-lat-30._wp),back=.true.))))
@@ -2283,6 +2290,9 @@ contains
     call nc_open(fnm,ncid)
     call nc_write(fnm,"time", real([(i,i=(year_now-(y-1)*n_accel),(year_now),(n_accel))],wp), &
     dim1=dim_time,start=[nout],count=[y],ncid=ncid)    
+    call nc_write(fnm,"eccentricity", vars%eccentricity, dims=[dim_time],start=[nout],count=[y],long_name="eccentricity",units="1",ncid=ncid)
+    call nc_write(fnm,"precession", vars%precession, dims=[dim_time],start=[nout],count=[y],long_name="climatic precession",units="1",ncid=ncid)
+    call nc_write(fnm,"obliquity", vars%obliquity, dims=[dim_time],start=[nout],count=[y],long_name="obliquity",units="degrees",ncid=ncid)
     call nc_write(fnm,"Smax65N ", vars%Smax65N , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 65N",units="W/m2",ncid=ncid)
     call nc_write(fnm,"Smax65S ", vars%Smax65S , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 65S",units="W/m2",ncid=ncid)
     call nc_write(fnm,"Smax30N ", vars%Smax30N , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 30N",units="W/m2",ncid=ncid)
