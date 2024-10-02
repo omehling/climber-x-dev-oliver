@@ -47,6 +47,7 @@ module climber_grid
   real(wp) :: area(ni,nj)
   real(wp) :: area_tot
   integer, dimension(ni,nj) :: basin_mask
+  integer, dimension(ni,nj) :: basin_mask2
   integer, parameter :: i_atlantic = 1
   integer, parameter :: i_pacific = 2
   integer, parameter :: i_indian = 3
@@ -87,6 +88,7 @@ contains
 
     ! read ocean basin mask
     call nc_read(trim(in_dir)//"basin_mask_5x5.nc","basin_mask",basin_mask)
+    call nc_read(trim(in_dir)//"basin_mask_5x5.nc","basin_mask2",basin_mask2)
 
   return
 
