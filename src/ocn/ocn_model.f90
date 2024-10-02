@@ -202,12 +202,6 @@ contains
     ! surface freshwater flux, P-E+sea ice fluxes
     ocn%fw = ocn%p_e_sic
 
-    ! update freshwater hosing and add it to freshwater flux, if needed
-    if (l_hosing .and. time_soy_ocn) then
-      call hosing_update(real(year,wp),ocn%f_ocn,ocn%amoc,ocn%hosing,ocn%fw_hosing)
-    endif
-    ocn%fw = ocn%fw + ocn%fw_hosing
-
     ! update freshwater noise and add it to freshwater flux, if needed
     if (l_noise_fw .and. time_soy_ocn) then
       call noise_fw_update(real(year,wp),ocn%f_ocn,ocn%mask_coast,ocn%noise_fw,ocn%fw_noise)
@@ -234,6 +228,12 @@ contains
     else
       ocn%fw_corr = ocn%fw
     endif
+
+    ! update freshwater hosing and add it to freshwater flux, if needed
+    if (l_hosing .and. time_soy_ocn) then
+      call hosing_update(real(year,wp),ocn%f_ocn,ocn%amoc,ocn%hosing,ocn%fw_hosing)
+    endif
+    ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing
 
     ! remove latent heat needed to melt ice reaching the ocean through calving and basal melt below ice shelfs
     ocn%flx = ocn%flx - ocn%calving*Lf - ocn%bmelt_flt*Lf    ! kg/m2/s * J/kg = W/m2 
