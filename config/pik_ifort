@@ -9,7 +9,7 @@ INC_NC  = -I${NETCDF_FORTRANROOT}/include
 # the -rpath options ensure that the same shared libraries are found at runtime
 LIB_NC  = -L${NETCDF_FORTRANROOT}/lib -Wl\,-rpath=${NETCDF_FORTRANROOT}/lib -lnetcdff -L${NETCDF_CROOT}/lib -Wl\,-rpath=${NETCDF_CROOT}/lib -lnetcdf
 
-FFTWROOT = src/utils/fftw
+FFTWROOT = src/utils/exlib/fftw-omp
 INC_FFTW = -I${FFTWROOT}/include
 #LIB_FFTW = -L${FFTWROOT}/lib -lfftw3_omp -lfftw3 -lfftw3f_omp -lfftw3f
 LIB_FFTW = -L${FFTWROOT}/lib -lfftw3
@@ -20,7 +20,7 @@ INC_COORD = -I${COORDROOT}/libcoordinates/include
 LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
 # LIS
-LISROOT = src/utils/lis
+LISROOT = src/utils/exlib/lis-omp
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
