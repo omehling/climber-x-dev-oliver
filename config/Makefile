@@ -421,4 +421,4 @@ clean:
 
 cleanall: clean
 	$(MAKE) -C $(COORDROOT) clean
-	$(MAKE) -C $(YELMOROOT) clean
+	if [ -d "$(YELMOROOT)" ]; then $(MAKE) -C $(YELMOROOT) clean; fi
