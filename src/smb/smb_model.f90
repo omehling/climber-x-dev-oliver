@@ -35,7 +35,9 @@ module smb_model
   use smb_grid, only : smb_grid_init, nl
   use smb_params, only : i_smb, gamma, i_z_sur_eff, alpha_zstd, l_regional_climate_forcing, l_diurnal_cycle, prc_par
   use smb_params, only : smb_params_init, map_method, filt_sigma, dt, snow_par, surf_par, smb_crit_mask, n_smb_mask_ext, nday_update_climate
+  use smb_params, only : l_smb_bias_corr, year_ini_smb_ref, year_end_smb_ref
   use smb_params, only : i_t2m_bias_corr, i_prc_bias_corr,  bias_corr_file, t2m_bias_scale_fac, t2m_bias_corr_uniform
+  use smb_params, only : l_maxice, mask_maxice_file, smb_maxice
   use smb_params, only : l_Tvar_ann, Tvar_ann_amp, Tvar_ann_period
   use smb_params, only : l_Tvar_day, Tvar_day_amp, Tvar_day_period
   use smb_params, only : l_write_timer
@@ -52,7 +54,7 @@ module smb_model
   use smb_simple_m, only : smb_simple
   use smb_pdd_m, only : smb_pdd
   use semi_m, only : semi
-  use bias_corr_mod, only : t2m_bias_corr, prc_bias_corr
+  use bias_corr_mod, only : smb_ref_write, smb_bias_corr, t2m_bias_corr, prc_bias_corr
 
   implicit none
 
@@ -279,7 +281,12 @@ contains
             smb%ann_snow(i,j)  = smb%ann_snow(i,j) + smb%snow(i,j)*sec_mon    ! kg/m2
             if (time_eoy_smb) then
               ! annually integrated values
-              smb%ann_smb(i,j)       = smb%simple%smb(i,j)*sec_year    ! kg/m2
+              if (smb%mask_maxice(i,j).eq.1) then
+                smb%ann_smb(i,j)       = smb%simple%smb(i,j)*sec_year    ! kg/m2
+              else
+                ! add large negative value outside of allowed ice mask
+                smb%ann_smb(i,j)       = smb%simple%smb(i,j)*sec_year + smb_maxice
+              endif
               smb%ann_melt(i,j)      = smb%simple%melt(i,j)*sec_year   ! kg/m2
               smb%ann_ablation(i,j)  = smb%simple%melt(i,j)*sec_year   ! kg/m2
               smb%ann_evp(i,j)       = 0._wp    ! kg/m2
@@ -704,7 +711,13 @@ contains
 
       smb%ann_prc(i,j)       = smb%ann_prc(i,j)        + smb%prc(i,j)  * dt
       smb%ann_snow(i,j)      = smb%ann_snow(i,j)       + smb%snow(i,j) * dt
-      smb%ann_smb(i,j)       = smb%ann_smb(i,j)        + (smb%snow(i,j)-smb%evp(i,j)-smb%snowmelt(i,j)-smb%icemelt(i,j)+smb%refreezing(i,j))*dt
+      if (smb%mask_maxice(i,j).eq.1) then
+        smb%ann_smb(i,j)       = smb%ann_smb(i,j)        + (smb%snow(i,j)-smb%evp(i,j)-smb%snowmelt(i,j)-smb%icemelt(i,j)+smb%refreezing(i,j))*dt
+      else
+        ! set large negative value outside of allowed ice mask
+        smb%ann_smb(i,j)       = smb%ann_smb(i,j)        + (smb%snow(i,j)-smb%evp(i,j)-smb%snowmelt(i,j)-smb%icemelt(i,j)+smb%refreezing(i,j))*dt &
+                                                         + smb_maxice*dt/sec_year  ! kg/m2/yr * s /s*yr = kg/m2
+      endif
       smb%ann_melt(i,j)      = smb%ann_melt(i,j)       + (smb%snowmelt(i,j) + smb%icemelt(i,j)) * dt
       smb%ann_icemelt(i,j)   = smb%ann_icemelt(i,j)    + smb%icemelt(i,j) * dt
       smb%ann_ablation(i,j)  = smb%ann_ablation(i,j)   + (smb%snowmelt(i,j) + smb%icemelt(i,j) + smb%evp(i,j)) * dt
@@ -737,6 +750,25 @@ contains
       elsewhere
         smb%t_ice = min(-1e-3_wp,smb%t_ground)  ! degC
       endwhere
+
+      ! correct if SMB anomaly approach is enabled
+      if (l_smb_bias_corr) then
+        smb%ann_smb = smb%ann_smb_ref-smb%ann_smb_cx_ref + smb%ann_smb
+        smb%ann_prc = smb%ann_prc_ref-smb%ann_prc_cx_ref + smb%ann_prc
+        smb%ann_evp = smb%ann_evp_ref-smb%ann_evp_cx_ref + smb%ann_evp
+      endif
+      ! compute average SMB to be written to output file to be used as reference
+      ! in future simulations with l_smb_bias_corr==T
+      if (year_now.ge.year_ini_smb_ref .and. year_now.le.year_end_smb_ref) then
+        smb%ann_smb_avg_ref = smb%ann_smb_avg_ref + smb%ann_smb/real(year_end_smb_ref-year_ini_smb_ref+1,wp)
+        smb%ann_prc_avg_ref = smb%ann_prc_avg_ref + smb%ann_prc/real(year_end_smb_ref-year_ini_smb_ref+1,wp)
+        smb%ann_evp_avg_ref = smb%ann_evp_avg_ref + smb%ann_evp/real(year_end_smb_ref-year_ini_smb_ref+1,wp)
+      endif
+      ! write to file at the end of the reference period
+      if (year_now.eq.year_end_smb_ref) then
+        call smb_ref_write(smb%grid, year_ini_smb_ref, year_end_smb_ref, &
+          smb%ann_smb_avg_ref, smb%ann_prc_avg_ref, smb%ann_evp_avg_ref)
+      endif
 
       ! update mask where mass balance has to be computed with SEMI
       do i = 1,smb%grid%G%nx
@@ -854,6 +886,13 @@ contains
     real(wp), allocatable, dimension(:,:) :: z_bed_1min_ext
     real(wp), allocatable, dimension(:) :: z_bed_cell
     integer, parameter :: ncells_max = 10000
+    integer :: ni, nj
+    integer :: ppos, spos
+    type(grid_class) :: mask_maxice_grid
+    type(map_class) :: map_maxice_to_ice
+    type(map_scrip_class) :: maps_maxice_to_ice
+    integer, dimension(:,:), allocatable :: maxi
+    real(wp), dimension(:), allocatable :: lon_maxi, lat_maxi
 
 
     call smb_params_init
@@ -994,6 +1033,44 @@ contains
 
     endif
 
+
+    call grid_allocate(smb%grid, smb%mask_maxice      )
+
+    if (l_maxice) then
+      ! read maximum ice extent mask
+
+      ni = nc_size(trim(mask_maxice_file),"lon")
+      nj = nc_size(trim(mask_maxice_file),"lat")
+      allocate( maxi(ni,nj) )
+      allocate( lon_maxi(ni) )
+      allocate( lat_maxi(nj) )
+      call nc_read(trim(mask_maxice_file),"lat",lat_maxi)
+      call nc_read(trim(mask_maxice_file),"lon",lon_maxi)
+      call nc_read(trim(mask_maxice_file),"mask",maxi)
+
+      ! grid definition
+      spos = scan(trim(mask_maxice_file),"/", BACK= .true.)+1
+      ppos = scan(trim(mask_maxice_file),".", BACK= .true.)-1
+      call grid_init(mask_maxice_grid,name=trim(mask_maxice_file(spos:ppos)),mtype="latlon",units="degrees",x=lon_maxi,y=lat_maxi)
+      ! map to ice grid
+      if (i_map==1) then
+        call map_init(map_maxice_to_ice,mask_maxice_grid,smb%grid,max_neighbors=1,lat_lim=5._wp,dist_max=1.e6_wp)
+        call map_field(map_maxice_to_ice,"mask",maxi,smb%mask_maxice,method="nn")
+      else if (i_map==2) then
+        call map_scrip_init(maps_maxice_to_ice,mask_maxice_grid,smb%grid,method="nn",fldr="maps",load=.TRUE.,clean=.FALSE.)
+        call map_scrip_field(maps_maxice_to_ice,"mask",maxi,smb%mask_maxice,method="mean",missing_value=-9999._wp, &
+          filt_method="none",filt_par=[5.0*smb%grid%G%dx,smb%grid%G%dx])
+      endif
+
+      deallocate(maxi, lon_maxi, lat_maxi)
+
+    else
+
+      smb%mask_maxice(:,:) = 1
+
+    endif
+
+
     allocate(smb%idx_cell_active(smb%grid%G%nx*smb%grid%G%ny))
     allocate(smb%ij_1d(2,smb%grid%G%nx*smb%grid%G%ny))
     allocate(smb%id_map(smb%grid%G%nx,smb%grid%G%ny))
@@ -1055,7 +1132,6 @@ contains
     call grid_allocate(smb%grid, smb%mask_smb_tmp     )
     call grid_allocate(smb%grid, smb%mask_ice         )
     call grid_allocate(smb%grid, smb%mask_ice_old     )
-    call grid_allocate(smb%grid, smb%mask_maxice      )
     call grid_allocate(smb%grid, smb%mask_margin      )
     call grid_allocate(smb%grid, smb%z_sur            )
     call grid_allocate(smb%grid, smb%z_sur_eff        )
@@ -1156,12 +1232,21 @@ contains
     call grid_allocate(smb%grid, smb%wind             )
     call grid_allocate(smb%grid, smb%t_ground         )
     call grid_allocate(smb%grid, smb%ann_smb          ) 
+    call grid_allocate(smb%grid, smb%ann_smb_ref      ) 
+    call grid_allocate(smb%grid, smb%ann_smb_cx_ref   ) 
+    call grid_allocate(smb%grid, smb%ann_smb_avg_ref  ) 
     call grid_allocate(smb%grid, smb%ann_prc          ) 
+    call grid_allocate(smb%grid, smb%ann_prc_ref      ) 
+    call grid_allocate(smb%grid, smb%ann_prc_cx_ref   ) 
+    call grid_allocate(smb%grid, smb%ann_prc_avg_ref  ) 
     call grid_allocate(smb%grid, smb%ann_snow         ) 
     call grid_allocate(smb%grid, smb%ann_ablation     ) 
     call grid_allocate(smb%grid, smb%ann_melt         ) 
     call grid_allocate(smb%grid, smb%ann_icemelt      ) 
     call grid_allocate(smb%grid, smb%ann_evp          ) 
+    call grid_allocate(smb%grid, smb%ann_evp_ref      ) 
+    call grid_allocate(smb%grid, smb%ann_evp_cx_ref   ) 
+    call grid_allocate(smb%grid, smb%ann_evp_avg_ref  ) 
     call grid_allocate(smb%grid, smb%ann_runoff       ) 
     call grid_allocate(smb%grid, smb%ann_refreezing   ) 
     call grid_allocate(smb%grid, smb%num_lh           )
@@ -1279,10 +1364,6 @@ contains
     smb%wind             = 0._wp 
     smb%cod              = 0._wp 
     smb%albedo           = 0._wp 
-    smb%alb_vis_dir = 0._wp 
-    smb%alb_nir_dir = 0._wp 
-    smb%alb_vis_dif = 0._wp 
-    smb%alb_nir_dif = 0._wp 
     smb%alb_snow_vis_dir = 0._wp 
     smb%alb_snow_nir_dir = 0._wp 
     smb%alb_snow_vis_dif = 0._wp 
@@ -1304,6 +1385,18 @@ contains
     smb%w_snow_old = 0._wp
     smb%t_prof_old = T0
     smb%t_skin_old = T0
+
+    smb%ann_smb_avg_ref = 0._wp 
+    smb%ann_prc_avg_ref = 0._wp 
+    smb%ann_evp_avg_ref = 0._wp 
+
+    ! read files for SMB anomaly approach 
+    if (l_smb_bias_corr) then
+      call smb_bias_corr(smb%grid, &
+        smb%ann_smb_ref, smb%ann_smb_cx_ref, &
+        smb%ann_prc_ref, smb%ann_prc_cx_ref, &
+        smb%ann_evp_ref, smb%ann_evp_cx_ref)
+    endif
 
     ! initialization for bias correction 
     if (i_domain==1) then
@@ -1373,7 +1466,6 @@ contains
       smb%mask_smb = 1
       smb%mask_ice = 1
       smb%mask_ice_old = 1
-      smb%mask_maxice = 1
       smb%mask_snow = 0
       smb%f_ice = 1._wp
       smb%w_snow = 0._wp
@@ -1386,8 +1478,24 @@ contains
       smb%dust_con         = 0._wp 
 
       smb%alb_ice = surf_par%alb_firn
+      smb%alb_vis_dir = 0._wp 
+      smb%alb_nir_dir = 0._wp 
+      smb%alb_vis_dif = 0._wp 
+      smb%alb_nir_dif = 0._wp 
 
     endif
+
+    ! count number of ice sheet cells in each climate model coarse grid cell
+    smb%grid_smb_to_cmn%ncells_ice(:,:) = 0
+    do i = 1,smb%grid%G%nx
+      do j = 1,smb%grid%G%ny
+        if (smb%mask_ice(i,j).eq.1) then
+          ii = smb%grid_smb_to_cmn%i_lowres(i,j) 
+          jj = smb%grid_smb_to_cmn%j_lowres(i,j) 
+          smb%grid_smb_to_cmn%ncells_ice(ii,jj) = smb%grid_smb_to_cmn%ncells_ice(ii,jj)+1
+        endif
+      enddo
+    enddo
 
     print*
     print*,'======================================================='
@@ -1614,12 +1722,21 @@ contains
     deallocate(smb%wind             )
     deallocate(smb%t_ground         )
     deallocate(smb%ann_smb          ) 
+    deallocate(smb%ann_smb_ref      ) 
+    deallocate(smb%ann_smb_cx_ref   ) 
+    deallocate(smb%ann_smb_avg_ref  ) 
     deallocate(smb%ann_prc          ) 
+    deallocate(smb%ann_prc_ref      ) 
+    deallocate(smb%ann_prc_cx_ref   ) 
+    deallocate(smb%ann_prc_avg_ref  ) 
     deallocate(smb%ann_snow         ) 
     deallocate(smb%ann_ablation     ) 
     deallocate(smb%ann_melt         ) 
     deallocate(smb%ann_icemelt      ) 
     deallocate(smb%ann_evp          ) 
+    deallocate(smb%ann_evp_ref      ) 
+    deallocate(smb%ann_evp_cx_ref   ) 
+    deallocate(smb%ann_evp_avg_ref  ) 
     deallocate(smb%ann_runoff       ) 
     deallocate(smb%ann_refreezing   ) 
     deallocate(smb%num_lh           )
@@ -1680,7 +1797,7 @@ contains
     call nc_write_dim(fnm,dim_x,x=smb%grid%G%x0,dx=smb%grid%G%dx,nx=nx,axis="x",units="m",ncid=ncid)
     call nc_write_dim(fnm,dim_y,x=smb%grid%G%y0,dx=smb%grid%G%dy,nx=ny,axis="y",units="m",ncid=ncid)
     call nc_write_dim(fnm,dim_month,x=1,dx=1,nx=nmon_year,units="mon",ncid=ncid)
-    call nc_write_dim(fnm,dim_depth,x=0,dx=1,nx=nl,axis="z",units="#",ncid=ncid)
+    call nc_write_dim(fnm,dim_depth,x=0,dx=1,nx=nl+1,axis="z",units="#",ncid=ncid)
 
     call nc_write(fnm,"mask_smb", smb%mask_smb, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="mask where to compute surface mass balance",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
@@ -1690,9 +1807,6 @@ contains
 
     call nc_write(fnm,"mask_ice_old", smb%mask_ice_old, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="old ice mask",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
-
-    call nc_write(fnm,"mask_maxice", smb%mask_maxice, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
-      long_name="mask of maximum ice extent",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
 
     call nc_write(fnm,"f_ice", smb%f_ice, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="ice cover fraction",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
@@ -1748,6 +1862,18 @@ contains
     call nc_write(fnm,"alb_ice", smb%alb_ice, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="ice albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
 
+    call nc_write(fnm,"alb_vis_dir", smb%alb_vis_dir, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="clear-sky visible albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_nir_dir", smb%alb_nir_dir, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="clear-sky near-infrared albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_vis_dif", smb%alb_vis_dif, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="diffuse visible albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
+    call nc_write(fnm,"alb_nir_dif", smb%alb_nir_dif, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
+      long_name="diffuse near-infrared albedo",grid_mapping="polar_stereographic",units="/",ncid=ncid)    
+
     call nc_close(ncid)
 
 
@@ -1772,8 +1898,6 @@ contains
     call nc_read(fnm,"mask_ice", smb%mask_ice)
 
     call nc_read(fnm,"mask_ice_old", smb%mask_ice_old)
-
-    call nc_read(fnm,"mask_maxice", smb%mask_maxice)
 
     call nc_read(fnm,"f_ice", smb%f_ice)
 
@@ -1810,6 +1934,11 @@ contains
     call nc_read(fnm,"dust_con", smb%dust_con)
 
     call nc_read(fnm,"alb_ice", smb%alb_ice)
+
+    call nc_read(fnm,"alb_vis_dir", smb%alb_vis_dir)
+    call nc_read(fnm,"alb_vis_dif", smb%alb_vis_dif)
+    call nc_read(fnm,"alb_nir_dir", smb%alb_nir_dir)
+    call nc_read(fnm,"alb_nir_dif", smb%alb_nir_dif)
 
 
     return

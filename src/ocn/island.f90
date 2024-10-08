@@ -63,7 +63,7 @@ contains
 
 
     erisl1 = 0._wp
-    !$omp parallel do private (i,k,lpi,ipi,jpi,cor,tv1,tv2) reduction(+:erisl1)
+    !!$omp parallel do private (i,k,lpi,ipi,jpi,cor,tv1,tv2) reduction(+:erisl1)
     do i=1,npi(isl)
        lpi = lpisl(i,isl)
        ipi = ipisl(i,isl)
@@ -122,7 +122,7 @@ contains
           endif
        endif
     enddo
-    !$omp end parallel do
+    !!$omp end parallel do
 
    return
 

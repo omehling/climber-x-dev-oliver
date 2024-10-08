@@ -1217,6 +1217,7 @@ end subroutine lnd_update
           lnd%l2d(i,j)%mask_snow      = 0._wp  
           lnd%l2d(i,j)%h_snow         = 0._wp  
           lnd%l2d(i,j)%w_snow         = 0._wp  
+          lnd%l2d(i,j)%w_snow_max     = 0._wp  
           lnd%l2d(i,j)%npp_ann         = 0._wp 
           lnd%l2d(i,j)%npp13_ann       = 0._wp 
           lnd%l2d(i,j)%npp14_ann       = 0._wp 
@@ -1380,7 +1381,6 @@ end subroutine lnd_update
         lnd%l2d(i,j)%alb_snow_vis_dif  = 0._wp
         lnd%l2d(i,j)%alb_snow_nir_dir  = 0._wp
         lnd%l2d(i,j)%alb_snow_nir_dif  = 0._wp
-        lnd%l2d(i,j)%w_snow_max     = 0._wp  
         lnd%l2d(i,j)%w_snow_old     = 0._wp  
         lnd%l2d(i,j)%snowmelt       = 0._wp  
         lnd%l2d(i,j)%icemelt        = 0._wp  
@@ -1516,8 +1516,6 @@ end subroutine lnd_update
         lnd%l2d(i,j)%z0m(i_bare)  = surf_par%z0m_bare
         lnd%l2d(i,j)%z0m(i_lake)  = surf_par%z0m_lake
         lnd%l2d(i,j)%z0m(i_ice)   = surf_par%z0m_ice
-        lnd%l2d(i,j)%rough_m(:)   = 1.e-3_wp
-        lnd%l2d(i,j)%rough_h(:)   = 1.e-3_wp
       enddo
     enddo
 
@@ -1712,7 +1710,7 @@ end subroutine lnd_update
         allocate(lnd%l2d(i,j)%lambda_int_lake (0:nl_l)) 
         allocate(lnd%l2d(i,j)%cap_lake        (0:nl_l)) 
         allocate(lnd%l2d(i,j)%lambda_int_sublake (0:nl)) 
-        allocate(lnd%l2d(i,j)%cap_sublake        (0:nl)) 
+        allocate(lnd%l2d(i,j)%cap_sublake        (nl)) 
         allocate(lnd%l2d(i,j)%t_soil          (0:nl)) 
         allocate(lnd%l2d(i,j)%t_soil_old      (0:nl)) 
         allocate(lnd%l2d(i,j)%t_soil_max      (0:nl)) 
@@ -2176,6 +2174,12 @@ end subroutine lnd_update
      enddo
    enddo
    call nc_write(fnm,"w_snow",          var_n,          dims=[dim_nsoil,dim_lon,dim_lat],start=[1,1,1],count=[nsoil,ni,nj],long_name="snow water equivalent",units="kg/m2",ncid=ncid)
+   do i=1,nx
+     do j=1,ny
+       var_n(:,i,j) = lnd(i,j)%w_snow_max(:)
+     enddo
+   enddo
+   call nc_write(fnm,"w_snow_max",      var_n, dims=[dim_nsoil,dim_lon,dim_lat],start=[1,1,1],count=[nsoil,ni,nj],long_name="maximum snow water equivalent",units="kg/m2",ncid=ncid)
    do i=1,nx
      do j=1,ny
        var_n(:,i,j) = lnd(i,j)%h_snow(:)
@@ -2679,6 +2683,7 @@ end subroutine lnd_update
         call nc_read(fnm,"alb_nir_dif",lnd(i,j)%alb_nir_dif,start=[1,i,j],count=[nsurf,1,1],ncid=ncid)
 
         call nc_read(fnm,"w_snow",lnd(i,j)%w_snow,start=[1,i,j],count=[nsoil,1,1],ncid=ncid)
+        call nc_read(fnm,"w_snow_max",lnd(i,j)%w_snow_max,start=[1,i,j],count=[nsoil,1,1],ncid=ncid)
         call nc_read(fnm,"h_snow",lnd(i,j)%h_snow,start=[1,i,j],count=[nsoil,1,1],ncid=ncid)
         call nc_read(fnm,"mask_snow",lnd(i,j)%mask_snow,start=[1,i,j],count=[nsoil,1,1],ncid=ncid)
 

@@ -108,6 +108,7 @@ contains
             dw_can = -w_can(n)
             w_can(n) = 0._wp
           endif
+          if( w_can(n) .lt. 1.e-30_wp ) w_can(n) = 0._wp
           if( w_can(n) .gt. w_can_max ) w_can(n) = w_can_max
 
           evap_can(n) = fac_e_w * w_can(n)/w_can_max

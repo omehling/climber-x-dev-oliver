@@ -55,6 +55,7 @@ module co2_def
       real(wp) :: dC13emis_dt   !! carbon 13 emissions [kgC/yr]
       real(wp) :: d13C_emis     !! d13C of CO2 emissions [permil]
       real(wp) :: Cemis_cum     !! cumulated carbon emissions [GtC]
+      real(wp) :: dC14dec_dt    !! radiocarbon decay [kgC/yr]
       real(wp) :: dC14prod_dt   !! radiocarbon production [kgC/yr]
       real(wp) :: dCH4_dt      !! carbon flux from oxidation of anthropogenic CH4 to CO2 [kgC/yr]
       real(wp) :: dCemis_extra_dt     !! carbon emissions from extra feedbacks [kgC/yr]

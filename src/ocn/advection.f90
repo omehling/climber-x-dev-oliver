@@ -30,7 +30,7 @@ module advection_mod
 
   use precision, only : wp
   use ocn_grid, only : maxi, maxj, maxk, k1, dx, dxv, dy, dz, dza, mask_ocn, mask_c, mask_u, mask_v, mask_w
-  use ocn_params , only : dt, diff_iso, diff_dia, i_frac
+  use ocn_params , only : dt, diff_iso, diff_dia
   use constants, only : r_earth
 
   implicit none
@@ -163,7 +163,6 @@ contains
     real(wp) :: xmax, xmin
     real(wp) :: cx, cy, cz
     real(wp) :: tracer_tmp1
-    real(wp), dimension(:,:,:), allocatable :: fx, fy, fz
 
     allocate(tracer_tmp(maxi,maxj,maxk))
 
@@ -179,9 +178,6 @@ contains
     allocate(rp(maxi,maxj,maxk))
     allocate(rn(maxi,maxj,maxk))
 
-    allocate(fx(0:maxi,0:maxj,0:maxk), source=0._wp)
-    allocate(fy(0:maxi,0:maxj,0:maxk), source=0._wp)
-    allocate(fz(0:maxi,0:maxj,0:maxk), source=0._wp)
 
     ! volume flux calculation 
     ! for low and high oder solutions
@@ -196,12 +192,7 @@ contains
             if (ip1.eq.maxi+1) ip1=1
             uvel = u(1,i,j,k)
             tracer_i = tracer((/i,ip1/),j,k)
-            if (i_frac.eq.1) then
-              dy_dz = dy*dz(k)
-            else if (i_frac.eq.2) then
-              dy_dz = dy*dz(k)*min(f_ocn(i,j),f_ocn(ip1,j))
-            endif
-            fx(i,j,k) = uvel*dy_dz*dt ! m/s*m2*s = m3
+            dy_dz = dy*dz(k)
             ! low order, ustream
             if (uvel.gt.0._wp) then
               fxl(i,j,k)=uvel*tracer_i(1)*dy_dz*dt  ! m/s*K * m2*s = m3 * K
@@ -216,7 +207,6 @@ contains
             !  afx(0,j,k) = afx(maxi,j,k)
             !endif
           else
-            fx(i,j,k) = 0._wp
             fxl(i,j,k)=0._wp
             afx(i,j,k)=0._wp
           endif
@@ -226,7 +216,6 @@ contains
     !!$omp end parallel do
 
     ! periodic boundary conditions
-    fx(0,:,:) = fx(maxi,:,:)
     fxl(0,:,:) = fxl(maxi,:,:)
     afx(0,:,:) = afx(maxi,:,:)
 
@@ -238,12 +227,7 @@ contains
           if (mask_v(i,j,k).eq.1) then
             vvel = u(2,i,j,k)
             tracer_j = tracer(i,j:j+1,k)
-            if (i_frac.eq.1) then
-              dx_dz = dxv(j)*dz(k)
-            else if (i_frac.eq.2) then
-              dx_dz = dxv(j)*dz(k)*min(f_ocn(i,j),f_ocn(i,j+1))
-            endif
-            fy(i,j,k) = vvel*dx_dz*dt ! m/s*m2*s = m3
+            dx_dz = dxv(j)*dz(k)
             ! low order
             if (vvel.gt.0._wp) then
               fyl(i,j,k)=vvel*tracer_j(1)*dx_dz*dt  ! m/s*K * m2*s = m3 * K
@@ -254,7 +238,6 @@ contains
             fyh=0.5_wp*(tracer_j(1)+tracer_j(2))*vvel*dx_dz*dt
             afy(i,j,k)=fyh-fyl(i,j,k)
           else
-            fy(i,j,k)=0._wp
             fyl(i,j,k)=0._wp
             afy(i,j,k)=0._wp
           endif
@@ -264,10 +247,8 @@ contains
     !!$omp end parallel do
 
     ! no meridional flux across South Pole and North Pole
-    fy(:,0,:) = 0._wp
     fyl(:,0,:) = 0._wp
     afy(:,0,:) = 0._wp
-    fy(:,maxj,:) = 0._wp
     fyl(:,maxj,:) = 0._wp
     afy(:,maxj,:) = 0._wp
 
@@ -279,7 +260,6 @@ contains
           if (mask_w(i,j,k).eq.1) then
             wvel = u(3,i,j,k)
             tracer_k = tracer(i,j,k:k+1)
-            fz(i,j,k) = wvel*dx(j)*dy*dt ! m/s*m2*s = m3
             ! low order
             if (wvel.gt.0._wp) then
               fzl(i,j,k)=wvel*tracer_k(1)*dx(j)*dy*dt  ! m/s*K * m2*s = m3 * K
@@ -291,16 +271,13 @@ contains
             afz(i,j,k)=fzh-fzl(i,j,k)
           else if (k.eq.maxk .and. mask_ocn(i,j).eq.1) then
             ! atmosphere-ocean flux
-            fz(i,j,k)=0._wp  ! m/s * K * m2*s = m3*K
             fzl(i,j,k)=flx_sur(i,j)*dx(j)*dy*f_ocn(i,j)*dt  ! m/s * K * m2*s = m3*K
             afz(i,j,k)=0._wp
           else if (k.eq.(k1(i,j)-1)) then
             ! bottom ocean flux
-            fz(i,j,k)=0._wp  ! m/s * K * m2*s = m3*K
             fzl(i,j,k)=flx_bot(i,j)*dx(j)*dy*f_ocn(i,j)*dt  ! m/s * K * m2*s = m3*K
             afz(i,j,k)=0._wp
           else
-            fz(i,j,k)=0._wp
             fzl(i,j,k)=0._wp
             afz(i,j,k)=0._wp
           endif
@@ -308,28 +285,8 @@ contains
       enddo
     enddo
     !!$omp end parallel do
-    fz(:,:,0) = 0._wp
     fzl(:,:,0) = 0._wp
     afz(:,:,0) = 0._wp
-
-!    do k=1,maxk
-!      do j=1,maxj
-!        do i=1,maxi
-!          if (mask_c(i,j,k).eq.1) then
-!            ip1 = i+1
-!            if (ip1.eq.maxi+1) ip1=1
-!            im1 = i-1
-!            if (im1.eq.0) ip1=maxi
-!            print *
-!            print *,i,j,k,f_ocn(i,j)
-!            print *,f_ocn(im1,j),f_ocn(i,j),f_ocn(ip1,j)
-!            print *,f_ocn(i,max(1,j-1)),f_ocn(i,j),f_ocn(i,min(maxj,jp1))
-!            print *,fx(i,j,k),fx(i-1,j,k),fy(i,j,k),fy(i,j-1,k),fz(i,j,k),fz(i,j,k-1)
-!            print *,(fx(i,j,k)-fx(i-1,j,k)+fy(i,j,k)-fy(i,j-1,k)+fz(i,j,k)-fz(i,j,k-1)) / (dx(j)*dy*dz(k)*f_ocn(i,j))
-!          endif 
-!        enddo
-!      enddo      
-!    enddo
 
     ! STEP I: LOWER ORDER SOLUTION
     !!$omp parallel do collapse(3) private(i,j,k)
@@ -489,7 +446,7 @@ contains
     faz(:,:,0:) = fzl(:,:,0:) + afz(:,:,0:)
 
     deallocate(tracer_tmp)
-    deallocate(fx,fy,fz,fxl,fyl,fzl,afx,afy,afz)
+    deallocate(fxl,fyl,fzl,afx,afy,afz)
     deallocate(xa,xb,rp,rn)
 
    return

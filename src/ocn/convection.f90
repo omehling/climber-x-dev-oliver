@@ -35,7 +35,7 @@ module convection_mod
 
   use precision, only : wp
   use ocn_grid
-  use ocn_params, only : i_conv_shuffle, l_conv_shuffle_bgc, l_mix_bgc_all, n_tracers_tot, n_tracers_ocn
+  use ocn_params, only : i_conv_shuffle, l_conv_shuffle_passive, l_mix_bgc_all, n_tracers_tot, n_tracers_ocn
   use eos_mod
 
   implicit none
@@ -75,7 +75,7 @@ contains
     dven  = 0._wp
 
     if (i_conv_shuffle.eq.1 .or. (i_conv_shuffle.eq.2 .and. mask_coast.eq.1)) then
-      ! Mueliler convection scheme from Bern3D after Müller et al 
+      ! Mueller convection scheme from Bern3D after Müller et al 
       ! 'ventilation time scales in an efficient 3-d ocean model'
       ! first apply coshuffle to mix directly down to density level
       ! don't comment out the call without ensuring kven is initialised
@@ -223,10 +223,10 @@ contains
     real(wp) :: ts_top, rho_top, rho_k
 
 
-    if (l_conv_shuffle_bgc) then
+    if (l_conv_shuffle_passive) then
       n_tracers_mix = n_tracers_tot
     else
-      n_tracers_mix = n_tracers_ocn
+      n_tracers_mix = 2 ! only active tracers (temperature and salinity)
     endif
 
     maxpass = maxk

@@ -385,12 +385,21 @@ module smb_def
 
       ! annually cumulated variables
       real(wp), dimension(:,:), allocatable :: ann_smb        !! annual surface mass balance [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_smb_ref    !! annual reference surface mass balance [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_smb_cx_ref !! annual CLIMBER-X reference surface mass balance [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_smb_avg_ref
       real(wp), dimension(:,:), allocatable :: ann_prc        !! annual precipitation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_prc_ref    !! annual reference precipitation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_prc_cx_ref !! annual CLIMBER-X reference precipitation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_prc_avg_ref
       real(wp), dimension(:,:), allocatable :: ann_snow       !! annual snowfall [kg/m2]
       real(wp), dimension(:,:), allocatable :: ann_ablation   !! annual surface ablation [kg/m2]
       real(wp), dimension(:,:), allocatable :: ann_melt       !! annual surface melt [kg/m2]
       real(wp), dimension(:,:), allocatable :: ann_icemelt    !! annual ice melt [kg/m2]
       real(wp), dimension(:,:), allocatable :: ann_evp        !! annual evaporation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_evp_ref    !! annual reference evaporation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_evp_cx_ref !! annual CLIMBER-X reference evaporation [kg/m2]
+      real(wp), dimension(:,:), allocatable :: ann_evp_avg_ref
       real(wp), dimension(:,:), allocatable :: ann_runoff     !! annual runoff [kg/m2]
       real(wp), dimension(:,:), allocatable :: ann_refreezing !! annual refreezing [kg/m2]
 

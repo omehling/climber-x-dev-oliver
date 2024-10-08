@@ -31,7 +31,7 @@ module geo_out
   use timer, only : year, year_geo, year_ini, year_now, nyears, sec_day, sec_year, nyout_geo, &
   n_year_geo, time_out_geo, ny_out_ts, y_out_ts_geo, time_out_ts_geo
   use control, only: flag_geo, ifake_geo, flag_lakes, out_dir
-  use geo_params, only : l_output_hires, n_coast_cells
+  use geo_params, only : l_output_hires, n_coast_cells, i_geo
   use geo_def, only : geo_class
   use ncio
 
@@ -135,9 +135,9 @@ contains
     fac = 1.e-12_wp ! m2 -> mln km2
 
     if (mod(year,10).eq.1) then
-      print '(a7,a9,5a7)','geo','year','seal','Aocn','Aveg','Aice','Alake'
+      print '(a7,a9,6a7)','geo','year','seal','Aocn','Aveg','Aice','Alake','Abrng'
     endif
-    print '(a7,i9,5F7.1)','geo',year_now,geo%sea_level,geo%ocn_area_tot*fac,geo%veg_area_tot*fac,geo%ice_area_tot*fac,geo%lake_area_tot*fac
+    print '(a7,i9,6F7.1)','geo',year_now,geo%sea_level,geo%ocn_area_tot*fac,geo%veg_area_tot*fac,geo%ice_area_tot*fac,geo%lake_area_tot*fac,geo%A_bering*1.e-6
 
 
     ! supress inital write to netCDF time series
@@ -246,7 +246,9 @@ contains
         call nc_write(fnm,"dz_bed", sngl(geo%hires%z_bed-geo%hires%z_bed_rel),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[ni,nj,1],long_name="difference between bedrock elevation and relaxed bedrock elevation",units="m",ncid=ncid)
         if (firstcall) then
           call nc_write(fnm,"z_bed_ref", sngl(geo%hires%z_bed_ref),dims=[dim_lon,dim_lat],start=[1,1],count=[ni,nj],long_name="present day reference bedrock elevation",units="m",ncid=ncid)
-          call nc_write(fnm,"z_bed_rel", sngl(geo%hires%z_bed_rel),dims=[dim_lon,dim_lat],start=[1,1],count=[ni,nj],long_name="relaxed ice-free bedrock elevation",units="m",ncid=ncid)
+          if (i_geo.eq.1) then
+            call nc_write(fnm,"z_bed_rel", sngl(geo%hires%z_bed_rel),dims=[dim_lon,dim_lat],start=[1,1],count=[ni,nj],long_name="relaxed ice-free bedrock elevation",units="m",ncid=ncid)
+          endif
         endif
         call nc_write(fnm,"z_sur", sngl(geo%hires%z_sur),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[ni,nj,1],long_name="surface elevation",units="m",ncid=ncid)
         call nc_write(fnm,"h_ice", sngl(geo%hires%h_ice),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[ni,nj,1],long_name="ice sheet thickness",units="m",ncid=ncid)

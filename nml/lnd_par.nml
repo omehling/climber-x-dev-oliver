@@ -30,16 +30,20 @@
     l_diurnal_cycle = F         ! use parameterisation of diurnal cycle for snowmelt?
     l_neutral = F               ! assume neutral stratification?
     z_sfl = 50.                 ! m, reference height for turbulent heat fluxes
-    i_racan = 2 !1
-    p_cdense = 0.002 !0.001            ! dense canopy drag coefficient for below canopy resistance
-    z0m_bare = 0.001 !0.01             ! m, roughness length of bare soil/desert
+    i_racan = 3                 ! parameterisation of aerodynamic resistance below canopy:
+                                ! 1 .. only wind dependence
+                                ! 2 .. wind + LAI+SAI dependence
+                                ! 3 .. same as resistance over bare soil
+    p_cdense = 0.002            ! dense canopy drag coefficient for below canopy resistance, used only for i_racan=1,2
+    z0m_bare = 0.01             ! m, roughness length of bare soil/desert
     z0m_ice = 0.002             ! m, roughness length of ice sheets
     z0m_lake = 0.001            ! m, roughness length of lake water
     z0m_lake_ice = 0.005        ! m, roughness length of lake ice
-    i_z0h = 3                   ! parameterisation of roughness length for heat and water vapor:
+    i_z0h = 4                   ! parameterisation of roughness length for heat and water vapor:
                                 ! 1 .. constant ratio (zm_to_zh_const) to roughness for momentum
                                 ! 2 .. roughness Reynolds number dependence from Brutsaert 1982 and Kanda 2007
                                 ! 3 .. roughness Reynolds number dependence from Zilitinkevich 1995 
+                                ! 4 .. same as 3, but with Yang 2008 for non-vegetated surfaces 
     zm_to_zh_const = 0.1353353  ! constant ratio between roughness length for momentum and heat, used only if i_z0h==1
     f_Ri_unstab = 2.            ! Richardson number factor for unstable stratification
     f_Ri_stab = 0.              ! Richardson number factor for stable stratification
@@ -50,7 +54,10 @@
     i_runoff    = 1             ! runoff parameterisation: 1..bottom free drainage, 2..simtop and no bottom drainage
     l_runoff_icemelt = F        ! allow for runoff from ice sheet melt?
     i_cond_theta= 2             ! use liquid+frozen water (1) or only liquid water (2) for hydraulic conductivity
-    theta_crit_evp = 0.35       ! m3/m3, critical volumentric soil moisture for bare soil evaporation parameterisation 
+    i_evp_soil = 2              ! parameterisation of soil evaporation:
+                                ! 1 .. Lee and Pielke 1992 
+                                ! 2 .. quadratic with soil moisture 
+    theta_crit_evp = 0.43       ! m3/m3, critical volumentric soil moisture for bare soil evaporation parameterisation 
     l_dew       = F             ! allow dew deposition?
     l_prc_intercept = T         ! allow for precipitation interception by vegetation?
     tau_w = 1.                  ! days, removal time scale of water from canopy
@@ -96,7 +103,8 @@
     alb_ice = 0.5               ! bare ice sheet albedo
     l_fsnow_orog = T            ! reduce snow cover fraction over rough topography?
     c_fsnow = 12.               ! parameter in snow cover fraction parameterisation
-    c_fsnow_orog = 2e-4         ! parameter in snow cover fraction parameterisation
+    c_fsnow_orog = 3e-4         ! parameter in snow cover fraction parameterisation, used only if l_fsnow_orog==T
+    z_veg_std_min = 0.          ! m, minimum standard deviation of sub-grid topography, used only if l_fsnow_orog==T
     l_ice_albedo_semi = T       ! use ice sheet albedo computed in SEMI also in climate model?
 
     !------------------------------------------------------------------------------------
@@ -203,9 +211,9 @@
     ich4_ftemp       = 2        ! temperature dependence of ch4 emission fraction. 1=Arrhenius, 2=q10
     Ea_ch4           = 0.96     ! eV, activation energy for temperature dependence of ch4 emission fraction, 0.96 in Yvon-Durocher 2014 (only for ich4_ftemp=1)
     q10_ch4          = 1.8      ! q10 for temperature dependence of ch4 emission fraction (only for ich4_ftemp==2)
-    ch4_frac_wet     = 0.06     ! fraction of carbon emitted as methane from wetlands, Riley 2011 0.2, Spahni 2011 range 0.024-0.0415
+    ch4_frac_wet     = 0.067    ! fraction of carbon emitted as methane from wetlands, Riley 2011 0.2, Spahni 2011 range 0.024-0.0415
     ch4_frac_shelf   = 0.0      ! fraction of carbon emitted as methane from ocean shelf
-    ch4_frac_peat    = 0.06     ! fraction of carbon emitted as methane from peatlands, Spahni 2011 range 0.2-0.25
+    ch4_frac_peat    = 0.067    ! fraction of carbon emitted as methane from peatlands, Spahni 2011 range 0.2-0.25
     ch4_frac_lake    = 0.0      ! fraction of carbon emitted as methane from lakes 
 
     !------------------------------------------------------------------------------------

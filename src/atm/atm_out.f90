@@ -58,6 +58,9 @@ module atm_out
 
   type ts_out
     real(wp) :: Smax65N
+    real(wp) :: Smax65S
+    real(wp) :: Smax30N
+    real(wp) :: Smax30S
     real(wp) :: co2
     real(wp) :: co2e
     real(wp) :: co2flx
@@ -75,6 +78,8 @@ module atm_out
     real(wp) :: tgrl1
     real(wp) :: tnatl
     real(wp) :: tant    
+    real(wp) :: dust_grl
+    real(wp) :: dust_wais
     real(wp) :: q2m    
     real(wp) :: r2m    
     real(wp) :: tam
@@ -135,6 +140,10 @@ module atm_out
     real(wp) :: snetsur_l   
     real(wp) :: lnettop_l   
     real(wp) :: lnetsur_l 
+    real(wp) :: itcz
+    real(wp) :: itcz_min
+    real(wp) :: itcz_max
+    real(wp) :: had_width
   end type
 
   type a_out
@@ -1039,6 +1048,8 @@ contains
       ann_ts(y)%tgrl1=0
       ann_ts(y)%tnatl=0
       ann_ts(y)%tant=0
+      ann_ts(y)%dust_grl=0
+      ann_ts(y)%dust_wais=0
       ann_ts(y)%q2m=0
       ann_ts(y)%r2m=0
       ann_ts(y)%tam=0
@@ -1099,6 +1110,10 @@ contains
       ann_ts(y)%snetsur_l =0
       ann_ts(y)%lnettop_l =0
       ann_ts(y)%lnetsur_l =0
+      ann_ts(y)%itcz =0
+      ann_ts(y)%itcz_min =0
+      ann_ts(y)%itcz_max =0
+      ann_ts(y)%had_width =0
     endif
 
     ann_co2d_avg=0
@@ -1172,7 +1187,14 @@ contains
     lsqr = sum(sqr(:,:)*atm%frlnd(:,:))
     esqr6090 = sum(sqr(1,:),mask=-lat.ge.60._wp)*im
 
-    !$omp parallel do private(i,j,ind,favg,favgl,fcum) reduction(+:ann_co2d_avg, ann_co2flx, ann_co2d_wais, ann_t2m ,ann_t2mnh ,ann_t2msh ,ann_t2mn6090 ,ann_t2ms6090 ,ann_q2m ,ann_r2m ,ann_tam ,ann_tskin ,ann_prc ,ann_evp ,ann_wcon ,ann_cld ,ann_sha ,ann_lha ,ann_rbtop ,ann_rbatm ,ann_rbsur ,ann_snettop ,ann_snetsur ,ann_lnettop ,ann_lnetsur ,ann_ldwnsur, ann_rbtopcs ,ann_rbsurcs ,ann_snettopcs ,ann_snetsurcs ,ann_lnettopcs ,ann_lnetsurcs ,ann_ldwnsurcs ,ann_lupsur ,ann_slp ,ann_htrop ,ann_ttrop, ann_hcld ,ann_plan ,ann_sol ,ann_sreftop ,ann_swrcrf ,ann_lwrcrf ,ann_dustload ,ann_dustdep ,ann_dustdrydep ,ann_dustwetdep ,ann_fw_pac_atl ,ann_fw_atl_indpac ,ann_t2m_l ,ann_q2m_l ,ann_r2m_l ,ann_tam_l ,ann_tskin_l ,ann_prc_l ,ann_evp_l ,ann_wcon_l ,ann_cld_l ,ann_sha_l ,ann_lha_l ,ann_rbtop_l ,ann_rbatm_l ,ann_rbsur_l ,ann_snettop_l ,ann_snetsur_l ,ann_lnettop_l ,ann_lnetsur_l)
+    !$omp parallel do private(i,j,ind,favg,favgl,fcum) reduction(+:ann_co2d_avg, ann_co2flx, ann_co2d_wais, ann_t2m ,ann_t2mnh) &
+    !$omp reduction(+:ann_t2msh ,ann_t2mn6090 ,ann_t2ms6090 ,ann_q2m ,ann_r2m ,ann_tam ,ann_tskin ,ann_prc ,ann_evp ,ann_wcon ,ann_cld ,ann_sha) &
+    !$omp reduction(+:ann_lha ,ann_rbtop ,ann_rbatm ,ann_rbsur ,ann_snettop ,ann_snetsur ,ann_lnettop ,ann_lnetsur ,ann_ldwnsur, ann_rbtopcs) &
+    !$omp reduction(+:ann_rbsurcs ,ann_snettopcs ,ann_snetsurcs ,ann_lnettopcs ,ann_lnetsurcs ,ann_ldwnsurcs ,ann_lupsur ,ann_slp ,ann_htrop) &
+    !$omp reduction(+:ann_ttrop, ann_hcld ,ann_plan ,ann_sol ,ann_sreftop ,ann_swrcrf ,ann_lwrcrf ,ann_dustload ,ann_dustdep ,ann_dustdrydep) &
+    !$omp reduction(+:ann_dustwetdep ,ann_fw_pac_atl ,ann_fw_atl_indpac ,ann_t2m_l ,ann_q2m_l ,ann_r2m_l ,ann_tam_l ,ann_tskin_l ,ann_prc_l) &
+    !$omp reduction(+:ann_evp_l ,ann_wcon_l ,ann_cld_l ,ann_sha_l ,ann_lha_l ,ann_rbtop_l ,ann_rbatm_l ,ann_rbsur_l ,ann_snettop_l ,ann_snetsur_l) &
+    !$omp reduction(+:ann_lnettop_l ,ann_lnetsur_l)
     do j=1,jm
       do i=1,im
 
@@ -1285,6 +1307,8 @@ contains
     ann_ts(y)%tnatl         = ann_ts(y)%tnatl         + sum(atm%t2(i_natl_1:i_natl_2,j_natl_2:j_natl_1,:)*atm%frst(i_natl_1:i_natl_2,j_natl_2:j_natl_1,:)) &
                                                       / size(atm%frst(i_natl_1:i_natl_2,j_natl_2:j_natl_1,1))* ann_avg
     ann_ts(y)%tant          = ann_ts(y)%tant          + sum(atm%t2(i_ant,j_ant,:)*atm%frst(i_ant,j_ant,:)) * ann_avg 
+    ann_ts(y)%dust_grl      = ann_ts(y)%dust_grl      + atm%dust_dep(i_grl,j_grl) * ann_avg 
+    ann_ts(y)%dust_wais     = ann_ts(y)%dust_wais     + atm%dust_dep(i_wais,j_wais) * ann_avg 
     ann_ts(y)%q2m           = ann_ts(y)%q2m           + ann_q2m        
     ann_ts(y)%r2m           = ann_ts(y)%r2m           + ann_r2m        
     ann_ts(y)%tskin         = ann_ts(y)%tskin         + ann_tskin      
@@ -1345,10 +1369,17 @@ contains
     ann_ts(y)%snetsur_l     = ann_ts(y)%snetsur_l     + ann_snetsur_l 
     ann_ts(y)%lnettop_l     = ann_ts(y)%lnettop_l     + ann_lnettop_l 
     ann_ts(y)%lnetsur_l     = ann_ts(y)%lnetsur_l     + ann_lnetsur_l 
+    ann_ts(y)%itcz          = ann_ts(y)%itcz          + atm%had_fi*180./pi * ann_avg
+    ann_ts(y)%itcz_min      = min(ann_ts(y)%itcz_min, atm%had_fi*180./pi)
+    ann_ts(y)%itcz_max      = max(ann_ts(y)%itcz_max, atm%had_fi*180./pi)
+    ann_ts(y)%had_width     = ann_ts(y)%had_width     + atm%had_width*180./pi * ann_avg
 
     if( time_eoy_atm ) then
 
       ann_ts(y)%Smax65N = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat-65._wp)))+atm%solarm(:,minloc(abs(-lat-65._wp),back=.true.))))
+      ann_ts(y)%Smax65S = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat+65._wp)))+atm%solarm(:,minloc(abs(-lat+65._wp),back=.true.))))
+      ann_ts(y)%Smax30N = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat-30._wp)))+atm%solarm(:,minloc(abs(-lat-30._wp),back=.true.))))
+      ann_ts(y)%Smax30S = maxval(0.5_wp*(atm%solarm(:,minloc(abs(-lat+30._wp)))+atm%solarm(:,minloc(abs(-lat+30._wp),back=.true.))))
 
       ann_ts(y)%co2 = atm%co2
       ann_ts(y)%co2e= atm%co2e
@@ -2105,6 +2136,8 @@ contains
         day_a(doy)%tskina  = atm%tskina
         day_a(doy)%lha     = atm%lha
         day_a(doy)%sha     = atm%sha
+        day_a(doy)%weff    = atm%weff
+        day_a(doy)%wcld    = atm%wcld
         day_a(doy)%cld     = atm%cld
         day_a(doy)%hcld    = atm%hcld
         day_a(doy)%clot    = atm%clot
@@ -2251,6 +2284,9 @@ contains
     call nc_write(fnm,"time", real([(i,i=(year_now-(y-1)*n_accel),(year_now),(n_accel))],wp), &
     dim1=dim_time,start=[nout],count=[y],ncid=ncid)    
     call nc_write(fnm,"Smax65N ", vars%Smax65N , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 65N",units="W/m2",ncid=ncid)
+    call nc_write(fnm,"Smax65S ", vars%Smax65S , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 65S",units="W/m2",ncid=ncid)
+    call nc_write(fnm,"Smax30N ", vars%Smax30N , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 30N",units="W/m2",ncid=ncid)
+    call nc_write(fnm,"Smax30S ", vars%Smax30S , dims=[dim_time],start=[nout],count=[y],long_name="maximum insolation at 30S",units="W/m2",ncid=ncid)
     call nc_write(fnm,"co2     ", vars%co2     , dims=[dim_time],start=[nout],count=[y],long_name="atmospheric CO2 concentration for radiation",units="ppm",ncid=ncid)
     call nc_write(fnm,"co2e    ", vars%co2e    , dims=[dim_time],start=[nout],count=[y],long_name="equivalent atmospheric CO2 concentration for radiation",units="ppm",ncid=ncid)
     if (l_co2d) then
@@ -2270,6 +2306,8 @@ contains
     call nc_write(fnm,"tgrl1   ", vars%tgrl1   , dims=[dim_time],start=[nout],count=[y],long_name="Greenland surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tnatl   ", vars%tnatl   , dims=[dim_time],start=[nout],count=[y],long_name="North Atlantic surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tant    ", vars%tant    , dims=[dim_time],start=[nout],count=[y],long_name="Antarctica surface air temperature",units="degC",ncid=ncid)
+    call nc_write(fnm,"dust_grl", vars%dust_grl, dims=[dim_time],start=[nout],count=[y],long_name="Greenland dust deposition",units="kg/m2/s",ncid=ncid)
+    call nc_write(fnm,"dust_wais", vars%dust_wais , dims=[dim_time],start=[nout],count=[y],long_name="WAIS dust deposition",units="kg/m2/s",ncid=ncid)
     call nc_write(fnm,"tam     ", vars%tam     , dims=[dim_time],start=[nout],count=[y],long_name="temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tskin   ", vars%tskin   , dims=[dim_time],start=[nout],count=[y],long_name="skin temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"q2      ", vars%q2m     , dims=[dim_time],start=[nout],count=[y],long_name="surface air humidity",units="kg/kg",ncid=ncid)
@@ -2311,6 +2349,10 @@ contains
     call nc_write(fnm,"dustwetdep", vars%dustwetdep, dims=[dim_time],start=[nout],count=[y],long_name="dust wet deposition",units="Tg/yr",ncid=ncid)
     call nc_write(fnm,"fw_pac_atl", vars%fw_pac_atl , dims=[dim_time],start=[nout],count=[y],long_name="water vapor transport from Pacific to Atlantic",units="Sv",ncid=ncid)
     call nc_write(fnm,"fw_atl_indpac", vars%fw_atl_indpac , dims=[dim_time],start=[nout],count=[y],long_name="water vapor transport from Atlantic to Indo-Pacific",units="Sv",ncid=ncid)
+    call nc_write(fnm,"itcz", vars%itcz , dims=[dim_time],start=[nout],count=[y],long_name="Latitude of the ITCZ (annual average)",units="deg",ncid=ncid)
+    call nc_write(fnm,"itcz_min", vars%itcz_min , dims=[dim_time],start=[nout],count=[y],long_name="Min latitude of the ITCZ",units="deg",ncid=ncid)
+    call nc_write(fnm,"itcz_max", vars%itcz_max , dims=[dim_time],start=[nout],count=[y],long_name="Max latitude of the ITCZ",units="deg",ncid=ncid)
+    call nc_write(fnm,"had_width", vars%had_width , dims=[dim_time],start=[nout],count=[y],long_name="Width of the Hadley cells (annual average)",units="deg",ncid=ncid)
 
     call nc_write(fnm,"tg_l      ", vars%t2m_l     , dims=[dim_time],start=[nout],count=[y],long_name="temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tam_l     ", vars%tam_l     , dims=[dim_time],start=[nout],count=[y],long_name="temperature",units="degC",ncid=ncid)
@@ -2935,6 +2977,8 @@ contains
     call nc_write(fnm,"cam        ", sngl(vars%cam       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"lha        ", sngl(vars%lha       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"sha        ", sngl(vars%sha       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
+    call nc_write(fnm,"weff       ", sngl(vars%weff      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
+    call nc_write(fnm,"wcld       ", sngl(vars%wcld      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"cld        ", sngl(vars%cld       (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"hcld       ", sngl(vars%hcld      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)
     call nc_write(fnm,"clot       ", sngl(vars%clot      (:,jm:1:-1) ), dims=["lon ","lat ","doy ","time"],start=[1,1,ndat,nout],count=[im,jm,1,1],long_name="",units="",ncid=ncid)

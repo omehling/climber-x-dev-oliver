@@ -27,7 +27,7 @@ module bering_mod
 
   use precision, only : wp
   use constants, only : g
-  use ocn_params, only : c_bering, saln0, dt
+  use ocn_params, only : c_bering, dt
   use ocn_grid, only : maxk
   use ocn_grid, only : dx, dy, dz, zw, zro
 
@@ -44,7 +44,7 @@ contains
   !   Subroutine :  b e r i n g
   !   Purpose    :  compute Bering Strait throughflow and tracer transport 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine bering(A_bering, f_ocn, ssh, &
+  subroutine bering(A_bering, f_ocn, ssh, saln0, &
                     sal, bering_tf, bering_fw)
 
     implicit none
@@ -52,6 +52,7 @@ contains
     real(wp), intent(in) :: A_bering    ! Bering Strait cross-sectional area (m2)
     real(wp), dimension(:,:), intent(in) :: f_ocn   ! ocean fraction (1)
     real(wp), dimension(:,:), intent(in) :: ssh     ! sea surface height (m)
+    real(wp), intent(in) :: saln0    ! reference salinity (psu)
 
     real(wp), dimension(:,:,:), intent(inout) :: sal
 

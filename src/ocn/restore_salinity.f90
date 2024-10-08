@@ -27,7 +27,7 @@ module restore_salinity_mod
 
   use precision, only : wp
   use ocn_grid
-  use ocn_params, only : saln0
+  use ocn_params, only : saln0_const
 
   implicit none
 
@@ -62,7 +62,7 @@ contains
 
     sglob = sglob/ocn_vol_tot
 
-    scorr = saln0 - sglob
+    scorr = saln0_const - sglob
 
 !      if (KSEM.ne.2) GLOB_SAL=34.7
 !      GLOB_SAL=34.7+35.*(0.9*TOI_VOL/OVOL)  ! account for ice sheet volume (ocean volume)

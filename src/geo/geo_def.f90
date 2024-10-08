@@ -94,6 +94,7 @@ module geo_def
     type geo_class
       real(wp) :: sea_level  !! sea level [m]
       real(wp) :: d_sea_level      !! change in sea level [m]
+      real(wp) :: V_ice_af       !! global ice sheet volume above floatation [m3]
       real(wp) :: A_bering       !! Bering Strait cross-sectional area [m2]      
       type(grid_class) :: grid
       real(wp), dimension(:,:), allocatable :: f_ocn0     !! ocean fraction for present day sea level

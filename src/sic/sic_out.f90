@@ -410,10 +410,9 @@ contains
       JNS = minloc(abs(sv(:)-sin(pi*latv_buoy(n)/180.0)),1) + lbound(sv,1) - 1    ! -1 because index of sv array starts from 0!
       buoy_sic_NA(n) = 0.0
       do i=1,maxi
-        if (basin_mask(i,JNS).eq.i_atlantic) then
+        if (lon(i).gt.-70. .and. basin_mask(i,JNS).eq.i_atlantic) then
           buoy_sic_NA(n) = buoy_sic_NA(n) &
-            - g*beta*S_star*(sic%fay_sic(i,JNS)+sic%fdy_sic(i,JNS))  ! freshwater export, m/s2*kg/m3/psu*psu*m3 = kg*m/s2 = N
-          ! add snow? TODO
+            + g*beta*S_star*(sic%fay_sic(i,JNS)+sic%fdy_sic(i,JNS))  ! freshwater export, m/s2*kg/m3/psu*psu*m3 = kg*m/s2 = N
         endif
       enddo
     enddo

@@ -83,13 +83,12 @@ module ocn_params
 
      integer :: i_advection
      integer :: i_conv_shuffle
-     logical :: l_conv_shuffle_bgc
+     logical :: l_conv_shuffle_passive
      logical :: l_mix_bgc_all
      logical :: l_mld
      real(wp) :: pe_buoy_coeff, ke_tau_coeff, ke_wind_dec
      integer :: i_eos
      real(wp) :: drhcor_max
-     integer :: i_frac
      integer :: i_diff
      integer :: i_diff_dia
      logical :: l_diff33_impl
@@ -107,6 +106,7 @@ module ocn_params
      logical :: l_fw_corr
      integer :: i_fw
      integer :: i_brines
+     real(wp) :: frac_brines
      real(wp) :: z_mix_brines
      real(wp) :: relax_run
      real(wp) :: relax_calv
@@ -115,7 +115,8 @@ module ocn_params
      ! peak and background temperatures for i_init option 3
      real(wp) :: init3_peak = 25.0_wp
      real(wp) :: init3_bg   = 15.0_wp
-     real(wp) :: saln0
+     integer :: i_saln0
+     real(wp) :: saln0_const
      logical :: l_salinity_restore
      real(wp) :: shelf_depth
      logical :: age_tracer
@@ -134,6 +135,7 @@ module ocn_params
      integer :: hosing_comp_basin
      real(wp) :: lat_min_hosing_comp, lat_max_hosing_comp
      real(wp) :: lon_min_hosing_comp, lon_max_hosing_comp
+     character (len=256) :: hosing_file
      logical :: l_noise_fw 
      logical :: is_fw_noise_Sv
      logical :: l_noise_flx 
@@ -155,6 +157,7 @@ module ocn_params
      real(wp) :: lat_min_flux_adj_atl, lat_max_flux_adj_atl
      real(wp) :: lat_min_flux_adj_pac, lat_max_flux_adj_pac
 
+     integer :: i_fwf_buoy 
      integer :: i_alphabeta
      real(wp) :: depth_buoy
 
@@ -250,7 +253,6 @@ subroutine ocn_par_load(filename)
 
     call nml_read(filename,"ocn_par","i_advection",i_advection)
 
-    call nml_read(filename,"ocn_par","i_frac",i_frac)
     call nml_read(filename,"ocn_par","i_diff",i_diff)
     call nml_read(filename,"ocn_par","i_diff_dia",i_diff_dia)
     call nml_read(filename,"ocn_par","l_diff33_impl",l_diff33_impl)
@@ -267,7 +269,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","diff_gm",diff_gm)
 
     call nml_read(filename,"ocn_par","i_conv_shuffle",i_conv_shuffle)
-    call nml_read(filename,"ocn_par","l_conv_shuffle_bgc",l_conv_shuffle_bgc)
+    call nml_read(filename,"ocn_par","l_conv_shuffle_passive",l_conv_shuffle_passive)
     call nml_read(filename,"ocn_par","l_mix_bgc_all",l_mix_bgc_all)
 
     call nml_read(filename,"ocn_par","l_mld",l_mld)
@@ -292,9 +294,11 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","i_fw",i_fw)
     call nml_read(filename,"ocn_par","init3_peak",init3_peak)
     call nml_read(filename,"ocn_par","init3_bg",init3_bg)
-    call nml_read(filename,"ocn_par","saln0",saln0)
+    call nml_read(filename,"ocn_par","i_saln0",i_saln0)
+    call nml_read(filename,"ocn_par","saln0_const",saln0_const)
     call nml_read(filename,"ocn_par","l_salinity_restore",l_salinity_restore)
     call nml_read(filename,"ocn_par","i_brines",i_brines)
+    call nml_read(filename,"ocn_par","frac_brines",frac_brines)
     call nml_read(filename,"ocn_par","z_mix_brines",z_mix_brines)
     call nml_read(filename,"ocn_par","relax_run",relax_run)
     call nml_read(filename,"ocn_par","relax_calv",relax_calv)
@@ -319,6 +323,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","year_hosing_ini",year_hosing_ini)
     call nml_read(filename,"ocn_par","year_hosing_end",year_hosing_end)
     call nml_read(filename,"ocn_par","year_hosing_ramp",year_hosing_ramp)
+    call nml_read(filename,"ocn_par","hosing_file",hosing_file)
 
     call nml_read(filename,"ocn_par","l_noise_fw   ",l_noise_fw   )
     call nml_read(filename,"ocn_par","is_fw_noise_Sv",is_fw_noise_Sv)
@@ -353,6 +358,7 @@ subroutine ocn_par_load(filename)
     if (.not.l_flux_adj_pac) flux_adj_pac = 0._wp
     if (.not.l_flux_adj_ant) flux_adj_ant = 0._wp
 
+    call nml_read(filename,"ocn_par","i_fwf_buoy",i_fwf_buoy)
     call nml_read(filename,"ocn_par","i_alphabeta",i_alphabeta)
     call nml_read(filename,"ocn_par","depth_buoy",depth_buoy)
 

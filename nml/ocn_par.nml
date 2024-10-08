@@ -77,7 +77,6 @@
  !-------------------------------------------------------------------------------------------
  ! diffusion settings
  !-------------------------------------------------------------------------------------------
- i_frac = 1
  i_diff = 1                   ! diffusion schemes:
                               ! 0 = horizontal/vertical diffusion
                               ! 1 = isopycnal/diapycnal diffusion
@@ -92,7 +91,7 @@
                               ! 4 = vertical profile dependent on roughness at the ocean floor, Decloedt and Luther 2010
  diff_dia_zref = 1000.        ! m2/s, diapycnal/vertical diffusivity (value at 2500m depth if not uniform)
  diff_dia_ref = 2e-5          ! m2/s, reference diapycnal diffusivity, used only if l_diff_dia_strat==T
- diff_dia_min = 1e-5          ! m2/s, minimum (surface) diapycnal diffusivity, used only if i_diff_dia==0,3,4
+ diff_dia_min = 1.e-5         ! m2/s, minimum (surface) diapycnal diffusivity, used only if i_diff_dia==0,3,4
  diff_dia_max = 1.5e-4        ! m2/s, maximum (deep ocean) diapycnal diffusivity, used only if i_diff_dia==3
  diff_dia_bgc_min = 1e-5      ! m2/s, minimum diapycnal diffusivity for DIC tracers
  l_diff_dia_strat = F         ! use stratification dependent vertical diffusivity? Added on top of the reference profile set by i_diff_dia
@@ -107,7 +106,7 @@
                               ! 0 = no shuffle convection applied
                               ! 1 = shuffle convection applied everywhere
                               ! 2 = shuffle convection applied only along the coast
- l_conv_shuffle_bgc = F       ! apply shuffle convection also to bgc tracers? Used only if i_conv_shuffle>0
+ l_conv_shuffle_passive = F   ! apply shuffle convection also to passive (including bgc) tracers? Used only if i_conv_shuffle>0
  l_mix_bgc_all = T            ! apply vertical mixing to ALL bgc tracers (convection+mixed layer)?
 
  !-------------------------------------------------------------------------------------------
@@ -152,12 +151,16 @@
                               ! 1 = virtual salinity flux using reference saln0
                               ! 2 = virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
                               ! 3 = virtual salinity flux using local salinity
- saln0 = 34.7                 ! psu, reference salinity
+ i_saln0 = 1                  ! treatment of reference salinity:
+                              ! 1 = use constant value saln0_const             
+                              ! 2 = use volume averaged salinity
+ saln0_const = 34.7           ! psu, reference salinity, used only if i_saln0==1
  l_salinity_restore = F       ! restore salinity to globally integrated value saln0?
  i_brines = 0                 ! treatment of brines during sea ice formation
                               ! 0 = no special treatment of brine rejection
                               ! 1 = brine rejection 
                               ! 2 = brine rejection only along coastal cells
+ frac_brines = 0.
  z_mix_brines = 100.          ! m, depth over which brines are mixed, only for i_brines>0
  relax_run = 0.               ! relaxation factor for runoff from ice sheets: 0 = no relaxation, -> 1 = strong relaxation
  relax_calv = 0.              ! relaxation factor for calving fluxes from ice sheets: 0 = no relaxation, -> 1 = strong relaxation
@@ -188,13 +191,15 @@
  lon_max_hosing_comp = 175    ! eastern longitude bound for region of freshwater flux compensation (used only if hosing_comp_basin>0)
  i_hosing = 0                 ! hosing flux settings:
                               ! 0..using hosing_ini and hosing_trend
-                              ! >=1..hosing flux evolution from code in hosing.f90
+                              ! 1..read hosing time series from hosing_file
+                              ! >=2..hosing flux evolution from code in hosing.f90
  hosing_ini = 0               ! Sv, inital/constant value of hosing flux
  hosing_trend = 0.            ! Sv/kyr, rate at which hosing flux is increased/decreased
  hosing_sigma = 0.            ! Sv, standard deviation of Gaussian white noise added to hosing
  year_hosing_ini = 0          ! years, initial time for hosing
  year_hosing_end = 1e6        ! years, final time for hosing
  year_hosing_ramp = 0         ! years, ramp-up time for hosing
+ hosing_file = input/Calov_Heinrich.nc  ! hosing time series input file, used only if i_hosing==1
 
  !-------------------------------------------------------------------------------------------
  ! freshwater adjustment settings
@@ -232,9 +237,12 @@
  lon_min_noise = -175         ! western longitude bound for noise region 
  lon_max_noise = 175          ! eastern longitude bound for noise region
 
+ !-------------------------------------------------------------------------------------------
+ ! for surface buoyancy flux diagnostics
+ !-------------------------------------------------------------------------------------------
+ i_fwf_buoy = 1
  i_alphabeta = 1
-
- depth_buoy = 0.
+ depth_buoy = 50.
 
  !-------------------------------------------------------------------------------------------
  ! fixed boundary conditions settings
@@ -244,7 +252,7 @@
  l_ocn_fix_flx  = F           ! used prescribed surface heat flux daily climatology?
  i_ocn_input_fix = 1          ! what fixed ocean input to use, only if any l_ocn_fix_*==T : 
                               ! 1 = average of first 30 years of simulation
-                              ! 2 = read from file ocn_inp_fix_file
+                              ! 2 = read from file ocn_input_fix_file
  l_ocn_input_fix_write = F    ! write average daily ocean input variables from last 30 years of simulation to file?
  ocn_input_fix_file = input/ocn_input_fix_pi.nc     ! file with daily climatology of ocean input fields to be used for simulations with any l_ocn_fix_*==T
 

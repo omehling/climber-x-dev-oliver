@@ -53,12 +53,10 @@ module geo_params
   logical :: l_close_hudson
   logical :: l_close_baltic
   logical :: l_fix_cell_stab
-  logical :: l_fix_agul
 
   real(wp) :: h_ice_min
 
   integer :: i_z_min_max
-  integer :: i_z_sur_std
   real(wp) :: sigma_filter
 
   integer :: i_lakes
@@ -119,10 +117,8 @@ subroutine geo_par_load(filename)
     call nml_read(filename,"geo_par","l_close_hudson",l_close_hudson)
     call nml_read(filename,"geo_par","l_close_baltic",l_close_baltic)
     call nml_read(filename,"geo_par","l_fix_cell_stab",l_fix_cell_stab)
-    call nml_read(filename,"geo_par","l_fix_agul",l_fix_agul)
     call nml_read(filename,"geo_par","h_ice_min",h_ice_min)
     call nml_read(filename,"geo_par","i_z_min_max",i_z_min_max)
-    call nml_read(filename,"geo_par","i_z_sur_std",i_z_sur_std)
     call nml_read(filename,"geo_par","sigma_filter",sigma_filter)
     call nml_read(filename,"geo_par","geo_ref_file",geo_ref_file)
     call nml_read(filename,"geo_par","z_bed_rel_file",z_bed_rel_file)

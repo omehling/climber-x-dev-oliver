@@ -16,7 +16,7 @@
  flag_smb         = F        ! use surface mass balance model?
  flag_imo         = F        ! use floating ice melt by ocean model?
  flag_ice         = F        ! use ice sheet model?
- ice_model_name   = 'yelmo'  ! select which ice sheet model to use, 'sico' or 'yelmo'
+ ice_model_name   = 'sico'   ! select which ice sheet model to use, 'sico' or 'yelmo'
  ice_domain_name  = 'NH-32KM' !'ANT-32KM'      ! name of ice sheet domanin(s) to be used
 
  !-------------------------------------------------------
@@ -92,7 +92,8 @@
                         ! 1 = yearly varying bedrock elevation from fake_geo_var_file
                         ! 2 = constant bedrock elevation closest to year_ini read from fake_geo_var_file
  fake_geo_const_file  = "input/RTopo-2.0.1_0.125deg_DRThydrocorr.nc"
- fake_geo_var_file    = "input/geo_ice_tarasov_deglac.nc"
+ fake_geo_var_file    = "input/geo_ice_tarasov_lgc.nc"
+ fake_geo_ref_file    = "input/geo_ice_tarasov_lgc_0ka.nc"
 
  !-------------------------------------------------------
  ! atmospheric CO2 for simulations with flag_co2==false
@@ -131,7 +132,7 @@
  iC14_production = 0                ! C14 production:
                                     ! 0 = constant (C14_production_const)
                                     ! 1 = prescribed C14 production from file (C14_production_file)
- C14_production_const = 1.74        ! atoms/cm2/s, constant C14_production, used only if iC14_production == 0
+ C14_production_const = 1.5         ! atoms/cm2/s, constant C14_production, used only if iC14_production == 0
  C14_production_file  = "input/C14_production.nc" 
 
  !-------------------------------------------------------
@@ -335,7 +336,7 @@
                         !     interactive ice sheets (flag_ice==T) will overwrite the fake ice sheet thickness, but only over the ice model domain(s)
                         ! 2 = constant ice thickness closest to year_ini read from fake_ice_var_file
  fake_ice_const_file  = "input/RTopo-2.0.1_0.125deg_DRThydrocorr.nc"
- fake_ice_var_file    = "input/geo_ice_tarasov_deglac.nc" 
+ fake_ice_var_file    = "input/geo_ice_tarasov_lgc.nc" 
 
  !-------------------------------------------------------
  ! output control

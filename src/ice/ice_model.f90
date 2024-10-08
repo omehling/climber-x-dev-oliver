@@ -517,6 +517,9 @@ contains
         ! ice base elevation 
         ice%z_base = ylmo%tpo%now%z_base 
 
+        ! bedrock elevation 
+        ice%z_bed = ylmo%bnd%z_bed
+
         ! basal melt [m(ice)/yr] => [m(ice)/s]
         ! (negativ bc yelmo convention is basal mass balance with melt negative)
         ice%Q_b = -ylmo%tpo%now%bmb*ylmo%tpo%now%f_ice/ylmo%bnd%c%sec_year 
@@ -593,6 +596,8 @@ contains
             ice%z_sur(i,j) = sico%state%zs(j-1,i-1)     ! m
             ! ice base elevation
             ice%z_base(i,j) = sico%state%zb(j-1,i-1)    ! m
+            ! bedrock elevation
+            ice%z_bed(i,j) = sico%state%zl(j-1,i-1)    ! m
             ! basal melt 
             ice%Q_b(i,j) = sico%state%Q_b_apl(j-1,i-1)     ! m(ice)/s
             ! calving
@@ -615,7 +620,6 @@ contains
         integer :: i, j, ii, jj, i_f, j_f, nx, ny, n_filter
         real(wp) :: dx, dy, sigma_ref, sigma_filter, dist, sum_weigh, weigh
         real(wp), dimension(:,:), allocatable :: zl
-        real(wp), dimension(:,:), allocatable :: zl_std
 
         ! Note: SICOPOLIS grid is (j,i) and indexes start from 0
 
@@ -719,38 +723,6 @@ contains
         end if
         deallocate(zl)
       endif
-
-      ! filter zl_std
-      nx = sico%grid%grid1%G%nx
-      ny = sico%grid%grid1%G%ny
-      allocate(zl_std(0:ny-1,0:nx-1))
-      zl_std = sico%state%zl_std
-      dx = sico%grid%grid1%G%dx ! km
-      dy = sico%grid%grid1%G%ny ! km
-      sigma_filter = 100._wp/dx   ! half span of filtered area, in grid points
-      n_filter     = ceiling(2.0_wp*sigma_filter)
-      do i=0,nx-1 
-        do j=0,ny-1
-          sum_weigh = 0.0_wp
-          sico%state%zl_std(j,i) = 0._wp
-          do ii=-n_filter, n_filter
-            do jj=-n_filter, n_filter
-              i_f = i+ii
-              j_f = j+jj
-              if (i_f <  0) i_f = 0
-              if (i_f > nx-1) i_f = nx-1
-              if (j_f <  0) j_f = 0
-              if (j_f > ny-1) j_f = ny-1
-              dist      = sqrt(real(ii,wp)**2+real(jj,wp)**2)
-              weigh     = exp(-(dist/sigma_filter)**2)
-              sum_weigh = sum_weigh + weigh
-              sico%state%zl_std(j,i) = sico%state%zl_std(j,i) + weigh*zl_std(j_f,i_f)
-            end do
-          end do
-          sico%state%zl_std(j,i) = sico%state%zl_std(j,i)/sum_weigh
-        end do
-      end do
-      deallocate(zl_std)
 
       ! rate of change of lithosphere elevation, needed? fixme
       sico%state%dzl_dtau = (sico%state%zl_neu - sico%state%zl) * sico%timer%dtime_inv

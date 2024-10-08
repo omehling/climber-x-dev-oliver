@@ -25,8 +25,13 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 module bias_corr_mod
 
-   use precision, only : wp
+   use precision, only : wp, dp
    use timer, only: doy, nday_year, monthly2daily
+   use control, only : i_map, out_dir
+   use smb_params, only : smb_ref_file, smb_cx_ref_file 
+   use coord, only : grid_init, grid_class
+   use coord, only : map_init, map_class, map_field
+   use coord, only : map_scrip_init, map_scrip_class, map_scrip_field
    use ncio
 
    implicit none
@@ -38,9 +43,135 @@ module bias_corr_mod
    real(wp), dimension(nday_year) :: wtm0, wtm1
 
    private
-   public :: t2m_bias_corr, prc_bias_corr
+   public :: smb_ref_write, smb_bias_corr, t2m_bias_corr, prc_bias_corr
 
 contains
+
+   subroutine smb_ref_write(grid, year_ini_smb_ref, year_end_smb_ref, &
+       ann_smb_avg_ref, ann_prc_avg_ref, ann_evp_avg_ref)
+
+   implicit none
+
+   type(grid_class), intent(in) :: grid
+   integer, intent(in) :: year_ini_smb_ref
+   integer, intent(in) :: year_end_smb_ref
+   real(wp), intent(in) :: ann_smb_avg_ref(:,:)
+   real(wp), intent(in) :: ann_prc_avg_ref(:,:)
+   real(wp), intent(in) :: ann_evp_avg_ref(:,:)
+
+   integer :: ncid
+   character (len=256) :: fnm
+   character (len=256) :: i1, i2
+
+   ! Create the netcdf file and the dimension variables
+   write (i1,'(I4)') year_ini_smb_ref+2000
+   write (i2,'(I4)') year_end_smb_ref+2000
+   fnm = trim(out_dir)//"/CLIMBER-X_SMB_"//trim(grid%name)//"_clim_"//trim(i1)//"_"//trim(i2)//".nc"
+   call nc_create(fnm)
+   call nc_open(fnm,ncid)
+   call nc_write_dim(fnm, "y", x=grid%G%y0, dx=grid%G%dy, nx=grid%G%ny,&
+     axis="y", units="km", ncid=ncid)
+   call nc_write_dim(fnm, "x", x=grid%G%x0, dx=grid%G%dx, nx=grid%G%nx,&
+     axis="x", units="km", ncid=ncid)
+   call nc_write(fnm,"phi",sngl(grid%lat), dims=["x","y"],start=[1,1],count=[grid%G%nx,grid%G%ny],ncid=ncid)
+   call nc_write(fnm,"lambda",sngl(grid%lon), dims=["x","y"],start=[1,1],count=[grid%G%nx,grid%G%ny],ncid=ncid)
+   call nc_write(fnm,"smb", sngl(ann_smb_avg_ref), dims=["x","y"],start=[1,1],count=[grid%G%nx,grid%G%ny],long_name="Climatology of annual surface mass balance",grid_mapping="polar_stereographic",units="kg/m2/yr",ncid=ncid) 
+   call nc_write(fnm,"prc", sngl(ann_prc_avg_ref), dims=["x","y"],start=[1,1],count=[grid%G%nx,grid%G%ny],long_name="Climatology of annual precipitation",grid_mapping="polar_stereographic",units="kg/m2/yr",ncid=ncid) 
+   call nc_write(fnm,"evp", sngl(ann_evp_avg_ref), dims=["x","y"],start=[1,1],count=[grid%G%nx,grid%G%ny],long_name="Climatology of annual sublimation",grid_mapping="polar_stereographic",units="kg/m2/yr",ncid=ncid) 
+   call nc_close(ncid)
+
+   return
+
+   end subroutine smb_ref_write
+
+
+   subroutine smb_bias_corr(grid, &
+        ann_smb_ref, ann_smb_cx_ref, &
+        ann_prc_ref, ann_prc_cx_ref, &
+        ann_evp_ref, ann_evp_cx_ref)
+
+   implicit none
+
+   type(grid_class), intent(in) :: grid
+   real(wp), intent(out) :: ann_smb_ref(:,:)
+   real(wp), intent(out) :: ann_smb_cx_ref(:,:)
+   real(wp), intent(out) :: ann_prc_ref(:,:)
+   real(wp), intent(out) :: ann_prc_cx_ref(:,:)
+   real(wp), intent(out) :: ann_evp_ref(:,:)
+   real(wp), intent(out) :: ann_evp_cx_ref(:,:)
+
+   integer :: ni, nj, nlon, nlat
+   integer :: ppos, spos
+   real(wp) :: dlon, dlat
+   real(wp), dimension(:), allocatable :: lon, lat
+   real(wp), dimension(:,:), allocatable :: smb, prc, evp
+   character(len=256) :: fnm
+   type(grid_class) :: grid_ref
+   type(map_class) :: map_to_smb
+   type(map_scrip_class) :: maps_to_smb
+
+
+   ! read CLIMBER-X reference SMB file, has to be on the same grid as the current domain
+   fnm = smb_cx_ref_file 
+   call nc_read(fnm,"smb",ann_smb_cx_ref) 
+   call nc_read(fnm,"prc",ann_prc_cx_ref) 
+   call nc_read(fnm,"evp",ann_evp_cx_ref) 
+
+   ! read reference SMB file, is NOT in the same grid as the current domain, mapping needed!
+   fnm = smb_ref_file 
+   ! read dimensions
+   ni = nc_size(trim(fnm),"lon")
+   nj = nc_size(trim(fnm),"lat")
+   ! read lat lon
+   allocate(lon(ni))
+   allocate(lat(nj))
+   call nc_read(trim(fnm),"lon",lon)
+   call nc_read(trim(fnm),"lat",lat)
+   dlon = lon(2)-lon(1)
+   dlat = lat(2)-lat(1)
+
+   allocate(smb(ni,nj))
+   allocate(prc(ni,nj))
+   allocate(evp(ni,nj))
+   call nc_read(fnm,"smb",smb(:,:))
+   call nc_read(fnm,"prc",prc(:,:))
+   call nc_read(fnm,"evp",evp(:,:))
+
+   ! mapping to current smb domain
+
+   ! create grid object
+   spos = scan(trim(fnm),"/", BACK= .true.)+1
+   ppos = scan(trim(fnm),".", BACK= .true.)-1
+   call grid_init(grid_ref,name=trim(fnm(spos:ppos)),mtype="latlon",units="degrees", &
+     x0=real(lon(1),dp),dx=real(dlon,dp),nx=ni,y0=real(lat(1),dp),dy=real(dlat,dp),ny=nj)
+
+   ! initialize map
+   if (i_map.eq.1) then
+     call map_init(map_to_smb,grid_ref,grid,max_neighbors=1,lat_lim=10._dp,dist_max=2.e6_dp)
+   else if (i_map.eq.2) then
+     call map_scrip_init(maps_to_smb,grid_ref,grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
+   endif
+
+   ! mapping
+   if (i_map.eq.1) then
+     call map_field(map_to_smb,"smb",smb,ann_smb_ref,method="nn") 
+     call map_field(map_to_smb,"prc",prc,ann_prc_ref,method="nn") 
+     call map_field(map_to_smb,"evp",evp,ann_evp_ref,method="nn") 
+   else if (i_map.eq.2) then
+     call map_scrip_field(maps_to_smb,"smb",smb,ann_smb_ref,method="mean") 
+     call map_scrip_field(maps_to_smb,"prc",prc,ann_prc_ref,method="mean") 
+     call map_scrip_field(maps_to_smb,"evp",evp,ann_evp_ref,method="mean") 
+   endif
+
+   deallocate(smb)
+   deallocate(prc)
+   deallocate(evp)
+
+
+   return
+
+   end subroutine smb_bias_corr
+
 
    subroutine t2m_bias_corr(i_t2m_bias_corr, bias_corr_file, t2m_bias)
 

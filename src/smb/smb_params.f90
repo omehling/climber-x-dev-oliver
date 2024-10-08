@@ -38,10 +38,20 @@ module smb_params
 
   integer :: i_smb
 
+  logical :: l_maxice                ! apply large negative SMB (-4 m/yr) outside ice area specified by mask_maxice_file?
+  character (len=256) :: mask_maxice_file ! maximum ice extent mask file
+  real(wp) :: smb_maxice    ! smb to be applied outside of allowed ice mask
+
   real(wp) :: smb_crit_mask
   integer :: n_smb_mask_ext
 
   logical :: l_regional_climate_forcing
+
+  logical :: l_smb_bias_corr 
+  character (len=256) :: smb_ref_file 
+  character (len=256) :: smb_cx_ref_file 
+  integer :: year_ini_smb_ref 
+  integer :: year_end_smb_ref 
 
   integer :: i_t2m_bias_corr
   integer :: i_prc_bias_corr
@@ -236,12 +246,24 @@ subroutine smb_par_load(filename)
 
     call nml_read(filename,"smb_par","i_smb",i_smb)
 
+    call nml_read(filename,"smb_par","l_maxice",l_maxice)
+    call nml_read(filename,"smb_par","mask_maxice_file",mask_maxice_file)
+    call nml_read(filename,"smb_par","smb_maxice",smb_maxice)
+
     call nml_read(filename,"smb_par","smb_crit_mask",smb_crit_mask)
     call nml_read(filename,"smb_par","n_smb_mask_ext",n_smb_mask_ext)
 
     call nml_read(filename,"smb_par","l_regional_climate_forcing",l_regional_climate_forcing)
     call nml_read(filename,"smb_par","map_method",map_method)
     call nml_read(filename,"smb_par","filt_sigma",filt_sigma)
+
+    call nml_read(filename,"smb_par","l_smb_bias_corr",l_smb_bias_corr)
+    call nml_read(filename,"smb_par","smb_ref_file",smb_ref_file)
+    call nml_read(filename,"smb_par","smb_cx_ref_file",smb_cx_ref_file)
+    call nml_read(filename,"smb_par","year_ini_smb_ref",year_ini_smb_ref)
+    call nml_read(filename,"smb_par","year_end_smb_ref",year_end_smb_ref)
+    year_ini_smb_ref = year_ini_smb_ref - 2000
+    year_end_smb_ref = year_end_smb_ref - 2000
 
     call nml_read(filename,"smb_par","i_t2m_bias_corr",i_t2m_bias_corr)
     call nml_read(filename,"smb_par","i_prc_bias_corr",i_prc_bias_corr)

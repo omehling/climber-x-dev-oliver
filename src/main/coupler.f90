@@ -38,6 +38,7 @@ module coupler
     use control, only : ico2_rad, ich4_rad, id13c, iD14c, prc_forcing
     use control, only : ocn_restore_temp, ocn_restore_sal, atm_fix_tau
     use control, only : flag_co2, flag_ch4, flag_atm, flag_ocn, flag_bgc, flag_sic, flag_lnd, flag_dust, flag_smb, flag_imo, flag_ice, flag_geo, flag_lakes
+    use control, only : geo_restart
     use control, only : ifake_ice
     use control, only : l_spinup_cc
     use control, only : l_weathering
@@ -70,7 +71,8 @@ module coupler
     use atm_grid, only : hatm, k1000, k900, k850, k700, k500
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, tau_sst, tau_sss
     use ocn_params, only : l_ocn_input_fix, l_ocn_fix_wind, l_ocn_fix_fw, l_ocn_fix_flx, i_ocn_input_fix
-    use ocn_params, only : n_cells_dist_runoff, n_cells_dist_calving, n_cells_dist_weath, relax_run, relax_calv, relax_bmelt, scale_runoff_ice
+    use ocn_params, only : n_cells_dist_runoff, n_cells_dist_calving, n_cells_dist_weath
+    use ocn_params, only : relax_run, relax_calv, relax_bmelt, scale_runoff_ice
     use ocn_grid, only : maxi, maxj, maxk, k1_shelf, ocn_area_tot
     use lnd_params, only : dt_lnd => dt, l_ice_albedo_semi
     use lnd_grid, only : is_veg, is_ice, nl
@@ -283,6 +285,7 @@ module coupler
       real(wp), dimension(:,:),   allocatable :: runoff_ice_l  !! runoff from ice sheets computed by land model [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice_l !! calving from ice sheets computed by land model [kg/s]
       real(wp), dimension(:,:,:), allocatable :: melt_ice_i_mon  !! monthly ice sheet melt from prescribed bnd ice thickness changes [kg/s]
+      real(wp), dimension(:,:,:), allocatable :: acc_ice_i_mon  !! monthly ice sheet net accumulation from prescribed bnd ice thickness changes [kg/s]
       real(wp), dimension(:,:,:), allocatable :: runoff_ice_i_mon  !! monthly runoff from ice sheets computed by smb model [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice_i !! calving from ice sheets computed by ice model [kg/s]
       real(wp), dimension(:,:),   allocatable :: bmelt_grd_i !! basal melt from grounded ice sheets computed by ice model [kg/s]
@@ -2261,6 +2264,7 @@ contains
       do ii=1,smb%grid%G%nx
         do jj=1,smb%grid%G%ny
           if (smb%mask_ice(ii,jj).eq.1) then
+          !if (smb%mask_ice(ii,jj).eq.1 .and. smb%h_ice(ii,jj).gt.h_ice_min) then
             i = smb%grid_smb_to_cmn%i_lowres(ii,jj)
             j = smb%grid_smb_to_cmn%j_lowres(ii,jj)
             runoff_ice_i_mon(i,j,:) = runoff_ice_i_mon(i,j,:) + smb%mon_runoff(ii,jj,:)*smb%grid%area(ii,jj)*1.e6_wp  ! kg/m2/s * m2 -> kg/s 
@@ -2348,8 +2352,6 @@ contains
       elsewhere
         smb%mask_ice = 0
       endwhere
-      ! mask of maximum ice extent
-      smb%mask_maxice = ice%mask_extent
     endif
 
     return
@@ -2425,6 +2427,9 @@ contains
     type(smb_class) :: smb
     type(ice_class) :: ice
 
+    integer :: i, j, ii, jj, i_f, j_f, nx, ny, n_filter
+    real(wp) :: sigma_filter, dx, dy, dist, weigh, sum_weigh
+    real(wp), dimension(:,:), allocatable :: z_bed_std
 
     ! annual surface mass balance
     ice%smb = smb%ann_smb/sec_year / rho_i ! kg/m2 -> m(ice equivalent)/s
@@ -2440,6 +2445,37 @@ contains
     ice%z_sur_std = smb%z_sur_std ! m
     ! standard deviation of bedrock topography
     ice%z_bed_std = smb%z_bed_std ! m
+    ! filter z_bed_std
+    nx = smb%grid%G%nx
+    ny = smb%grid%G%ny
+    allocate(z_bed_std(1:nx,1:ny))
+    z_bed_std = ice%z_bed_std
+    dx = smb%grid%G%dx ! km
+    dy = smb%grid%G%ny ! km
+    sigma_filter = 100._wp/dx   ! half span of filtered area, in grid points
+    n_filter     = ceiling(2.0_wp*sigma_filter)
+    do j=1,ny 
+      do i=1,nx
+        sum_weigh = 0.0_wp
+        ice%z_bed_std(i,j) = 0._wp
+        do ii=-n_filter, n_filter
+          do jj=-n_filter, n_filter
+            i_f = i+ii
+            j_f = j+jj
+            if (i_f <  1) i_f = 1
+            if (i_f > nx) i_f = nx
+            if (j_f <  1) j_f = 1
+            if (j_f > ny) j_f = ny
+            dist      = sqrt(real(ii,wp)**2+real(jj,wp)**2)
+            weigh     = exp(-(dist/sigma_filter)**2)
+            sum_weigh = sum_weigh + weigh
+            ice%z_bed_std(i,j) = ice%z_bed_std(i,j) + weigh*z_bed_std(i_f,j_f)
+          end do
+        end do
+        ice%z_bed_std(i,j) = ice%z_bed_std(i,j)/sum_weigh
+      end do
+    end do
+    deallocate(z_bed_std)
 
 
     return
@@ -2588,6 +2624,7 @@ contains
       elsewhere
         imo%mask_ice_shelf = 0
       endwhere
+      imo%zl_fil = z_bed
       deallocate(h_ice)
       deallocate(z_bed)
 
@@ -2711,8 +2748,8 @@ contains
     type(geo_class) :: geo
 
     integer :: i, j, n
-    real(wp) :: V_grounded, V_gr_redu, V_af
-    real(wp), save :: V_af_old
+    real(wp) :: V_grounded, V_gr_redu, V_ice_af
+    real(wp), save :: V_ice_af_old
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
     type(map_class), save, allocatable, dimension(:) :: map_ice_to_geo
@@ -2806,16 +2843,23 @@ contains
     enddo
 
     ! total ice volume above floatation (which contributes to sea level)
-    V_af    = V_grounded - V_gr_redu
-    if (firstcall) V_af_old = V_af
+    V_ice_af    = V_grounded - V_gr_redu
+
+    if (firstcall) then
+      if (geo_restart) then
+        V_ice_af_old = geo%V_ice_af
+      else
+        V_ice_af_old = V_ice_af
+      endif
+    endif
+
+    geo%V_ice_af = V_ice_af
 
     ! change in sea level (m)
-    geo%d_sea_level = -(V_af-V_af_old)*(rho_i/rho_w)/geo%ocn_area_tot     ! m^3 ice equiv./m^2 -> m water equiv. -> sea level equivalent
-
-    ! write(6,*) "coupler_test", geo%d_sea_level, V_af_old, V_af, V_grounded 
+    geo%d_sea_level = -(V_ice_af-V_ice_af_old)*(rho_i/rho_w)/geo%ocn_area_tot     ! m^3 ice equiv./m^2 -> m water equiv. -> sea level equivalent
 
     ! save ice volume above floatation
-    V_af_old = V_af
+    V_ice_af_old = V_ice_af
 
     if (firstcall) firstcall = .false.
 
@@ -3023,7 +3067,8 @@ contains
     ! if solid Earth model not active, derive bedrock elevation anomaly from bnd
     if (.not.flag_geo) then
       if (l_samegrid_geo_bndgeo) then
-        geo%hires%z_bed = geo%hires%z_bed_ref + bnd%geo%z_bed-bnd%geo%z_bed_ref
+        geo%hires%z_bed = bnd%geo%z_bed
+        bnd%geo%z_bed_ref = bnd%geo%z_bed
       else
         ! map bedrock topography to geo
         if (i_map==1) then
@@ -3282,10 +3327,11 @@ contains
 
       if (ifake_ice.eq.1) then
 
-        ! derive icemelt flux going into runoff from changes in thickness of the
-        ! prescribed ice sheets
+        ! derive icemelt flux going into runoff and accumulation to be substracted from calving in the land model
+        ! from changes in thickness of the prescribed ice sheets
         allocate(melt_ice_i_mon(cmn%grid%G%nx,cmn%grid%G%ny,nmon_year))
         melt_ice_i_mon(:,:,:) = 0._wp
+        cmn%acc_ice_i_mon(:,:,:) = 0._wp
         do ii=1,bnd%ice%grid%G%nx
           do jj=1,bnd%ice%grid%G%ny
             i = bnd%ice%grid_ice_to_cmn%i_lowres(ii,jj)
@@ -3293,6 +3339,8 @@ contains
             if (bnd%ice%h_ice(ii,jj).gt.0._wp) then
               melt_ice_i_mon(i,j,:) = melt_ice_i_mon(i,j,:) + &
                 max(0._wp,(-bnd%ice%dh_ice_dt(ii,jj))*rho_i*bnd%ice%grid%area(ii,jj))  ! m /s * kg/m3 * m2 = kg/s
+              cmn%acc_ice_i_mon(i,j,:) = cmn%acc_ice_i_mon(i,j,:) + &
+                max(0._wp,(bnd%ice%dh_ice_dt(ii,jj))*rho_i*bnd%ice%grid%area(ii,jj))  ! m /s * kg/m3 * m2 = kg/s
             endif
           enddo
         enddo
@@ -3612,7 +3660,9 @@ contains
 
         if (cmn%mask_ice(i,j).eq.0) then
           ! grid cell not covered by ice sheet model domain(s), use calving computed in the land model, no basal melt
-          cmn%calving_ice(i,j) = cmn%calving_ice_l(i,j)
+          ! substract ice accumulation from prescribed ice sheet changes (if applicable)
+          !cmn%calving_ice(i,j) = cmn%calving_ice_l(i,j)
+          cmn%calving_ice(i,j) = max(0._wp, cmn%calving_ice_l(i,j) - scale_runoff_ice*cmn%acc_ice_i_mon(i,j,mon)) 
           cmn%bmelt_grd(i,j) = 0._wp
           cmn%bmelt_flt(i,j) = 0._wp
         else 
@@ -3996,6 +4046,7 @@ contains
     cmn%runoff_ice_l = 0._wp
     cmn%calving_ice_l = 0._wp
     cmn%melt_ice_i_mon = 0._wp
+    cmn%acc_ice_i_mon = 0._wp
     cmn%runoff_ice_i_mon = 0._wp
     cmn%calving_ice_i = 0._wp
     cmn%bmelt_grd_i = 0._wp
@@ -4182,6 +4233,7 @@ contains
     allocate(cmn%runoff_ice_l(ni,nj))
     allocate(cmn%calving_ice_l(ni,nj))
     allocate(cmn%melt_ice_i_mon(ni,nj,nmon_year)) 
+    allocate(cmn%acc_ice_i_mon(ni,nj,nmon_year)) 
     allocate(cmn%runoff_ice_i_mon(ni,nj,nmon_year)) 
     allocate(cmn%calving_ice_i(ni,nj))
     allocate(cmn%bmelt_grd_i(ni,nj))

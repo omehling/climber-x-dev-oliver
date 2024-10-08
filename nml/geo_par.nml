@@ -21,9 +21,8 @@
  l_close_hudson   = F           ! enforce closed Hudson strait?
  l_close_baltic   = F           ! enforce disconnected Baltic Sea?
  l_fix_cell_stab  = F           ! enforce that special cell causing instabilities in ocean model is always wet?
- l_fix_agul       = F
-
- h_ice_min = 10.                 ! m, minimum ice thickness for grid cell to be considered covered by ice sheet
+ n_coast_cells = 10             ! number of coastal cells over which runoff is spread
+ h_ice_min = 10.                ! m, minimum ice thickness for grid cell to be considered covered by ice sheet
 
  !-------------------------------------------------------
  ! reference high resolution geo file 
@@ -41,7 +40,12 @@
  z_bed_rel_file  = "input/RTopo-2.0.1_10min_z_bed_rel_icefree_LLRA.nc" !"input/VILMA_zbed_relaxed_icefree.nc"
 
  !-------------------------------------------------------
- ! VILMA solid Earth model
+ ! glacial isostatic adjustment (used only if i_geo==1)
+ !-------------------------------------------------------
+ gia_time_lag = 3000.   ! years, time lag of the relaxing asthenosphere
+
+ !-------------------------------------------------------
+ ! VILMA solid Earth model (used only if i_geo==2)
  !-------------------------------------------------------
  l_visc_3d = T          ! use 3d viscosity structure?
  visc_1d_file = visko_80_420_122_Clemens.inp    ! name of file containing 1d viscosity structure, used only if l_visc_3d==F
@@ -58,19 +62,16 @@
  lake_sea_z_crit = 0.       ! m, critical deepest point lake topography for 'sea lake' (only for i_lakes==2)
 
  !-------------------------------------------------------
- ! glacial isostatic adjustment (used only if i_geo==1)
+ ! deep ocean origin point coordinates 
  !-------------------------------------------------------
- gia_time_lag = 3000.   ! years, time lag of the relaxing asthenosphere
-
-
  lon_ocn_origin = -150       ! longitude of ocean origin point (point which is always ocean)
  lat_ocn_origin = 0          ! latitude of ocean origin point (point which is always ocean)
 
- n_coast_cells = 10          ! number of coastal cells over which runoff is spread
-
+ !-------------------------------------------------------
+ ! parameters for topography-derived quantities
+ !-------------------------------------------------------
  i_z_min_max = 1
- i_z_sur_std = 2
- sigma_filter = 100.        ! km
+ sigma_filter = 100.        ! km, sigma for topography smoothing for sub-grid standard deviation
 
  !-------------------------------------------------------
  ! geothermal heat flux
@@ -84,6 +85,6 @@
  !-------------------------------------------------------
  sed_file = "input/sediment_thickness_Laske_etal_2013.nc"
 
-  l_write_timer = F             ! write simulation times of the different atm model components to standard output?
+ l_write_timer = F             ! write simulation times of the different atm model components to standard output?
  l_output_hires = T
 /

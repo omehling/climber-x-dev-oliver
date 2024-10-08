@@ -92,6 +92,7 @@ module lnd_params
     logical :: l_prc_intercept
     integer :: i_runoff
     logical :: l_runoff_icemelt
+    integer :: i_evp_soil
     real(wp) :: theta_crit_evp
     real(wp) :: p_psi_min
     real(wp) :: p_psi_max
@@ -147,6 +148,7 @@ module lnd_params
     logical :: l_fsnow_orog
     real(wp) :: c_fsnow
     real(wp) :: c_fsnow_orog
+    real(wp) :: z_veg_std_min
   end type
   type(snow_par_type) :: snow_par
 
@@ -719,6 +721,7 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","l_fsnow_orog" ,snow_par%l_fsnow_orog)
     call nml_read(filename,"lnd_par","c_fsnow" ,snow_par%c_fsnow)
     call nml_read(filename,"lnd_par","c_fsnow_orog" ,snow_par%c_fsnow_orog)
+    call nml_read(filename,"lnd_par","z_veg_std_min" ,snow_par%z_veg_std_min)
 
     call nml_read(filename,"lnd_par","l_ice_albedo_semi",l_ice_albedo_semi)
     call nml_read(filename,"lnd_par","alb_ice",alb_ice)
@@ -734,6 +737,7 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","i_cond_theta",hydro_par%i_cond_theta)
     call nml_read(filename,"lnd_par","i_wtab",hydro_par%i_wtab)
     call nml_read(filename,"lnd_par","i_fwet",hydro_par%i_fwet)
+    call nml_read(filename,"lnd_par","i_evp_soil",hydro_par%i_evp_soil)
     call nml_read(filename,"lnd_par","theta_crit_evp",hydro_par%theta_crit_evp)
     call nml_read(filename,"lnd_par","p_psi_min",hydro_par%p_psi_min)
     call nml_read(filename,"lnd_par","p_psi_max",hydro_par%p_psi_max)

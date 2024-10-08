@@ -49,7 +49,7 @@ module geo_mod
   use fill_ocean_mod, only : fill_ocean
   use topo_fill_mod, only : topo_fill
   use topo_filter_mod, only : topo_filter
-  use vilma_model, only : vilma_init, vilma_update, vilma_end
+  use vilma_model, only : vilma_init, vilma_update, vilma_end, vilma_write_restart
   use gia_mod, only : gia_init, gia_update
   use q_geo_mod, only : geo_heat
   use sed_mod, only : sed
@@ -73,17 +73,16 @@ contains
   ! Function :  g e o _ i n i t
   ! Purpose  :  initialize geo
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine geo_init(geo, bnd_geo_grid, z_bed, bnd_ice_grid, h_ice, &
-                      z_bed_ref)
+  subroutine geo_init(geo, bnd_geo_grid, z_bed, z_bed_ref, bnd_ice_grid, h_ice)
 
     implicit none
 
     type(geo_class) :: geo 
     type(grid_class), intent(in) :: bnd_geo_grid
     real(wp), dimension(:,:), intent(in) :: z_bed
+    real(wp), dimension(:,:), intent(in) :: z_bed_ref
     type(grid_class), intent(in) :: bnd_ice_grid
     real(wp), dimension(:,:), intent(in) :: h_ice
-    real(wp), dimension(:,:), intent(out) :: z_bed_ref
 
     integer :: i, j, nocn
     integer :: ni_rel, nj_rel
@@ -96,7 +95,6 @@ contains
     real(wp), dimension(:), allocatable :: lat_rel
     integer, dimension(:), allocatable :: mask_cell
     real(wp), dimension(:,:), allocatable :: tmp
-    integer :: ni_bnd, nj_bnd, ni_geo, nj_geo
     real(wp), dimension(:,:), allocatable :: z_bed_anom
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
@@ -105,12 +103,10 @@ contains
     type(map_class) :: map_rel_to_geo
     type(map_class) :: map_bndgeo_to_geo
     type(map_class) :: map_bndice_to_geo
-    type(map_class) :: map_geo_to_bndgeo
     type(map_scrip_class) :: maps_hires_to_lowres
     type(map_scrip_class) :: maps_rel_to_geo
     type(map_scrip_class) :: maps_bndgeo_to_geo
     type(map_scrip_class) :: maps_bndice_to_geo
-    type(map_scrip_class) :: maps_geo_to_bndgeo
 
 
     ! read geo parameters
@@ -190,38 +186,7 @@ contains
     !-------------------------------------------------------------------
 
     call nc_read(trim(geo_ref_file),"bedrock_topography",geo%hires%z_bed_ref)
-
-    ! interpolate reference bedrock topography to bnd%geo grid resolution
-
-    ni_bnd = bnd_geo_grid%G%nx
-    nj_bnd = bnd_geo_grid%G%ny
-    ni_geo = geo%hires%grid%G%nx
-    nj_geo = geo%hires%grid%G%ny
-
-    if (bnd_geo_grid%name==geo%hires%grid%name) then
-      ! grids are equal, use geo%hires as reference
-      z_bed_ref = geo%hires%z_bed_ref
-    else
-
-      if (i_map==1) then
-
-        ! initialize map
-        call map_init(map_geo_to_bndgeo,geo%hires%grid,bnd_geo_grid, &
-          lat_lim=10._dp*(geo%hires%grid%lat(1,2)-geo%hires%grid%lat(1,1)),dist_max=1.e6_dp,max_neighbors=10)
-        ! map reference topography to fake_geo domain
-        call map_field(map_geo_to_bndgeo,"zbedref",geo%hires%z_bed_ref,z_bed_ref,method="radius")
-
-      else if (i_map==2) then
-
-        ! SCRIP mapping initialization
-        call map_scrip_init(maps_geo_to_bndgeo,geo%hires%grid,bnd_geo_grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
-        ! map reference topography to fake_geo domain
-        call map_scrip_field(maps_geo_to_bndgeo,"zbedref",geo%hires%z_bed_ref,z_bed_ref,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[5._dp*bnd_geo_grid%G%dx,bnd_geo_grid%G%dx])
-
-      endif
-
-    endif
+    call nc_read(trim(geo_ref_file),"ice_thickness",geo%hires%h_ice_ref)
 
     !------------------------------------------------------------------------
     ! restart 
@@ -403,10 +368,6 @@ contains
     ! reference present day topography and fractions
     !-------------------------------------------------------------------
 
-    ! read bedrock elevation and ice thickness
-    call nc_read(trim(geo_ref_file),"bedrock_topography",geo%hires%z_bed_ref)
-    call nc_read(trim(geo_ref_file),"ice_thickness",geo%hires%h_ice_ref)
-
     ! derive mask and topography
     ! initially land everywhere
     geo%hires%mask_ref = 1 
@@ -587,9 +548,11 @@ contains
     endif
 
     !-------------------------------------------------------------------
-    ! initialize VILMA, for some reason this is needed even if VILMA is not used later
+    ! initialize VILMA
     !-------------------------------------------------------------------
-    !call vilma_init(geo%hires%grid, geo%hires%z_bed, geo%hires%h_ice) ! fixme, what should the reference topography be? Unloaded? Relaxed?
+    if (flag_geo .and. i_geo.eq.2) then
+      call vilma_init(geo%hires%grid, geo%hires%z_bed_ref, geo%hires%h_ice_ref, geo%hires%h_ice) 
+    endif
 
     print*
     print*,'======================================================='
@@ -650,16 +613,12 @@ contains
       !-------------------------------------------------------------------
       ! VILMA solid Earth model
 
-      ! initialize VILMA 
-      if (firstcall) then
-        call vilma_init(geo%hires%grid, geo%hires%z_bed, geo%hires%h_ice) ! fixme, what should the reference topography be? Unloaded? Relaxed?
+      if (.not.firstcall) then
+        ! takes current ice load (thickness) as input
+        ! returns relative sea level and new bedrock elevation
+        call vilma_update(geo%hires%grid, geo%hires%h_ice, & ! in
+          geo%hires%rsl, geo%hires%z_bed)    ! out
       endif
-
-      ! call VILMA 
-      ! takes current ice load (thickness) as input
-      ! returns relative sea level and new bedrock elevation
-      call vilma_update(geo%hires%grid, geo%hires%h_ice, & ! in
-        geo%hires%rsl, geo%hires%z_bed)    ! out
 
     endif
     !$ time2 = omp_get_wtime()
@@ -737,13 +696,6 @@ contains
     geo%hires%z_topo_fil)   ! out
   !$ time2 = omp_get_wtime()
   !$ if(l_write_timer) print *,'topo_filter',time2-time1
-
-  if (i_geo==2) then
-    ! derive global mean sea level, diagnostic only
-    ! area-weighted? fixme todo
-    nocn = count(geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3) 
-    geo%sea_level = sum(geo%hires%rsl, geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3) / real(nocn,wp)
-  endif
 
   !-------------------------------------------------------------------
   ! compute ocean fraction of coarse grid and make sure all ocean cells are connected
@@ -934,6 +886,13 @@ contains
   geo%lake_area_tot = sum(area_dp,geo%hires%mask.eq.4)
 
   !-------------------------------------------------------------------
+  ! diagnostic global mean relative sea level 
+  !-------------------------------------------------------------------
+  if (i_geo==2) then
+    geo%sea_level = sum(geo%hires%rsl*area_dp, mask=geo%hires%mask.eq.2 .or. geo%hires%mask.eq.3)/geo%ocn_area_tot
+  endif
+
+  !-------------------------------------------------------------------
   ! compute Bering Strait cross-sectional area
   !-------------------------------------------------------------------
   geo%A_bering = 1.e15_wp
@@ -949,7 +908,6 @@ contains
       geo%A_bering = min(geo%A_bering,A_bering)
     endif
   enddo
-  print *,'A_bering',geo%A_bering
 
   if (firstcall) firstcall = .false.
 
@@ -970,7 +928,7 @@ contains
     type(geo_class) :: geo
 
 
-    if (i_geo==2) then
+    if (flag_geo .and. i_geo==2) then
       ! end VILMA
       call vilma_end
     endif
@@ -1069,10 +1027,11 @@ contains
   ! Function :  g e o _ w r i t e _ r e s t a r t
   ! Purpose  :  Write restart netcdf file 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine geo_write_restart(fnm,geo)
+  subroutine geo_write_restart(dir,fnm,geo)
 
     implicit none
 
+    character (len=*) :: dir
     character (len=*) :: fnm
     type(geo_class) :: geo
 
@@ -1083,6 +1042,7 @@ contains
     call nc_write_dim(fnm,"lat",x=geo%hires%grid%lat(1,:),axis="y")
 
     call nc_write(fnm,"sea_level", geo%sea_level, dim1="g", long_name="sea_level",units="m")
+    call nc_write(fnm,"V_ice_af", geo%V_ice_af, dim1="g", long_name="volume of ice above floatation",units="m3")
 
     call nc_write(fnm,"z_bed ", geo%hires%z_bed , dims=["lon","lat"],long_name="z_bed ",units="m")
     call nc_write(fnm,"z_topo", geo%hires%z_topo, dims=["lon","lat"],long_name="z_topo",units="m") 
@@ -1090,6 +1050,9 @@ contains
     call nc_write(fnm,"rsl   ", geo%hires%rsl   , dims=["lon","lat"],long_name="rsl   ",units="m")
     call nc_write(fnm,"mask  ", geo%hires%mask  , dims=["lon","lat"],long_name="mask  ",units="1")
 
+    if (flag_geo .and. i_geo.eq.2) then
+      call vilma_write_restart(dir)
+    endif
 
    return
 
@@ -1108,6 +1071,7 @@ contains
     type(geo_class) :: geo
 
     call nc_read(fnm,"sea_level", geo%sea_level      )
+    call nc_read(fnm,"V_ice_af",  geo%V_ice_af       )
 
     call nc_read(fnm,"z_bed    ", geo%hires%z_bed    )
     call nc_read(fnm,"z_topo   ", geo%hires%z_topo   ) 

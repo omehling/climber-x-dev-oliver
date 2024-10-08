@@ -62,6 +62,7 @@ module ocn_grid
   integer, dimension(:,:), allocatable :: k1       !! index of the first wet ocean grid cell, counting starts from bottom []
   integer :: k1_shelf
   integer :: k1_1000
+  integer :: k1_3000
   integer :: k_mix_brines
   integer, dimension(:,:,:), allocatable :: ku       !! index of the first wet ocean grid cell on velocity grid (u,v) []
   logical, dimension(:,:), allocatable :: getj     !!  array to avoid J term in flat regions
@@ -356,6 +357,18 @@ contains
     enddo
     print *,'k1_1000',k1_1000
     print *,'depth 1000',zw(k1_1000-1),zro(k1_1000)
+
+    ! define 3000 m level depth
+    k1_3000 = maxk
+    tv1 = 3000._wp
+    do k=maxk,1,-1
+      if (abs(zw(k-1)+3000._wp).lt.tv1) then
+        k1_3000 = k
+        tv1 = abs(zw(k-1)+3000._wp)
+      endif
+    enddo
+    print *,'k1_3000',k1_3000
+    print *,'depth 3000',zw(k1_3000-1),zro(k1_3000)
 
     ! define depth of mixing brines 
     k_mix_brines = maxk
