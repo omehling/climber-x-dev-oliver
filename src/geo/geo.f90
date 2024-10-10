@@ -234,7 +234,9 @@ contains
         endwhere
       endif
 
-      ! initialize ice sheet thickness, map from bnd to geo
+      ! initialize ice sheet thickness with reference field
+      geo%hires%h_ice = geo%hires%h_ice_ref
+      ! map from bnd to geo
       if (bnd_ice_grid%name==geo%hires%grid%name) then
         geo%hires%h_ice = h_ice
       else
@@ -244,7 +246,7 @@ contains
           call map_field(map_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="nn")
         else if (i_map==2) then
           call map_scrip_init(maps_bndice_to_geo,bnd_ice_grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          call map_scrip_field(maps_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp)
+          call map_scrip_field(maps_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false.)
           allocate(mask_ice(bnd_ice_grid%G%nx,bnd_ice_grid%G%ny))
           allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
           where (h_ice>h_ice_min) 

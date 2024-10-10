@@ -3052,7 +3052,7 @@ contains
         if (i_map==1) then
           call map_field(map_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="nn") 
         else if (i_map==2) then
-          call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp, &
+          call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
             filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
           allocate(mask_ice(bnd%ice%grid%G%nx,bnd%ice%grid%G%ny))
           allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
