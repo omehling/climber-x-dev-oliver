@@ -35,7 +35,7 @@ module geo_mod
   use ncio
   use geo_params, only : i_geo, geo_ref_file
   use geo_params, only : z_bed_rel_file, z_bed_1min_file, sigma_filter
-  use geo_params, only : geo_params_init, l_connect_ocn, f_crit, n_coast_cells
+  use geo_params, only : geo_params_init, l_connect_ocn, f_crit, n_coast_cells, i_fix_cell_grl
   use geo_params, only : h_ice_min
   use geo_params, only : l_close_hudson, l_close_baltic
   use geo_params, only : lon_ocn_origin, lat_ocn_origin
@@ -689,6 +689,16 @@ contains
   if (.not.flag_lakes) then
     where (geo%hires%mask.eq.1 .and. geo%hires%z_topo.le.0._wp)
       geo%hires%mask = 4  ! lake
+    endwhere
+  endif
+
+  if (i_fix_cell_grl.eq.1) then
+    ! always ocean
+    geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34)) = 2
+  else if (i_fix_cell_grl.eq.2) then
+    ! never ocean
+    where (geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34))==2)
+      geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34)) = 1
     endwhere
   endif
 

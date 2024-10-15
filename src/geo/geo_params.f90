@@ -52,7 +52,7 @@ module geo_params
   logical :: l_close_bering
   logical :: l_close_hudson
   logical :: l_close_baltic
-  logical :: l_fix_cell_stab
+  integer :: i_fix_cell_grl
 
   real(wp) :: h_ice_min
 
@@ -116,7 +116,7 @@ subroutine geo_par_load(filename)
     call nml_read(filename,"geo_par","l_close_bering",l_close_bering)
     call nml_read(filename,"geo_par","l_close_hudson",l_close_hudson)
     call nml_read(filename,"geo_par","l_close_baltic",l_close_baltic)
-    call nml_read(filename,"geo_par","l_fix_cell_stab",l_fix_cell_stab)
+    call nml_read(filename,"geo_par","i_fix_cell_grl",i_fix_cell_grl)
     call nml_read(filename,"geo_par","h_ice_min",h_ice_min)
     call nml_read(filename,"geo_par","i_z_min_max",i_z_min_max)
     call nml_read(filename,"geo_par","sigma_filter",sigma_filter)
