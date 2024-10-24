@@ -35,7 +35,7 @@ module geo_mod
   use ncio
   use geo_params, only : i_geo, geo_ref_file
   use geo_params, only : z_bed_rel_file, z_bed_1min_file, sigma_filter
-  use geo_params, only : geo_params_init, l_connect_ocn, f_crit, n_coast_cells
+  use geo_params, only : geo_params_init, l_connect_ocn, f_crit, n_coast_cells, i_fix_cell_grl
   use geo_params, only : h_ice_min
   use geo_params, only : l_close_hudson, l_close_baltic
   use geo_params, only : lon_ocn_origin, lat_ocn_origin
@@ -234,7 +234,9 @@ contains
         endwhere
       endif
 
-      ! initialize ice sheet thickness, map from bnd to geo
+      ! initialize ice sheet thickness with reference field
+      geo%hires%h_ice = geo%hires%h_ice_ref
+      ! map from bnd to geo
       if (bnd_ice_grid%name==geo%hires%grid%name) then
         geo%hires%h_ice = h_ice
       else
@@ -244,7 +246,7 @@ contains
           call map_field(map_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="nn")
         else if (i_map==2) then
           call map_scrip_init(maps_bndice_to_geo,bnd_ice_grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          call map_scrip_field(maps_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp)
+          call map_scrip_field(maps_bndice_to_geo,"h_ice",h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false.)
           allocate(mask_ice(bnd_ice_grid%G%nx,bnd_ice_grid%G%ny))
           allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
           where (h_ice>h_ice_min) 
@@ -687,6 +689,16 @@ contains
   if (.not.flag_lakes) then
     where (geo%hires%mask.eq.1 .and. geo%hires%z_topo.le.0._wp)
       geo%hires%mask = 4  ! lake
+    endwhere
+  endif
+
+  if (i_fix_cell_grl.eq.1) then
+    ! always ocean
+    geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34)) = 2
+  else if (i_fix_cell_grl.eq.2) then
+    ! never ocean
+    where (geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34))==2)
+      geo%hires%mask(i0_topo(32):i1_topo(32),j0_topo(34):j1_topo(34)) = 1
     endwhere
   endif
 

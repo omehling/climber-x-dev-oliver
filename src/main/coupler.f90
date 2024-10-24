@@ -317,6 +317,9 @@ module coupler
       real(wp), dimension(:,:,:), allocatable :: s_lake_imo    !! lake salinity for basal melt [psu]
       integer, dimension(:), allocatable :: idivide_pac_atl 
       integer, dimension(:), allocatable :: idivide_atl_indpac
+      real(wp) :: eccentricity
+      real(wp) :: precession
+      real(wp) :: obliquity
       real(wp), dimension(:,:,:),   allocatable :: cosz  !! cosine of solar zenith angle, with diurnal cycle []
       real(wp), dimension(:,:),   allocatable :: coszm  !! radiation weighted mean cosine of solar zenith angle []
       real(wp), dimension(:,:,:),   allocatable :: solar  !! insolation at top of the atmosphere, with diurnal cycle [W/m2]
@@ -381,6 +384,10 @@ contains
     endif
 
     if (time_soy_atm) then
+      ! orbital parameters
+      atm%eccentricity = cmn%eccentricity
+      atm%precession   = cmn%precession
+      atm%obliquity    = cmn%obliquity
       ! well mixed greenhouse gas concentrations
       atm%co2 = cmn%co2_rad
       atm%ch4 = cmn%ch4_rad
@@ -3045,7 +3052,7 @@ contains
         if (i_map==1) then
           call map_field(map_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="nn") 
         else if (i_map==2) then
-          call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp, &
+          call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
             filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
           allocate(mask_ice(bnd%ice%grid%G%nx,bnd%ice%grid%G%ny))
           allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
@@ -3277,6 +3284,11 @@ contains
       if (.not.flag_geo) then
         cmn%sea_level = bnd%sea_level
       endif
+
+      ! orbital parameters
+      cmn%eccentricity = bnd%eccentricity
+      cmn%precession   = bnd%precession
+      cmn%obliquity    = bnd%obliquity
 
       cmn%solar  = bnd%solar
       cmn%solarm = bnd%solarm

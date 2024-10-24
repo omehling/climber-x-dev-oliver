@@ -31,7 +31,7 @@ module hires_to_lowres_mod
   use climber_grid, only : lat
   use geo_params, only : f_crit, f_crit_eq
   use geo_params, only : l_ocn_below_shelf
-  use geo_params, only : l_close_panama, l_close_bering, l_fix_cell_stab
+  use geo_params, only : l_close_panama, l_close_bering
   use geo_params, only : i_z_min_max
   use geo_grid, only : ni, nj, n_topo_sur, i_topo_sur, j_topo_sur, i0_topo, i1_topo, j0_topo, j1_topo
 
@@ -163,10 +163,6 @@ contains
       if (l_close_bering) then
         ! close Bering, ocean fraction=0
         f_ocn(1:4,32) = 0._wp
-      endif
-      ! fix to keep special cell causing instabilities in ocean model always wet 
-      if (l_fix_cell_stab) then
-        f_ocn(46,20) = max(0.10001_wp,f_ocn(46,20))
       endif
 
       ! land fraction

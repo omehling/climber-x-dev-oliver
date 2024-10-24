@@ -20,7 +20,7 @@
  l_close_bering   = F           ! enforce closed Bering strait?
  l_close_hudson   = F           ! enforce closed Hudson strait?
  l_close_baltic   = F           ! enforce disconnected Baltic Sea?
- l_fix_cell_stab  = F           ! enforce that special cell causing instabilities in ocean model is always wet?
+ i_fix_cell_grl   = 0
  n_coast_cells = 10             ! number of coastal cells over which runoff is spread
  h_ice_min = 10.                ! m, minimum ice thickness for grid cell to be considered covered by ice sheet
 

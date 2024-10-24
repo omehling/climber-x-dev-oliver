@@ -30,7 +30,7 @@
 
 &ytopo
     solver              = "impl-lis"        ! "expl", "impl-lis"
-    calv_flt_method     = "threshold" !"vm-l19"          ! "zero", "simple", "flux", "vm-l19", "kill"
+    calv_flt_method     = "vm-l19"          ! "zero", "threshold", "flux", "vm-l19", "kill"
     calv_grnd_method    = "stress-b12"      ! "zero", "stress-b12"
     bmb_gl_method       = "pmp"             ! "fcmp": flotation; "fmp": full melt; "pmp": partial melt; "nmp": no melt
     fmb_method          = 1                 ! 0: prescribe boundary field fmb_shlf; 1: calculate proportional fmb~bmb_shlf.
@@ -45,6 +45,7 @@
     topo_rel_field      = "H_ref"           ! "H_ref" or "H_ice_n"
     calv_tau            = 1.0               ! [a] Characteristic calving time
     calv_thin           = 30.0              ! [m/yr] Calving rate to apply to very thin ice
+    H_ref_calv_thin     = 50.0             ! [m] Reference ice thickness for thin ice calving
     H_min_grnd          = 0.1               ! [m] Minimum ice thickness at grounded margin (thinner ice is ablated) - helps with stability
     H_min_flt           = 0.0               ! [m] Minimum ice thickness at floating margin (thinner ice is ablated) - helps with stability
     sd_min              = 100.0             ! [m] calv_grnd(z_bed_sd <= sd_min) = 0.0 
@@ -68,8 +69,8 @@
     zb_deep_1           = -1000.0 !-2000.0           ! [m] Bedrock elevation to end transition to deep ocean
     zb_sigma            = 100e3             ! [m] Gaussian filtering of bedrock for calving transition to deep ocean
     dmb_alpha_max       = 60.0              ! [deg] Maximum angle of slope from coast at which to allow discharge
-    dmb_tau             = 50.0 !100.0              ! [yr]  Discharge timescale
-    dmb_sigma_ref       = 1.0 !300.0             ! [m]   Reference bed roughness
+    dmb_tau             = 20.0              ! [yr]  Discharge timescale
+    dmb_sigma_ref       = 300.0             ! [m]   Reference bed roughness
     dmb_m_d             = 3.0               ! [-]   Discharge distance scaling exponent
     dmb_m_r             = 0.0               ! [-]   Discharge resolution scaling exponent
 

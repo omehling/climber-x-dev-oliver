@@ -417,7 +417,8 @@ contains
     call nc_write_dim(fnm,"epoch",x=epoch(1:), units="ka BP", unlimited=.TRUE.,ncid=ncid)
     call nc_write_dim(fnm,"lon",x=lon,axis="x",ncid=ncid)
     call nc_write_dim(fnm,"lat",x=lat,axis="y",ncid=ncid)
-    call nc_write(fnm,"Ice", h_ice, dims=["lon","lat","epoch"],start=[1,1,iepoch],count=[ni,nj,1],long_name="Ice thickness",units="m",ncid=ncid)
+    !call nc_write(fnm,"Ice", h_ice, dims=["lon","lat","epoch"],start=[1,1,iepoch],count=[ni,nj,1],long_name="Ice thickness",units="m",ncid=ncid)
+    call nc_write(fnm,"Ice", h_ice_ref, dims=["lon","lat","epoch"],start=[1,1,iepoch],count=[ni,nj,1],long_name="Ice thickness",units="m",ncid=ncid)
     call nc_close(ncid)
 
 

@@ -56,6 +56,10 @@ module atm_def
       real(wp) :: had_fi   !! ITCZ position latitude (radians)
       real(wp) :: had_width   !! width of Hadley cell (radians)
 
+      real(wp) :: eccentricity
+      real(wp) :: precession
+      real(wp) :: obliquity
+
       real(wp), allocatable, dimension(:,:,:) :: solar
       real(wp), allocatable, dimension(:,:) :: solarm
       real(wp), allocatable, dimension(:,:,:) :: cosz
