@@ -38,41 +38,39 @@ class DictAction(argparse.Action):
 def main():
     '''Main subroutine to run one simulation.'''
 
-    # Define name of standard info json configuration file 
-    info_file = os.path.basename(__file__) + ".js"
+    # Define configuration filenames
+    info_file   = "config/" + os.path.basename(__file__) + "_info.json"
+    queues_file = "config/" + os.path.basename(__file__) + "_queues.json"
+    config_file = os.path.basename(__file__) + "_config"
     
-    if os.path.isfile(info_file):
+    # Load configuration files
+    info   = json.load(open(info_file))
+    queues = json.load(open(queues_file))
+
+    if os.path.isfile(config_file):
         # If file is found, load it up
-        info = json.load(open(info_file))
+        config_defaults = json.load(open(config_file))
     else: 
         # Copy file from config directory, inform user, 
         # and then load it. 
-        # error_msg = ("Required json file '{}' containing run options not found. \n".format(info_file) +
-        #              "This is probably the first time you are running this script. \n" +
-        #              "The default file will be generated now. Check it is correct, \n" +
-        #              "or copy your own file, and then run this script again.")
-        # print(error_msg)
+        error_msg = ("Required json file containing hpc job defaults not found: {} \n".format(config_file) +
+                     "This is probably the first time you are running this script. \n" +
+                     "Copy the default file from the config directory using the following command, \n" +
+                     "check the settings and then try again: \n\n cp config/{} ./ \n".format(config_file))
 
-        info_file_default = os.path.join("config",info_file)
-        shutil.copy(info_file_default,info_file)
-        
-        # Load info file 
-        info = json.load(open(info_file))
-
-        error_msg = ("Missing required json configuration file.\n" +
-                     "Copied {} to {}.\n".format(info_file_default,info_file) +
-                     "Confirm defaults are correct and try again.")
         raise Exception(error_msg)
+
 
     ## Get defaults for arguments ##
     default_jobname  = info['defaults']['jobname']
     default_email    = info['defaults']['email']
     default_group    = info['defaults']['group']
-    default_omp      = info['defaults']['omp']
+    default_hpc      = info['defaults']['hpc']
+    default_template = info['defaults']['job_template']
     default_wall     = info['defaults']['wall']
     default_qos      = info['defaults']['qos']
     default_part     = info['defaults']['partition'] 
-    default_template = info['defaults']['job_template']
+    default_omp      = info['defaults']['omp']
     
     # Substitute USER for actual username in email if found:
     default_email   = default_email.replace('USER',os.environ.get('USER'))
@@ -186,17 +184,8 @@ def main():
     # Also extract executable filename 
     exe_fname = os.path.basename(exe_path)
 
-    # Yelmo-specific:
-    par_fname  = os.path.basename(par_path)
-    
-    # Yelmo-specific:
-    # Executable assumed to take parameter file as command line argument
-    # Define argument depending on whether running from rundir (copy_exec==True)
-    # or from central directory. 
-    if copy_exec: 
-        exe_args = os.path.basename(par_path)
-    else:
-        exe_args = os.path.join(rundir,par_fname)
+    # No arguments expected
+    exe_args = ""
 
     # Define prefix part of command for running with a profiler (eg vtune)
     if with_profiler:
@@ -207,16 +196,6 @@ def main():
             profiler_prefix = "amplxe-cl -c hotspots -r {} -- ".format(rundir)
     else: 
         profiler_prefix = ""
-
-    ### Yelmo-specific ###
-
-    # Make sure input files exist 
-    if not os.path.isfile(par_path):
-        print("Input file does not exist: {}".format(par_path))
-        sys.exit() 
-
-    ### END Yelmo-specific ###
-
 
     # Make sure input file(s) exist 
     if not os.path.isfile(exe_path):
@@ -490,14 +469,8 @@ def get_git_revision_hash():
     githash = subp.check_output(['git', 'rev-parse', 'HEAD']).strip()
     return githash.decode("ascii") 
 
-def generate_jobscript(template,cmd,jobname,group,email,qos,wall,partition,omp,queues=None):
-    '''Definition of the job script based on a template file and 
-    fields in < > that can be substituted.'''
 
-# Extra parameter options to consider:
-##SBATCH --partition=ram_gpu
-##SBATCH --mem=50000 
-    
+def parse_hpc_queue(queue,queues):
     # Check queue information if available
     if not queues == None: 
 
@@ -512,6 +485,12 @@ def generate_jobscript(template,cmd,jobname,group,email,qos,wall,partition,omp,q
         #     error_msg = "Error generating jobscript. Wall time too large for desired queue. \n" \
         #                 "wall={} greater than limit of {} for queue '{}'".format(wall,queues[qos]['wall'],qos)
         #     raise Exception(error_msg)
+    
+    return qos, partition, wall
+
+def generate_jobscript(template,cmd,jobname,group,email,qos,wall,partition,omp):
+    '''Definition of the job script based on a template file and 
+    fields in < > that can be substituted.'''
 
     # If omp has been set, generate a jobscript string with appropriate settings
     if omp > 0:

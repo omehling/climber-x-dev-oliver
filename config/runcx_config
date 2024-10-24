@@ -1,0 +1,13 @@
+{
+    "defaults" :
+    {
+        "jobname"       : "ClimberX",
+        "email"         : "",
+        "group"         : "megarun", 
+        "hpc"           : "pik_hpc2024",
+        "queue"         : "priority",
+        "wall"          : "24:00:00",
+        "omp"           : 16
+    }
+
+}

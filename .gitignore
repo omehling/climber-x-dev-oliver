@@ -1,4 +1,5 @@
 Makefile
+runcx_config
 climber.x
 input
 output

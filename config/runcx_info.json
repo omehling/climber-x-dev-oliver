@@ -1,15 +1,4 @@
 {
-    "defaults" :
-    {
-        "jobname"       : "ClimberX",
-        "email"         : "USER@pik-potsdam.de",
-        "group"         : "megarun", 
-        "omp"           : 16,
-        "wall"          : 24, 
-        "qos"           : "priority",
-        "partition"     : "haswell",
-        "job_template"  : "config/pik_submit_slurm"
-    },  
 
     "exe_aliases" : 
         {   "climber" : "climber.x",
@@ -25,7 +14,8 @@
             "lnd"  : "lnd_par",
             "ocn"  : "ocn_par",
             "sic"  : "sic_par",
-            "smb"  : "smb_par"
+            "smb"  : "smb_par",
+            "hose" : "hyster_hosing"
         },
 
     "par_paths" :
@@ -39,11 +29,12 @@
             "ocn"  : "nml/ocn_par.nml",
             "smb"  : "nml/smb_par.nml",
             "icey" : "nml/ice_yelmo_par.nml",
-            "ices" : "nml/ice_sico_par.nml"
+            "ices" : "nml/ice_sico_par.nml",
+            "hyst" : "nml/hyster_ctrl.nml"
         },
 
     "files" : 
-        ["nml/ice_grids.nml","nml/yelmo_const_Earth.nml"], 
+        ["nml/ice_grids.nml"], 
 
     "dir-special" :
     {
@@ -51,16 +42,6 @@
     },
 
     "links" : 
-        ["input", "maps", "restart", "ice_data"],
+        ["input", "maps", "restart", "ice_data"]
 
-    "job_queues" :
-        {   "priority" :
-            {   "wall" : 24  },
-            "short" :
-            {   "wall" : 24  },
-            "medium" :
-            {   "wall" : 168 },
-            "long" :
-            {   "wall" : 720 }
-        }
 }
