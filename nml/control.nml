@@ -175,7 +175,7 @@
                                     ! 0 = constant (d13c_emis_const)
                                     ! 1 = prescribed d13C of CO2 emissions from file (d13C_emis_file)
  d13C_emis_const = -26.             ! permil, constant d13C of CO2 emissions  
- d13C_emis_file = input/d13C_co2_emis.nc
+ d13C_emis_file = "input/d13C_co2_emis.nc"
 
  !-------------------------------------------------------
  ! isotopes and other settings for simulations with flag_co2==true
