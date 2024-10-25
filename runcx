@@ -480,9 +480,27 @@ def generate_jobscript(template,cmd,jobname,account,email,qos,wall,partition,omp
     '''Definition of the job script based on a template file and 
     fields in < > that can be substituted.'''
 
+    # If omp has been set, generate a jobscript string with appropriate settings
+    if omp > 0:
+        # Use openmp settings 
+
+        # Read in omp section template
+        omp_script = open(template+"_omp",'r').read()
+
+        # Now make substitutions to match argument choices 
+        omp_script = omp_script.replace('<OMP>',"{}".format(omp))
+    
+    else: 
+        # No openmp 
+        omp_script = "" 
+
+    
     # Read in jobscript template 
     job_script = open(template,'r').read()
 
+    # Substitute in omp section as needed to make full job script
+    job_script = job_script.replace('<OMPSECTION>',omp_script)
+    
     # Make additional substitutions to match argument choices 
     job_script = job_script.replace('<PARTITION>',partition)
     job_script = job_script.replace('<QOS>',qos)
