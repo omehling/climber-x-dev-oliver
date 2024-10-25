@@ -1,7 +1,10 @@
 {
 
+    "exe_default" : "climber.x",
+
     "exe_aliases" : 
         {   "climber" : "climber.x",
+            "cx"      : "climber.x",
             "mapping" : "mapping.x"
         },
     

@@ -2,7 +2,7 @@
 
     "pik_hpc2024" :
     {
-        "job_template"  : "config/pik_hpc2024_submit_slurm",
+        "job_template"  : "config/submit_slurm",
         
         "queues" :
         {   "priority" :
@@ -24,13 +24,48 @@
             {   "qos"  : "long",
                 "partition" : "standard",
                 "wall" : "720:00:00" 
+            },
+            "standby" :
+            {   "qos"  : "standby",
+                "partition" : "priority",
+                "wall" : "168:00:00" 
+            },
+            "standby_cancel" :
+            {   "qos"  : "standby_cancel",
+                "partition" : "priority",
+                "wall" : "168:00:00" 
+            },
+            "io" :
+            {   "qos"  : "io",
+                "partition" : "io",
+                "wall" : "72:00:00" 
+            },
+            "gpushort" :
+            {   "qos"  : "gpushort",
+                "partition" : "gpu",
+                "wall" : "24:00:00"  
+            },
+            "gpumedium" :
+            {   "qos"  : "gpumedium",
+                "partition" : "gpu",
+                "wall" : "168:00:00" 
+            },
+            "gpulong" :
+            {   "qos"  : "gpulong",
+                "partition" : "gpu",
+                "wall" : "720:00:00" 
+            },
+            "gpupreempt" :
+            {   "qos"  : "gpupreempt",
+                "partition" : "gpu",
+                "wall" : "720:00:00" 
             }
         }
     },
 
     "awi_albedo" :
     {
-        "job_template"  : "config/awi_albedo_submit_slurm",
+        "job_template"  : "config/submit_slurm",
         
         "queues" :
         {   "30min" :
@@ -58,7 +93,7 @@
 
     "dkrz_levante" :
     {
-        "job_template"  : "config/dkrz_levante_submit_slurm",
+        "job_template"  : "config/submit_slurm",
         
         "queues" :
         {   "compute" :
