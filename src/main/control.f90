@@ -390,7 +390,9 @@ contains
     narg = command_argument_count()
 
     ! Set default values (in case no arguments provided)
-    folder = "output/test/"
+    ! Default value assumes program is running within
+    ! current folder.
+    folder = "./"
 
     if (narg .gt. 0) then
       ! Get the last argument, the rest are ignored
