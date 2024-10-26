@@ -2,6 +2,8 @@
 
     "exe_default" : "climber.x",
 
+    "par_path_as_argument" : false,
+
     "exe_aliases" : 
         {   "climber" : "climber.x",
             "cx"      : "climber.x",

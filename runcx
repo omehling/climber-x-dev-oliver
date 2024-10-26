@@ -116,9 +116,10 @@ def main():
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-o',dest='rundir',metavar='RUNDIR',type=str,required=True,
          help='Path where simulation will run and store output.')
-    # Yelmo-specific:
-    #requiredNamed.add_argument('-n',dest='par_path',metavar='PAR_PATH',type=str,required=True,
-    #     help='Path to input parameter file/folder.')
+    
+    if info["par_path_as_argument"] is True:
+        requiredNamed.add_argument('-n',dest='par_path',metavar='PAR_PATH',type=str,required=True,
+            help='Path to input parameter file/folder.')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -140,8 +141,9 @@ def main():
     verbose     = args.v 
     par         = args.p 
     rundir      = args.rundir 
-    # Yelmo-specific:
-    #par_path    = args.par_path 
+    
+    if info["par_path_as_argument"] is True:
+        par_path    = args.par_path 
 
     # Define some variables based on default values (not parameters for now)
     jobname                 = hpc_config["jobname"]
@@ -192,8 +194,20 @@ def main():
     # Also extract executable filename 
     exe_fname = os.path.basename(exe_path)
 
-    # No arguments expected
-    exe_args = ""
+
+    if info["par_path_as_argument"] is True:
+        # Executable assumed to take parameter file as command line argument
+        # Define argument depending on whether running from rundir (copy_exec==True)
+        # or from central directory. 
+        if copy_exec: 
+            exe_args = os.path.basename(par_path)
+        else:
+            par_fname  = os.path.basename(par_path)
+            exe_args = os.path.join(rundir,par_fname)
+
+    else:
+        # No arguments expected
+        exe_args = ""
 
     # Define prefix part of command for running with a profiler (eg vtune)
     if with_profiler:
@@ -210,6 +224,12 @@ def main():
         print("Input file does not exist: {}".format(exe_path))
         sys.exit() 
     
+    if info["par_path_as_argument"] is True:
+        # Make sure input parameter file exists
+        if not os.path.isfile(par_path):
+            print("Input file does not exist: {}".format(par_path))
+            sys.exit() 
+
 
     ### Start the script to make the job, and then run it ############################
 
@@ -242,7 +262,9 @@ def main():
 
     # Get list of parameter files to manage
     par_paths = list(info["par_paths"].values())
-    #par_paths.append(par_path)   # Yelmo-specific: include parameter file provided at command line 
+
+    if info["par_path_as_argument"] is True:
+        par_paths.append(par_path)   # add included parameter file provided at command line too
 
     # Copy the default parameter files to the rundir 
     copy_files(par_paths,rundir)
