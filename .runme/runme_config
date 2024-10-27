@@ -6,5 +6,5 @@
     "omp"           : 16,
 
     "queues_file"   : ".runme/queues.json",
-    "info_file"     : ".runme/my_model_info.json"
+    "info_file"     : ".runme/climberx_info.json"
 }

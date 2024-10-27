@@ -63,7 +63,7 @@ echo cc_string_lnd $cc_string_lnd
 if [ $step -eq 1 ]
 then
 # preindustrial equilibrium spinup, climate only
-./runcx -s -q short -w 24:00:00 --omp 32 -o output/$outdir/preind  ctl.nyears=10000 ctl.i_write_restart=1
+./runme -s -q short -w 24:00:00 --omp 32 -o output/$outdir/preind  ctl.nyears=10000 ctl.i_write_restart=1
 fi
 
 ####################
