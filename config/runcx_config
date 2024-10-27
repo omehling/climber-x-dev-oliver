@@ -1,7 +1,0 @@
-{
-    "hpc"           : "pik_hpc2024",
-    "email"         : "",
-    "account"       : "megarun", 
-    "jobname"       : "ClimberX",
-    "omp"           : 16
-}

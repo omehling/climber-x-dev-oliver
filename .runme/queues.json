@@ -2,7 +2,7 @@
 
     "pik_hpc2024" :
     {
-        "job_template"  : "config/submit_slurm",
+        "job_template"  : ".runme/submit_slurm",
         
         "queues" :
         {   "priority" :
@@ -65,7 +65,7 @@
 
     "awi_albedo" :
     {
-        "job_template"  : "config/submit_slurm",
+        "job_template"  : ".runme/submit_slurm",
         
         "queues" :
         {   "30min" :
@@ -93,7 +93,7 @@
 
     "dkrz_levante" :
     {
-        "job_template"  : "config/submit_slurm",
+        "job_template"  : ".runme/submit_slurm",
         
         "queues" :
         {   "compute" :
