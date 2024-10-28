@@ -210,7 +210,7 @@ contains
                               cti_mean, cti_cdf, &
                               dyptop_k,dyptop_v,dyptop_xm,dyptop_fmax, &
                               w_snow_old,w_snow,w_snow_max,w_w,w_i,w_table_cum,f_wet_cum,tatm,t_soil,t_ice,t_lake, &
-                              h_snow,calving,runoff_sur,infiltration,w_table,f_wet,lake_water_tendency)
+                              h_snow,calving,runoff_sur,infiltration,w_table,f_wet,f_wet_max,cti_lim,lake_water_tendency)
 
 
     implicit none
@@ -229,11 +229,11 @@ contains
     real(wp), dimension(:), intent(inout) :: w_w, w_i
     real(wp), dimension(:), intent(out) :: h_snow, calving, runoff_sur
     real(wp), intent(out) :: lake_water_tendency
-    real(wp), intent(out) :: infiltration, w_table, f_wet
+    real(wp), intent(out) :: infiltration, w_table, f_wet, f_wet_max, cti_lim
 
     integer :: n, i1, i2
-    real(wp) :: f_sat, cti_lim, w1, w2, phi, rain_g, snow_g, H, H_m, H_star, wsnowold_m
-    real(wp) :: z, d_z, deficit, integral
+    real(wp) :: f_sat, w1, w2, phi, rain_g, snow_g, H, H_m, H_star, wsnowold_m
+    real(wp) :: z, d_z, deficit, integral, psi
     real(wp) :: f_ice_grd, f_veg, f_lake
     real(wp) :: infiltration_max, q_liq, sublimation, evaporation, dws
 
@@ -243,6 +243,8 @@ contains
     infiltration = 0._wp
     w_table = 0._wp
     f_wet = 0._wp
+    f_wet_max = 0._wp
+    cti_lim = 0._wp
     lake_water_tendency = 0._wp
 
     f_ice_grd = frac_surf(i_ice)
@@ -354,26 +356,53 @@ contains
 
       else if (hydro_par%i_wtab.eq.6) then
 
-        w_table = z_int(nl) - 0.5_wp * (sum(min(1._wp,theta/theta_field)*dz(1:nl)) + min(1._wp,theta(1)/theta_field(1))*sum(dz(1:nl)))
+        w_table = z_int(nl) - 0.5_wp * (sum(theta/theta_field*dz(1:nl)) + theta(1)/theta_field(1)*sum(dz(1:nl)))
+
+      else if (hydro_par%i_wtab.eq.7) then
+
+        w_table = z_int(nl) - theta(1)/theta_sat(1)*sum(dz(1:nl))
+
+      else if (hydro_par%i_wtab.eq.8) then
+
+        ! Kleinen 2020
+        !k = nl
+        !do while (psi.lt.0.95_wp .and. k.le.1) 
+        !  psi = theta(k)/theta_field(k)
+        !  k = k-1
+        !enddo
+        !if (k.eq.0) then
+        !  w_table = 0._wp
+        !else
+        !  w_table = z_int(k) - psi*dz(k+1)
+        !endif
 
       endif
 
       w_table_cum = w_table_cum + w_table
+        
+      ! max possible wetland extent (w_table=0)
+      if (cti_mean.gt.14._wp) then
+        f_wet_max = 0._wp
+      else
+        i1 = max(cti_mean,hydro_par%cti_min)
+        i2 = i1+1
+        w2 = (max(cti_mean,hydro_par%cti_min)-i1)/(i2-i1)
+        w1 = 1._wp-w2
+        f_wet_max = 1._wp-(w1*cti_cdf(i1)+w2*cti_cdf(i2))
+      endif
+      ! no inundation if CTI lower than critical value (5.5 in Kleinen 2020)
+      if (cti_mean.le.hydro_par%cti_mean_crit) f_wet_max = 0._wp 
 
       ! saturated grid cell fraction
       if( hydro_par%i_fwet .eq. 1 ) then
 
         ! fraction of icefree surface at saturation, SIMTOP, Niu 2005
-        f_sat = dyptop_fmax * exp(-hydro_par%f_wtab * w_table)
+        f_sat = f_wet_max * exp(-hydro_par%f_wtab * w_table)
         ! wetland area, excluding snow
         if( mask_snow(is_veg) .eq. 1 ) then
           f_wet = 0._wp ! no wetland where snow
         else
-          if( dyptop_fmax .gt. hydro_par%fmax_crit ) then
-            f_wet = f_sat
-          else
-            f_wet = 0._wp
-          endif
+          f_wet = f_sat
         endif
 
       elseif( hydro_par%i_fwet .eq. 2 ) then
@@ -396,6 +425,7 @@ contains
 
         ! TOPMODEL following Kleinen et al 2020
         cti_lim = cti_mean + hydro_par%f_wtab*w_table   ! NOTE: w_table is positive!
+        cti_lim = max(cti_lim,hydro_par%cti_min)
         cti_lim = max(1._wp,cti_lim)
         if (cti_lim.gt.14._wp) then
           f_sat = 0._wp

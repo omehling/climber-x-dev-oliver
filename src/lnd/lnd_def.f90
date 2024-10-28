@@ -52,7 +52,7 @@ module lnd_def
      real(wp) :: t2m_min_mon
      real(wp) :: t2m_ann_mean
      real(wp) :: infiltration, w_table, w_table_peat
-     real(wp) :: f_wet, f_wet_cum, f_wet_max, f_wetland, w_table_cum, w_table_min
+     real(wp) :: f_wet, f_wet_cum, f_wet_max, f_wetland, w_table_cum, w_table_min, cti_lim
      real(wp) :: t_skin_veg, flx_g_veg, dflxg_dT_veg, flx_melt_veg, t_2m
      real(wp) :: f_lake_ice
      real(wp) :: h_lake

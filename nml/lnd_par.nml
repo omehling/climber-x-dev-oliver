@@ -72,9 +72,9 @@
     i_fwet      = 3             ! param of water saturated fraction; 1..SIMTOP, 2..DYPTOP, 3..TOPMODEL
     wtab_scale  = 4             ! scaling for water table depth, used only if i_wtab==3
     f_wtab       = 2.5          ! scaling parameter in computation of saturated grid cell fraction 
-    fmax_crit    = 0.55         ! critical maximum wetland fraction above which wetlands can occur
-    cti_mean_crit = 5.5         ! critical grid-cell mean CTI index below which no wetlands, used only for i_fwet==3
-    wtab_peat = 0.              ! m, constant peat water table depth
+    fmax_crit    = 0.55         ! critical maximum wetland fraction above which wetlands can occur, used only if i_fwet==1,2
+    cti_min = 0.                ! minimum CTI index for floodability, 8.5 in Kleinen 2020
+    cti_mean_crit = 5.5         ! critical grid-cell mean CTI index below which no wetlands, 5.5 in Kleinen 2020, used only for i_fwet==3
 
     !------------------------------------------------------------------------------------
     ! lake parameters 

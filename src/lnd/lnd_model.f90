@@ -686,7 +686,7 @@ contains
                             lnd%w_snow_old,lnd%w_snow,lnd%w_snow_max,lnd%w_w,lnd%w_i, &
                             lnd%w_table_cum,lnd%f_wet_cum,lnd%tatm,lnd%t_soil,lnd%t_ice,lnd%t_lake, &
                             lnd%h_snow,lnd%calving,lnd%runoff_sur, &
-                            lnd%infiltration,lnd%w_table,lnd%f_wet,lnd%lake_water_tendency)
+                            lnd%infiltration,lnd%w_table,lnd%f_wet,lnd%f_wet_max,lnd%cti_lim,lnd%lake_water_tendency)
  
       ! if any soil
       if( lnd%f_veg .gt. 0._wp ) then

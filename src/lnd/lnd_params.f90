@@ -104,8 +104,8 @@ module lnd_params
     real(wp) :: can_max_s      ! kg/m2, canopy interception capacity parameter for snow
     real(wp) :: tau_w       ! s, removal time scale of water from canopy
     real(wp) :: tau_s       ! s, removal time scale of snow from canopy
-    real(wp) :: wtab_peat
     real(wp) :: f_wtab
+    real(wp) :: cti_min
     real(wp) :: wtab_scale
     real(wp) :: fmax_crit
     real(wp) :: cti_mean_crit
@@ -743,9 +743,9 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","p_psi_max",hydro_par%p_psi_max)
     call nml_read(filename,"lnd_par","wtab_scale",hydro_par%wtab_scale)
     call nml_read(filename,"lnd_par","f_wtab",hydro_par%f_wtab)
+    call nml_read(filename,"lnd_par","cti_min",hydro_par%cti_min)
     call nml_read(filename,"lnd_par","fmax_crit",hydro_par%fmax_crit)
     call nml_read(filename,"lnd_par","cti_mean_crit",hydro_par%cti_mean_crit)
-    call nml_read(filename,"lnd_par","wtab_peat",hydro_par%wtab_peat)
     call nml_read(filename,"lnd_par","alpha_int_w",hydro_par%alpha_int_w)
     call nml_read(filename,"lnd_par","alpha_int_s",hydro_par%alpha_int_s)
     call nml_read(filename,"lnd_par","can_max_w",hydro_par%can_max_w  )
