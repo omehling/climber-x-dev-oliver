@@ -20,7 +20,10 @@
             "ocn"  : "ocn_par",
             "sic"  : "sic_par",
             "smb"  : "smb_par",
-            "hose" : "hyster_hosing"
+            "hose" : "hyster_hosing",
+            "icey" : "ice_yelmo_par",
+            "ices" : "ice_sico_par"
+            
         },
 
     "par_paths" :
