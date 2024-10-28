@@ -48,8 +48,8 @@
  ! VILMA solid Earth model (used only if i_geo==2)
  !-------------------------------------------------------
  l_visc_3d = T          ! use 3d viscosity structure?
- visc_1d_file = visko_80_420_122_Clemens.inp    ! name of file containing 1d viscosity structure, used only if l_visc_3d==F
- visc_3d_file = visc3d_Bagge2021_min_19.5.nc    ! name of file containing 3d viscosity structure, used only if l_visc_3d==T
+ visc_1d_file = "visko_80_420_122_Clemens.inp"    ! name of file containing 1d viscosity structure, used only if l_visc_3d==F
+ visc_3d_file = "visc3d_Bagge2021_min_19.5.nc"    ! name of file containing 3d viscosity structure, used only if l_visc_3d==T
  vilma_grid_file = "input/vilma/vilma_grid.nc"
 
  !-------------------------------------------------------
