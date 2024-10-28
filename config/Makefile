@@ -379,7 +379,7 @@ showconfig:
 	@echo "compiler 		: $(FC)"
 	@echo "host 			: $(shell hostname)"
 	@echo "machine  		: $(machine)"
-	@echo "required modules 	: $(modules)"
+	@echo "required modules : $(modules)"
 	@echo "debug 			: $(debug)"
 module:
 	@echo module load $(modules)

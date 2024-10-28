@@ -31,8 +31,8 @@
   ! bias correction settings, for i_smb==1,2
   !-------------------------------------------------------------------
   l_smb_bias_corr = F         ! apply SMB bias correction?
-  smb_ref_file = input/MARv3.11_GRL_ERA5_clim_1981_2010.nc          ! reference SMB file, used only if l_smb_bias_corr==T
-  smb_cx_ref_file = input/CLIMBER-X_SMB_GRL-16KM_clim_1981_2010.nc     ! CLIMBER-X reference SMB file, used only if l_smb_bias_corr==T
+  smb_ref_file = "input/MARv3.11_GRL_ERA5_clim_1981_2010.nc"          ! reference SMB file, used only if l_smb_bias_corr==T
+  smb_cx_ref_file = "input/CLIMBER-X_SMB_GRL-16KM_clim_1981_2010.nc"     ! CLIMBER-X reference SMB file, used only if l_smb_bias_corr==T
   year_ini_smb_ref = 1981     ! start year over which to compute reference SMB climatology
   year_end_smb_ref = 2010     ! end year over which to compute reference SMB climatology
   i_t2m_bias_corr = 1         ! present-day near-surface air temperature bias correction
@@ -43,7 +43,7 @@
                               ! 0 = no bias correction
                               ! 1 = constant MJJAS bias correction derived from monthly input file bias_corr_file
                               ! 2 = seasonal bias correction derived from monthly input file bias_corr_file
-  bias_corr_file = input/bias_jja_NA_1981_2010_ERA5.nc !input/bias_1981_2010_ERA5.nc
+  bias_corr_file = "input/bias_jja_NA_1981_2010_ERA5.nc" !"input/bias_1981_2010_ERA5.nc"
   t2m_bias_scale_fac = 1.     ! scaling factor for temperature bias correction
   t2m_bias_corr_uniform = 0.  ! K, 2 m temperature bias correction applied uniformely everywhere
   dLW_dT_fac = 1.             ! scaling factor for sensitivity of downward longwave at the surface on near-surface air temperature
@@ -81,7 +81,7 @@
   tstd_scale = 0.             ! scaling factor for standard deviation of daily temperature, used only if l_diurnal_cycle==T
 
   l_maxice = F                ! apply large negative SMB (smb_maxice) outside ice area specified by mask_maxice_file?
-  mask_maxice_file = input/RTopo-2.0.1_0.1deg_icemask.nc    ! maximum ice extent mask file, used only if l_maxice==T
+  mask_maxice_file = "input/RTopo-2.0.1_0.1deg_icemask.nc"    ! maximum ice extent mask file, used only if l_maxice==T
   smb_maxice = -4000.         ! kg/m2/yr, mass balance to be applied outside of allowed ice mask, used only if l_maxice==T
 
   smb_crit_mask = -20000.     ! kg/m2/yr, critical PDD-based SMB used to define where SEMI is applied, used only if i_smb==1

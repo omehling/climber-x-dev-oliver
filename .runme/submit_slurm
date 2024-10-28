@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH --qos=<QOS>
-#SBATCH --time=<WALL>:00:00
+#SBATCH --partition=<PARTITION>
+#SBATCH --time=<WALL>
 #SBATCH --job-name=<JOBNAME>
-#SBATCH --account=<GROUP>
+#SBATCH --account=<ACCOUNT>
 #SBATCH --mail-user=<EMAIL>
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
@@ -12,8 +13,6 @@
 
 <OMPSECTION>
 
-export GMON_OUT_PREFIX=./gmon
-
 ulimit -s unlimited
 #ulimit -c unlimited
 #ulimit -s unlimited
@@ -22,6 +21,10 @@ ulimit -s unlimited
 ulimit -v unlimited
 #ulimit -f unlimited
 ulimit -a
+
+export GMON_OUT_PREFIX=./gmon
+export LD_LIBRARY_PATH=${NETCDF_FORTRANROOT}/lib:${NETCDF_CROOT}/lib:$LD_LIBRARY_PATH
+module load cdo
 
 # Run the job
 srun <CMD> 
