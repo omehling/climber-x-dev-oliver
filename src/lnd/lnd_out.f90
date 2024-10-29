@@ -91,8 +91,10 @@ module lnd_out
     real(wp), allocatable, dimension(:,:,:) :: hsnow
     real(wp), allocatable, dimension(:,:,:) :: tsnow
     real(wp), allocatable, dimension(:,:,:) :: albsnw
+    real(wp), allocatable, dimension(:,:) :: cti_lim
     real(wp), allocatable, dimension(:,:) :: fwet
     real(wp), allocatable, dimension(:,:) :: fwetmax
+    real(wp), allocatable, dimension(:,:) :: fwetmaxpot
     real(wp), allocatable, dimension(:,:) :: wtab
     real(wp), allocatable, dimension(:,:) :: inf
     real(wp), allocatable, dimension(:,:) :: alt
@@ -255,6 +257,7 @@ contains
       allocate(mon_su(k)%hsnow(nx,ny,nsoil))
       allocate(mon_su(k)%tsnow(nx,ny,nsoil))
       allocate(mon_su(k)%albsnw(nx,ny,nsoil))
+      allocate(mon_su(k)%cti_lim(nx,ny))
       allocate(mon_su(k)%fwet(nx,ny))
       allocate(mon_su(k)%fwetmax(nx,ny))
       allocate(mon_su(k)%wtab(nx,ny))
@@ -377,8 +380,10 @@ contains
     allocate(ann_su%hsnow(nx,ny,nsoil))
     allocate(ann_su%tsnow(nx,ny,nsoil))
     allocate(ann_su%albsnw(nx,ny,nsoil))
+    allocate(ann_su%cti_lim(nx,ny))
     allocate(ann_su%fwet(nx,ny))
     allocate(ann_su%fwetmax(nx,ny))
+    allocate(ann_su%fwetmaxpot(nx,ny))
     allocate(ann_su%wtab(nx,ny))
     allocate(ann_su%inf(nx,ny))
     allocate(ann_su%alt(nx,ny))
@@ -1129,6 +1134,7 @@ contains
                   mon_su(m)%Ch(i,j,:)       = 0._wp
                   mon_su(m)%rs(i,j,:)       = 0._wp
                   mon_su(m)%betas(i,j,:)    = 0._wp
+                  mon_su(m)%cti_lim(i,j)    = 0._wp
                   mon_su(m)%fwet(i,j)       = 0._wp
                   mon_su(m)%wtab(i,j)       = 0._wp
                   mon_su(m)%inf(i,j)        = 0._wp
@@ -1181,6 +1187,7 @@ contains
                   mon_su(m)%Ch(i,j,:)       = missing_value 
                   mon_su(m)%rs(i,j,:)       = missing_value 
                   mon_su(m)%betas(i,j,:)    = missing_value 
+                  mon_su(m)%cti_lim(i,j)    = missing_value 
                   mon_su(m)%fwet(i,j)       = missing_value 
                   mon_su(m)%wtab(i,j)       = missing_value 
                   mon_su(m)%inf(i,j)        = missing_value 
@@ -1369,9 +1376,15 @@ contains
         !!$omp end parallel do
         if( time_eom_lnd ) then
           where (lnd%f_land.gt.0._wp) 
-            mon_su(mon)%fwet     = lnd%f_wetland
+            mon_su(mon)%fwet    = lnd%f_wetland
+            mon_su(mon)%cti_lim = lnd%cti_lim
           endwhere
           if(time_eoy_lnd) then
+            where (lnd%f_land.gt.0._wp) 
+              ann_su%fwetmaxpot = lnd%f_wet_max
+            elsewhere 
+              ann_su%fwetmaxpot = 0._wp
+            endwhere
             do i=1,nx
               do j=1,ny 
                 ann_su%fwetmax(i,j) = mon_su(1)%fwet(i,j)
@@ -2338,6 +2351,7 @@ contains
     call nc_write(fnm,"hsnow",    sngl(vars%hsnow),dims=[dim_lon,dim_lat,dim_nsoil,dim_month,dim_time],start=[1,1,1,ndat,nout],count=[nx,ny,nsoil,1,1],long_name="snow thickness",units="m",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"tsnow",    sngl(vars%tsnow),dims=[dim_lon,dim_lat,dim_nsoil,dim_month,dim_time],start=[1,1,1,ndat,nout],count=[nx,ny,nsoil,1,1],long_name="snow layer temperature",units="K",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"tlake",     sngl(vars%tlake_sur), dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[nx,ny,1,1],long_name="top layer lake temperature",units="K",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"cti_lim",  sngl(vars%cti_lim), dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[nx,ny,1,1],long_name="critical CTI index",units="/",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"fwet",     sngl(vars%fwet), dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[nx,ny,1,1],long_name="saturated fraction",units="/",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"wtab",     sngl(vars%wtab), dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[nx,ny,1,1],long_name="water table depth",units="m",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"inf",      sngl(vars%inf),  dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[nx,ny,1,1],long_name="infiltration",units="kg/m2/day",missing_value=missing_value,ncid=ncid)
@@ -2390,6 +2404,7 @@ contains
      call nc_write(fnm,"t2m_min_mon",sngl(vars%t2m_min_mon),  dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[nx,ny,1],long_name="near-surface air temperature of the coldest month",units="degC",missing_value=missing_value,ncid=ncid)
      call nc_write(fnm,"alt",        sngl(vars%alt),  dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[nx,ny,1],long_name="active layer thickness",units="m",missing_value=missing_value,ncid=ncid)
      call nc_write(fnm,"fwetmax",    sngl(vars%fwetmax),  dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[nx,ny,1],long_name="maxmiumum monthly wetland extent",units="m",missing_value=missing_value,ncid=ncid)
+     call nc_write(fnm,"fwetmaxpot",    sngl(vars%fwetmaxpot), dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[nx,ny,1],long_name="potential maximum wetland extent",units="m",missing_value=missing_value,ncid=ncid)
     endif
 
 
@@ -2451,6 +2466,7 @@ contains
     ave%Ch      = 0._wp
     ave%rs      = 0._wp
     ave%betas   = 0._wp
+    ave%cti_lim = 0._wp
     ave%fwet    = 0._wp
     ave%wtab    = 0._wp
     ave%inf     = 0._wp
@@ -2555,6 +2571,7 @@ contains
       ave%Ch      = ave%Ch         + d(k)%Ch        / div
       ave%rs      = ave%rs         + d(k)%rs        / div
       ave%betas   = ave%betas      + d(k)%betas     / div
+      ave%cti_lim = ave%cti_lim    + d(k)%cti_lim   / div
       ave%fwet    = ave%fwet       + d(k)%fwet      / div
       ave%wtab    = ave%wtab       + d(k)%wtab      / div
       ave%inf     = ave%inf        + d(k)%inf       / div

@@ -75,6 +75,7 @@ module atm_out
     real(wp) :: t2m    
     real(wp) :: tnh
     real(wp) :: tsh    
+    real(wp) :: dtnsh    
     real(wp) :: tn6090
     real(wp) :: ts6090
     real(wp) :: tgrl
@@ -1045,6 +1046,7 @@ contains
       ann_ts(y)%t2m=0
       ann_ts(y)%tnh=0
       ann_ts(y)%tsh=0
+      ann_ts(y)%dtnsh=0
       ann_ts(y)%tn6090=0
       ann_ts(y)%ts6090=0
       ann_ts(y)%tgrl=0
@@ -1302,6 +1304,7 @@ contains
     ann_ts(y)%t2m           = ann_ts(y)%t2m           + ann_t2m        
     ann_ts(y)%tnh           = ann_ts(y)%tnh           + ann_t2mnh        
     ann_ts(y)%tsh           = ann_ts(y)%tsh           + ann_t2msh        
+    ann_ts(y)%dtnsh         = ann_ts(y)%dtnsh         + (ann_t2mnh-ann_t2msh)
     ann_ts(y)%tn6090        = ann_ts(y)%tn6090        + ann_t2mn6090        
     ann_ts(y)%ts6090        = ann_ts(y)%ts6090        + ann_t2ms6090        
     ann_ts(y)%tgrl          = ann_ts(y)%tgrl          + sum(atm%t2(i_grl,j_grl,:)*atm%frst(i_grl,j_grl,:)) * ann_avg
@@ -1397,6 +1400,7 @@ contains
       ann_ts(y)%t2m = ann_ts(y)%t2m - T0    ! degC
       ann_ts(y)%tnh = ann_ts(y)%tnh - T0    ! degC
       ann_ts(y)%tsh = ann_ts(y)%tsh - T0    ! degC
+      ann_ts(y)%dtnsh = ann_ts(y)%dtnsh - T0    ! degC
       ann_ts(y)%tn6090 = ann_ts(y)%tn6090 - T0    ! degC
       ann_ts(y)%ts6090 = ann_ts(y)%ts6090 - T0    ! degC
       ann_ts(y)%tgrl = ann_ts(y)%tgrl - T0    ! degC
@@ -2310,6 +2314,7 @@ contains
     call nc_write(fnm,"tg      ", vars%t2m     , dims=[dim_time],start=[nout],count=[y],long_name="global surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tnh     ", vars%tnh     , dims=[dim_time],start=[nout],count=[y],long_name="NH surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tsh     ", vars%tsh     , dims=[dim_time],start=[nout],count=[y],long_name="SH surface air temperature",units="degC",ncid=ncid)
+    call nc_write(fnm,"dtnsh   ", vars%dtnsh   , dims=[dim_time],start=[nout],count=[y],long_name="difference between mean NH and SH surface air temperature",units="degC",ncid=ncid)
     call nc_write(fnm,"tn6090  ", vars%tn6090  , dims=[dim_time],start=[nout],count=[y],long_name="surface air temperature between 60-90N",units="degC",ncid=ncid)
     call nc_write(fnm,"ts6090  ", vars%ts6090  , dims=[dim_time],start=[nout],count=[y],long_name="surface air temperature between 60-90S",units="degC",ncid=ncid)
     call nc_write(fnm,"tgrl    ", vars%tgrl    , dims=[dim_time],start=[nout],count=[y],long_name="Greenland surface air temperature NGRIP",units="degC",ncid=ncid)
