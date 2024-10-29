@@ -4,12 +4,9 @@
 #SBATCH --time=<WALL>
 #SBATCH --job-name=<JOBNAME>
 #SBATCH --account=<ACCOUNT>
-#SBATCH --mail-user=<EMAIL>
-#SBATCH --mail-type=END
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=REQUEUE
 #SBATCH --output=./out.out
 #SBATCH --error=./out.err
+<EMAILSECTION>
 
 <OMPSECTION>
 
