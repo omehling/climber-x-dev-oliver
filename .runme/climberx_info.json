@@ -50,6 +50,6 @@
     },
 
     "links" : 
-        ["input", "maps", "restart", "ice_data"]
+        ["input", "maps", "restart"]
 
 }
