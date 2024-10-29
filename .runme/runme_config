@@ -1,10 +1,13 @@
 {
     "hpc"           : "pik_hpc2024",
-    "email"         : "",
     "account"       : "megarun", 
     "jobname"       : "ClimberX",
     "omp"           : 16,
 
     "queues_file"   : ".runme/queues.json",
-    "info_file"     : ".runme/climberx_info.json"
+    "info_file"     : ".runme/climberx_info.json",
+
+    "email"         : "",
+    "mail_type"     : ["FAIL", "REQUEUE"]
+
 }
