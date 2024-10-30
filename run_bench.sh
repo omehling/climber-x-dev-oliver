@@ -379,7 +379,7 @@ restart_in_dir=restart_pi_v22
 ./runme -rs -q standby -w 24:00:00 --omp 32 -o output/$outdir/pliomip_400     -p ctl.year_ini=0 ctl.fake_geo_const_file=input/geo_Pliomip2.nc ctl.fake_ice_const_file=input/geo_Pliomip2.nc ctl.co2_const=400 ctl.restart_in_dir=$restart_in_dir ocn.drag_topo_fac=$drag_topo_fac
 ./runme -rs -q standby -w 24:00:00 --omp 32 -o output/$outdir/pliomip_500     -p ctl.year_ini=0 ctl.fake_geo_const_file=input/geo_Pliomip2.nc ctl.fake_ice_const_file=input/geo_Pliomip2.nc ctl.co2_const=500 ctl.restart_in_dir=$restart_in_dir ocn.drag_topo_fac=$drag_topo_fac
 
-jobrun ./runme -rs -q standby --omp 32  -- -a -o output/$outdir/DOevents/     -p ctl.year_ini=-70000 ctl.nyears=50000 ctl.iorbit=2 ctl.ice_domain_name=NH-32KM ctl.co2_const=180,190,200,210,220,230,240 ctl.flag_geo=T ctl.flag_ice=T ctl.flag_smb=T ctl.flag_imo=T ctl.restart_in_dir=$restart_in_dir ocn.drag_topo_fac=$drag_topo_fac
+jobrun ./runme -rs -q standby --omp 32 -a -o output/$outdir/DOevents/     -p ctl.year_ini=-70000 ctl.nyears=50000 ctl.iorbit=2 ctl.ice_domain_name=NH-32KM ctl.co2_const=180,190,200,210,220,230,240 ctl.flag_geo=T ctl.flag_ice=T ctl.flag_smb=T ctl.flag_imo=T ctl.restart_in_dir=$restart_in_dir ocn.drag_topo_fac=$drag_topo_fac
 
 fi
 
