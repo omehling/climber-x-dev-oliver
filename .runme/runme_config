@@ -2,7 +2,7 @@
     "hpc"           : "pik_hpc2024",
     "account"       : "megarun", 
     "jobname"       : "ClimberX",
-    "omp"           : 16,
+    "omp"           : 32,
 
     "queues_file"   : ".runme/queues.json",
     "info_file"     : ".runme/climberx_info.json",

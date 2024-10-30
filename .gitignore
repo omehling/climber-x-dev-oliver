@@ -4,6 +4,7 @@ runcx_config
 climber.x
 input
 output
+out
 src/main/gitversion.f90
 src/bgc
 src/utils/exlib
