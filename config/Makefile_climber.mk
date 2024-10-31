@@ -750,7 +750,7 @@ $(objdir)/geo.o : $(dir_geo)geo.f90 $(objdir)/climber_grid.o $(objdir)/control.o
 	$(objdir)/hires_to_lowres.o $(objdir)/corals_topo.o $(objdir)/coast_cells.o $(objdir)/drainage_basins.o $(ncio_obj) 
 	$(FC) $(LDFLAGS) -c -o $@ $<
 
-$(objdir)/vilma.o : $(dir_geo)vilma.f90
+$(objdir)/vilma.o : $(dir_geo)vilma.F90
 	$(FC) $(LDFLAGS) -c -o $@ $<
 
 $(objdir)/.vilma_dummy.o : $(dir_geo).vilma_dummy.f90 

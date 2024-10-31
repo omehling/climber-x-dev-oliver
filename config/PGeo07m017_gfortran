@@ -1,7 +1,6 @@
 ### Compiler #####################
 
-FC  = mpif90
-#FC  = gfortran
+FC  = gfortran
 
 ### Library locations ############
 
