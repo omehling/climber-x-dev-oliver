@@ -138,6 +138,15 @@ atm: $(obj_atm)
 	@echo "atm files compiled successfully."
 	@echo ""
 
+atm-out: FFLAGS = $(FFLAGS_CLIM)
+atm-out: LFLAGS = $(LFLAGS_CLIM)
+atm-out: CPPFLAGS = $(CPPFLAGS_CLIM)
+atm-out: LDFLAGS = $(FFLAGS) $(DFLAGS) $(CPPFLAGS)
+atm-out: $(objdir)/atm_out.o
+	@echo ""
+	@echo "atm-out files compiled successfully."
+	@echo ""
+
 bgc: FFLAGS = $(FFLAGS_CLIM)
 bgc: LFLAGS = $(LFLAGS_CLIM)
 bgc: CPPFLAGS = $(CPPFLAGS_CLIM)
