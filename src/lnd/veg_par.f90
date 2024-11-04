@@ -56,7 +56,9 @@ contains
     real(wp), dimension(:), intent(inout) :: lai
 
     integer :: n
-    real(wp) :: lai_old, t2m_veg
+    real(wp) :: lai_old, t2m_veg, f_deciduous, f_deciduous_T, f_deciduous_gdd5
+    real(wp), parameter :: dT_dec = 5._wp ! degC
+    real(wp), parameter :: dgdd5_dec = 200._wp 
     real(wp), parameter :: phen_max  = 250._wp !210._wp
     real(wp), parameter :: phen_min  = 10._wp
 
@@ -79,8 +81,26 @@ contains
           gdd(n) = gdd(n) + (t2m(n)-T0-pft_par%t_base_phen(n)) * dt_day
         endif
 
+        if (veg_par%i_deciduous.eq.1) then
+          if( (t2m_min_mon-T0).lt.pft_par%t_cmon_phen(n) ) then
+            f_deciduous_T = 1._wp
+          else
+            f_deciduous_T = 0._wp
+          endif
+          if( gdd5.lt.pft_par%gdd5_phen(n) ) then
+            f_deciduous_gdd5 = 1._wp
+          else
+            f_deciduous_gdd5 = 0._wp
+          endif
+        else if (veg_par%i_deciduous.eq.2) then
+          ! factor for smooth transition between evergreen and deciduous
+          f_deciduous_T = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dT_dec)*(t2m_min_mon-T0-pft_par%t_cmon_phen(n)+dT_dec)))
+          f_deciduous_gdd5 = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dgdd5_dec)*(gdd5-pft_par%gdd5_phen(n)+dgdd5_dec)))
+        endif
+        f_deciduous = max(f_deciduous_T,f_deciduous_gdd5)
+
         ! deciduous
-        if( ((t2m_min_mon-T0).lt.pft_par%t_cmon_phen(n)) .or. (gdd5.lt.pft_par%gdd5_phen(n)) ) then
+        if (f_deciduous.gt.0._wp) then
 
           ! save old lai
           lai_old = lai(n)
@@ -104,20 +124,17 @@ contains
 
           phen_acc(n) = phen_acc(n) + phen(n)
 
-          lai(n) = phen(n) * lai_bal(n) 
-
-          gamma_leaf(n) = 1._wp/sec_year  ! 1/s, 1 year^-1
-
           ! evergreen
         else
 
           phen(n) = 1._wp
-          lai(n) = lai_bal(n) 
-
-          gamma_leaf(n) = pft_par%gamma_leaf(n)
 
         endif
 
+        lai(n) = (f_deciduous*phen(n)+(1._wp-f_deciduous)) * lai_bal(n) 
+
+        gamma_leaf(n) = f_deciduous*1._wp/sec_year + (1._wp-f_deciduous)*pft_par%gamma_leaf(n)
+        
       enddo
 
     else ! ice covered grid cell

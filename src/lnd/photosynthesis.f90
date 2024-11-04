@@ -99,7 +99,7 @@ contains
     real(wp) :: vm, vm25, je, jc, tstress, beta
     real(wp) :: agd, rd, rm, and, adt, conv_fac
     real(wp) :: low, high
-    real(wp) :: ftemp_air, ftemp_soil, resp10
+    real(wp) :: ftemp_air, ftemp_soil, resp10, wT
     real(wp) :: resp_leaf, resp_stem, resp_root
     real(wp) :: Ratm13
     real(wp) :: Ratm14
@@ -331,8 +331,17 @@ contains
           g_can(n) = pft_par%g_min(n) * fexp * beta * 1.e-3_wp & ! minimum canopy conductance, m/s, depends on LAI, limited by soil moisture
             + adt/cmass / ((ca - ci(n)) * 3600._wp*daylength) * conv_fac ! gC/m2/day * mol/gC / s/h / h/day * m3/mol
 
-          if( flag_tree(n) .eq. 1 .and. (t2m_min_mon-T0) .gt. 15.5_wp ) then 
-            resp10 = 0.011_wp ! tropical trees
+          if( flag_tree(n) .eq. 1) then
+            if (veg_par%i_resp_trop.eq.1) then
+              if ((t2m_min_mon-T0) .gt. 15.5_wp ) then 
+                resp10 = 0.011_wp ! tropical trees
+              else
+                resp10 = 0.066_wp 
+              endif
+            else if (veg_par%i_resp_trop.eq.2) then
+              wT = min(max(0._wp,(t2m_min_mon-T0)),20._wp)/20._wp
+              resp10 = wT*0.011_wp + (1._wp-wT)*0.066_wp ! tropical trees
+            endif
           else
             resp10 = 0.066_wp 
           endif

@@ -1603,9 +1603,9 @@ contains
           + mon_c(mon)%sresp14(:,:,ic_shelf)*lnd%f_shelf &
           + mon_c(mon)%sresp14(:,:,ic_lake)*lnd%f_lake &
           + mon_c(mon)%sresp14(:,:,ic_ice)*lnd%f_ice_grd ! kgC/m2/yr
-          mon_c_g(mon)%Cflx_atm_lnd  = mon_c_g(mon)%npp - mon_c_g(mon)%sresp ! kgC/m2/yr
-          mon_c_g(mon)%C13flx_atm_lnd = mon_c_g(mon)%npp13 - mon_c_g(mon)%sresp13 ! kgC/m2/yr 
-          mon_c_g(mon)%C14flx_atm_lnd = mon_c_g(mon)%npp14 - mon_c_g(mon)%sresp14 ! kgC/m2/yr
+          mon_c_g(mon)%Cflx_atm_lnd  = mon_c_g(mon)%npp*lnd%f_veg - mon_c_g(mon)%sresp ! kgC/m2/yr
+          mon_c_g(mon)%C13flx_atm_lnd = mon_c_g(mon)%npp13*lnd%f_veg - mon_c_g(mon)%sresp13 ! kgC/m2/yr 
+          mon_c_g(mon)%C14flx_atm_lnd = mon_c_g(mon)%npp14*lnd%f_veg - mon_c_g(mon)%sresp14 ! kgC/m2/yr
 
           ! at end of year
           if( time_eoy_lnd ) then
