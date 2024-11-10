@@ -5,7 +5,7 @@
 # Import desired modules
 import sys, getopt, os, shutil, datetime
 from subprocess import *
-#from distutils.dir_util import copy_tree
+from distutils.dir_util import copy_tree
 
 def usage():
     print('''
@@ -1073,74 +1073,7 @@ def main():
 
     return
     
-
-
-import re
-
-def convert_script(input_script):
-    # Define a mapping from the old format to the new format
-    option_mapping = {
-        '-s': '-rs',            # Change -s to -rs
-        '-f': '',               # Remove -f as it's not present in the new script
-        '-c': '-q',             # Change -c to -q
-        '-w': '-w',             # Keep -w as it is, but format in hours
-        '-j parallel': '--omp', # Change -j parallel to --omp
-        '-n': '',               # Remove -n as --omp already captures parallelism
-    }
-    
-    # Update walltime to hours format HH:MM:SS
-    def convert_walltime(time):
-        return f"{int(time):02}:00:00"
-
-    # Substitute old pattern with the new pattern
-    def substitute_options(command):
-        for old, new in option_mapping.items():
-            if old == '-w':
-                # Convert walltime if -w detected
-                command = re.sub(r'(?<=-w )(\d+)', lambda match: convert_walltime(match.group()), command)
-            else:
-                command = command.replace(old, new)
-        return command.replace('"', '')  #.replace('&', '')
-
-    # Process each line and convert
-    output_script = []
-    for line in input_script.splitlines():
-        if line.strip().startswith("#"):
-            # Preserve comments as they are
-            output_script.append(line)
-        elif line.strip():
-            # Substitute options in commands
-            converted_line = substitute_options(line)
-            output_script.append(converted_line)
-
-    return "\n".join(output_script)
-
     
 if __name__ == "__main__":
-    #main()
-
-    # For Matteo, suggest how to modify command being called to use runme script instead
-
-    old_command = " ".join(sys.argv)
-    new_command = convert_script(old_command)
-
-    print('''
-          
-          Matteo, job_climber is obsolete. You should use `runme` from now on.
-          The command you just called can be modified roughly like below.
-          You just need to modify the part related to the parameter values, specifying 
-          group.par for each individual par instead of \&group="par=1". 
-          
-          Good luck!
-
-          Original command with job_climber:
-
-          {}
-
-          New command with runme (almost):
-
-          {}
-
-          '''.format(old_command,new_command))
-    
+    main()
 # Done!
