@@ -1,3 +1,10 @@
+restart/*
+!restart/pi
+!restart/pi_cc_open
+!restart/lgm
+restart/pi/geo_restart.nc
+restart/pi_cc_open/geo_restart.nc
+restart/lgm/geo_restart.nc
 Makefile
 runcx_config
 .runme_config
@@ -16,13 +23,6 @@ src/vilma
 bench
 matlab
 data
-restart/*
-!restart/restart_pi/
-!restart/restart_pi_cc_open/
-!restart/restart_lgm/
-restart/restart_pi/geo_restart.nc
-restart/restart_pi_cc_open/geo_restart.nc
-restart/restart_lgm/geo_restart.nc
 *.sh
 !run_bench_cx.sh
 !run_bench.sh

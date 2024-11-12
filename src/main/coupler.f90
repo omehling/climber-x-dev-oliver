@@ -3853,7 +3853,7 @@ contains
     type(cmn_class) :: cmn
 
     if (l_aqua_slab) then
-      call nc_read("restart/"//trim(restart_in_dir)//"/aqua_restart.nc","qflux",cmn%qflux) 
+      call nc_read(trim(restart_in_dir)//"/aqua_restart.nc","qflux",cmn%qflux) 
     endif
 
     return
@@ -3868,7 +3868,7 @@ contains
     character (len=256) :: fnm
 
     if (.not.l_aqua_slab) then
-      fnm = "restart/"//trim(restart_in_dir)//"/aqua_restart.nc" 
+      fnm = trim(restart_in_dir)//"/aqua_restart.nc" 
       call nc_create(fnm)
       call nc_write_dim(fnm,"lon",x=lon,axis="x")
       call nc_write_dim(fnm,"lat",x=lat,axis="y")

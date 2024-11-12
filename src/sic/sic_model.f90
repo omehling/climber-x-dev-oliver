@@ -509,7 +509,7 @@ contains
 
     if (sic_restart) then
       ! read restart file
-      call sic_read_restart("restart/"//trim(restart_in_dir)//"/sic_restart.nc",sic)
+      call sic_read_restart(trim(restart_in_dir)//"/sic_restart.nc",sic)
     else
       ! initialise prognostic variables
       sic%u          = 0._wp

@@ -606,7 +606,7 @@ contains
       !------------------------------------------------------------------------
       ! read restart file
       !------------------------------------------------------------------------
-      call ocn_read_restart("restart/"//trim(restart_in_dir)//"/ocn_restart.nc",ocn)
+      call ocn_read_restart(trim(restart_in_dir)//"/ocn_restart.nc",ocn)
 
       if (cons_tracer) then
         ocn%ts(:,:,:,i_cons) = 1._wp

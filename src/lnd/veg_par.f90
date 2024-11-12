@@ -81,22 +81,9 @@ contains
           gdd(n) = gdd(n) + (t2m(n)-T0-pft_par%t_base_phen(n)) * dt_day
         endif
 
-        if (veg_par%i_deciduous.eq.1) then
-          if( (t2m_min_mon-T0).lt.pft_par%t_cmon_phen(n) ) then
-            f_deciduous_T = 1._wp
-          else
-            f_deciduous_T = 0._wp
-          endif
-          if( gdd5.lt.pft_par%gdd5_phen(n) ) then
-            f_deciduous_gdd5 = 1._wp
-          else
-            f_deciduous_gdd5 = 0._wp
-          endif
-        else if (veg_par%i_deciduous.eq.2) then
-          ! factor for smooth transition between evergreen and deciduous
-          f_deciduous_T = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dT_dec)*(t2m_min_mon-T0-pft_par%t_cmon_phen(n)+dT_dec)))
-          f_deciduous_gdd5 = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dgdd5_dec)*(gdd5-pft_par%gdd5_phen(n)+dgdd5_dec)))
-        endif
+        ! factor for smooth transition between evergreen and deciduous
+        f_deciduous_T = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dT_dec)*(t2m_min_mon-T0-pft_par%t_cmon_phen(n)+dT_dec)))
+        f_deciduous_gdd5 = min(1._wp,max(0._wp,1._wp-1._wp/(2._wp*dgdd5_dec)*(gdd5-pft_par%gdd5_phen(n)+dgdd5_dec)))
         f_deciduous = max(f_deciduous_T,f_deciduous_gdd5)
 
         ! deciduous

@@ -254,8 +254,6 @@
     veg_h_min = 0.3             ! m, minimum height of vegetation
     hveg_z0_scale = 0.06 0.06 0.12 0.12 0.12         ! scaling from vegetation height to roughness length
     f_lit_to_ice = 1.           ! fraction of vegetation carbon beeing buried under ice when ice sheets are expanding
-    i_resp_trop = 1
-    i_deciduous = 1
 
     i_deforest = 0              ! deforestation experiments:
                                 ! 0 .. no deforestation

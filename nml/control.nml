@@ -368,7 +368,7 @@
  smb_restart = false       ! start form saved smb state?
  imo_restart = false       ! start form saved imo state?
 
- restart_in_dir = "restart_pi"      ! name of directory inside restart/ that contains the restart files to restart from
+ restart_in_dir = "restart/pi"      ! name of directory inside restart/ that contains the restart files to restart from
  i_write_restart = 0                ! control of restart file writing:
                                     ! 0 = restart files written only at end of simulation
                                     ! 1 = restart files written regularly every n_year_write_restart years

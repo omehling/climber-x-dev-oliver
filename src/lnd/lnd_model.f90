@@ -1094,7 +1094,7 @@ end subroutine lnd_update
 
     if( lnd_restart ) then
 
-      call lnd_read_restart("restart/"//trim(restart_in_dir)//"/lnd_restart.nc",lnd%l2d,lnd%l0d)
+      call lnd_read_restart(trim(restart_in_dir)//"/lnd_restart.nc",lnd%l2d,lnd%l0d)
 
       ! update surface fractions given the prescribed input fractions of land/ocean/ice/lake
       ! potentially vegetated fraction

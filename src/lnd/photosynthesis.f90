@@ -332,16 +332,8 @@ contains
             + adt/cmass / ((ca - ci(n)) * 3600._wp*daylength) * conv_fac ! gC/m2/day * mol/gC / s/h / h/day * m3/mol
 
           if( flag_tree(n) .eq. 1) then
-            if (veg_par%i_resp_trop.eq.1) then
-              if ((t2m_min_mon-T0) .gt. 15.5_wp ) then 
-                resp10 = 0.011_wp ! tropical trees
-              else
-                resp10 = 0.066_wp 
-              endif
-            else if (veg_par%i_resp_trop.eq.2) then
-              wT = min(max(0._wp,(t2m_min_mon-T0)),20._wp)/20._wp
-              resp10 = wT*0.011_wp + (1._wp-wT)*0.066_wp ! tropical trees
-            endif
+            wT = min(max(0._wp,(t2m_min_mon-T0)),20._wp)/20._wp
+            resp10 = wT*0.011_wp + (1._wp-wT)*0.066_wp ! tropical trees
           else
             resp10 = 0.066_wp 
           endif

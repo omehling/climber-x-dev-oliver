@@ -273,8 +273,6 @@ module lnd_params
     real(wp) :: f_veg_crit = 0.2_wp    !! critical vegetation fraction for buried litter []
     real(wp) :: f_lit_to_ice    !! fraction of vegetation buried when ice sheets are expanding []
     integer :: i_deforest
-    integer :: i_resp_trop
-    integer :: i_deciduous
   end type
   type(veg_par_type) :: veg_par
 
@@ -833,8 +831,6 @@ subroutine lnd_par_load
     pft_par%tau_fire = tau_fire*sec_year
     call nml_read(filename,"lnd_par","theta_fire_crit",veg_par%theta_fire_crit)
     call nml_read(filename,"lnd_par","i_deforest",veg_par%i_deforest)
-    call nml_read(filename,"lnd_par","i_resp_trop",veg_par%i_resp_trop)
-    call nml_read(filename,"lnd_par","i_deciduous",veg_par%i_deciduous)
 
     call nml_read(filename,"lnd_par","soil_texture",soil_par%soil_texture)
     call nml_read(filename,"lnd_par","uniform_porosity",soil_par%uniform_porosity)

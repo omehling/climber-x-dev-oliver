@@ -275,18 +275,18 @@ contains
     open(unit=1, iostat=stat, file=io_dfgl%n, status='old')
     if (stat == 0) close(1, status='delete')
 
-    io_mos_indx%n   = 'restart/'//trim(restart_in_dir)//'/vilma//mos_indx.nc'  !matrix of Galerkin System
-    io_mos_amtrx%n  = 'restart/'//trim(restart_in_dir)//'/vilma//mos_amtrx.nc' !matrix of Galerkin System
-    io_mos_acomp%n  = 'restart/'//trim(restart_in_dir)//'/vilma//mos_acomp.nc' !matrix of Galerkin System
-    io_mos_acompl%n = 'restart/'//trim(restart_in_dir)//'/vilma//mos_acompl.nc'  !matrix of Galerkin System
-    io_ve_struct%n  = 'restart/'//trim(restart_in_dir)//'/vilma//ve_struct.nc' !restart array for ve structure
-    io_pjj%n        = 'restart/'//trim(restart_in_dir)//'/vilma//pjj.nc' !restart array for associated scalar sph
-    io_pefgh%n      = 'restart/'//trim(restart_in_dir)//'/vilma//pefgh.nc' !restart array for associated tensor sph
-    io_nwl_struct%n = 'restart/'//trim(restart_in_dir)//'/vilma//nwl_struct.nc'  !restart array for spatial discretisation in lon and lat
-    io_visc3drs%n   = 'restart/'//trim(restart_in_dir)//'/vilma//visc3d.nc'  !restart array 3d ve structure
-    io_disp%n       = 'restart/'//trim(restart_in_dir)//'/vilma//disp.nc'  !restart array for spectal displacement field
-    io_stress%n     = 'restart/'//trim(restart_in_dir)//'/vilma//stress.nc'  !restart array for spatial stress components (3d)
-    io_1dstress%n   = 'restart/'//trim(restart_in_dir)//'/vilma//ctc_stress.nc'  !restart array for sepctral stress components (1d)
+    io_mos_indx%n   = trim(restart_in_dir)//'/vilma//mos_indx.nc'  !matrix of Galerkin System
+    io_mos_amtrx%n  = trim(restart_in_dir)//'/vilma//mos_amtrx.nc' !matrix of Galerkin System
+    io_mos_acomp%n  = trim(restart_in_dir)//'/vilma//mos_acomp.nc' !matrix of Galerkin System
+    io_mos_acompl%n = trim(restart_in_dir)//'/vilma//mos_acompl.nc'  !matrix of Galerkin System
+    io_ve_struct%n  = trim(restart_in_dir)//'/vilma//ve_struct.nc' !restart array for ve structure
+    io_pjj%n        = trim(restart_in_dir)//'/vilma//pjj.nc' !restart array for associated scalar sph
+    io_pefgh%n      = trim(restart_in_dir)//'/vilma//pefgh.nc' !restart array for associated tensor sph
+    io_nwl_struct%n = trim(restart_in_dir)//'/vilma//nwl_struct.nc'  !restart array for spatial discretisation in lon and lat
+    io_visc3drs%n   = trim(restart_in_dir)//'/vilma//visc3d.nc'  !restart array 3d ve structure
+    io_disp%n       = trim(restart_in_dir)//'/vilma//disp.nc'  !restart array for spectal displacement field
+    io_stress%n     = trim(restart_in_dir)//'/vilma//stress.nc'  !restart array for spatial stress components (3d)
+    io_1dstress%n   = trim(restart_in_dir)//'/vilma//ctc_stress.nc'  !restart array for sepctral stress components (1d)
     
     ! write io.tmp file with parameters, needed for restart capability
     open (1,file=io_tmp%n,form='formatted')
@@ -425,13 +425,13 @@ contains
     if (vg%restart) then
 
       ! copy some files from vilma restart directory to output directory
-      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_deg1.dat '//trim(out_dir)//'/', &
+      call execute_command_line('cp ' // adjustl(trim(restart_in_dir))//'/vilma/vega_deg1.dat '//trim(out_dir)//'/', &
         exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
-      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_oce.dat '//trim(out_dir)//'/', &
+      call execute_command_line('cp ' // adjustl(trim(restart_in_dir))//'/vilma/vega_oce.dat '//trim(out_dir)//'/', &
         exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
-      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/vega_rpt.dat '//trim(out_dir)//'/', &
+      call execute_command_line('cp ' // adjustl(trim(restart_in_dir))//'/vilma/vega_rpt.dat '//trim(out_dir)//'/', &
         exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
-      call execute_command_line('cp restart/' // adjustl(trim(restart_in_dir))//'/vilma/restart.log '//trim(out_dir)//'/', &
+      call execute_command_line('cp ' // adjustl(trim(restart_in_dir))//'/vilma/restart.log '//trim(out_dir)//'/', &
         exitstat=estat, cmdstat=cstat, cmdmsg=cmsg)
 
       ! read restart

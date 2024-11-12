@@ -140,7 +140,7 @@ contains
     if (ch4_restart) then
 
       ! read restart file
-      call ch4_read_restart("restart/"//trim(restart_in_dir)//"/ch4_restart.nc",ch4)
+      call ch4_read_restart(trim(restart_in_dir)//"/ch4_restart.nc",ch4)
 
     else
 

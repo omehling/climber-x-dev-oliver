@@ -1445,8 +1445,8 @@ contains
     if (smb_restart) then
 
       ! read restart file 
-      call smb_read_restart("restart/"//trim(restart_in_dir)//"/smb_"//trim(smb%grid%name)//"_restart.nc",smb)
-      print *,'read restart file ',"restart/"//trim(restart_in_dir)//"/smb_"//trim(smb%grid%name)//"_restart.nc"
+      call smb_read_restart(trim(restart_in_dir)//"/smb_"//trim(smb%grid%name)//"_restart.nc",smb)
+      print *,'read restart file ',trim(restart_in_dir)//"/smb_"//trim(smb%grid%name)//"_restart.nc"
 
     else
 

@@ -434,8 +434,8 @@ contains
   if (l_restart) then
     ! Read initial state from output of previous simulation
 
-    call sico_read_restart("restart/"//trim(restart_in_dir)//"/ice_sico_"//trim(ice%grid%grid1%name)//"_restart.nc",ice)
-    print *,'read restart file ',"restart/"//trim(restart_in_dir)//"/ice_sico_"//trim(ice%grid%grid1%name)//"_restart.nc"
+    call sico_read_restart(trim(restart_in_dir)//"/ice_sico_"//trim(ice%grid%grid1%name)//"_restart.nc",ice)
+    print *,'read restart file ',trim(restart_in_dir)//"/ice_sico_"//trim(ice%grid%grid1%name)//"_restart.nc"
 
     if (ice%par%topograd==0) then
       call topograd_1(ice%state,ice%grid, 1)

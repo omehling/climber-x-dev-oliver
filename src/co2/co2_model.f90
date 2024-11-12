@@ -182,7 +182,7 @@ contains
           co2%dCemis_dt = 20._wp*time_now/(0.5_wp*co2_pulse/10._wp)*1.e12_wp     ! kgC/yr
         else if (time_now.lt.co2_pulse/10.) then
           ! down
-          co2%dCemis_dt = 20._wp*(100._wp-time_now)/(0.5_wp*co2_pulse/10._wp)*1.e12_wp     ! kgC/yr
+          co2%dCemis_dt = 20._wp*(co2_pulse/10._wp-time_now)/(0.5_wp*co2_pulse/10._wp)*1.e12_wp     ! kgC/yr
         else
           co2%dCemis_dt = 0._wp
         endif
@@ -298,7 +298,7 @@ contains
     if (co2_restart) then
 
       ! read restart file
-      call co2_read_restart("restart/"//trim(restart_in_dir)//"/co2_restart.nc",co2)
+      call co2_read_restart(trim(restart_in_dir)//"/co2_restart.nc",co2)
 
       ! derive CO2 concentration
       co2%co2 = co2%Catm * kgC_to_ppm

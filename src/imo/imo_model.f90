@@ -420,8 +420,8 @@ contains
     if (imo_restart) then
 
       ! read restart file 
-      call imo_read_restart("restart/"//trim(restart_in_dir)//"/imo_"//trim(imo%grid%name)//"_restart.nc",imo)
-      print *,'read restart file ',"restart/"//trim(restart_in_dir)//"/imo_"//trim(imo%grid%name)//"_restart.nc"
+      call imo_read_restart(trim(restart_in_dir)//"/imo_"//trim(imo%grid%name)//"_restart.nc",imo)
+      print *,'read restart file ',trim(restart_in_dir)//"/imo_"//trim(imo%grid%name)//"_restart.nc"
 
     else
 
