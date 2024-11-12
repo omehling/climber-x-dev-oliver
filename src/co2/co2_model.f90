@@ -298,7 +298,7 @@ contains
     if (co2_restart) then
 
       ! read restart file
-      call co2_read_restart("restart/"//trim(restart_in_dir)//"/co2_restart.nc",co2)
+      call co2_read_restart(trim(restart_in_dir)//"/co2_restart.nc",co2)
 
       ! derive CO2 concentration
       co2%co2 = co2%Catm * kgC_to_ppm

@@ -196,7 +196,7 @@ contains
       !------------------------------------------------------------------------
       ! read restart file
       !------------------------------------------------------------------------
-      call geo_read_restart("restart/"//trim(restart_in_dir)//"/geo_restart.nc",geo)
+      call geo_read_restart(trim(restart_in_dir)//"/geo_restart.nc",geo)
 
     else  
 

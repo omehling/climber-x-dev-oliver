@@ -415,7 +415,7 @@ contains
     if (atm_restart) then
       ! read restart file
 
-      call atm_read_restart("restart/"//trim(restart_in_dir)//"/atm_restart.nc",atm)
+      call atm_read_restart(trim(restart_in_dir)//"/atm_restart.nc",atm)
 
     else
       ! initial atmosperic state without restart      
