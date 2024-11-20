@@ -45,7 +45,6 @@
     topo_rel_field      = "H_ref"           ! "H_ref" or "H_ice_n"
     calv_tau            = 1.0               ! [a] Characteristic calving time
     calv_thin           = 30.0              ! [m/yr] Calving rate to apply to very thin ice
-    H_ref_calv_thin     = 50.0             ! [m] Reference ice thickness for thin ice calving
     H_min_grnd          = 0.1               ! [m] Minimum ice thickness at grounded margin (thinner ice is ablated) - helps with stability
     H_min_flt           = 0.0               ! [m] Minimum ice thickness at floating margin (thinner ice is ablated) - helps with stability
     sd_min              = 100.0             ! [m] calv_grnd(z_bed_sd <= sd_min) = 0.0 
@@ -64,6 +63,7 @@
     kt_ref              = 0.0025            ! [m yr-1 Pa-1] vm-l19 calving scaling parameter
     kt_deep             = 0.1               ! [m yr-1 Pa-1] vm-l19 calving scaling parameter for deep ocean
     Hc_ref              = 50.0 !200.0             ! [m] Calving limit in ice thickness (thinner ice calves)
+    Hc_ref_thin         = 50.0              ! [m] Reference ice thickness for thin ice calving
     Hc_deep             = 500.0 !500.0             ! [m] Calving limit in ice thickness (thinner ice calves)
     zb_deep_0           = -200.0 !-1500.0           ! [m] Bedrock elevation to begin transition to deep ocean
     zb_deep_1           = -1000.0 !-2000.0           ! [m] Bedrock elevation to end transition to deep ocean
