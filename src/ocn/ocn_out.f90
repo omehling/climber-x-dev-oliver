@@ -38,7 +38,7 @@ module ocn_out
   use control, only: out_dir
   use climber_grid, only : lon, lat, lonu, latv, basin_mask, basin_mask2, i_atlantic, i_pacific, i_indian, i_southern
   use ocn_grid, only: mask_c, mask_v, k1, k1_shelf, k1_1000, k1_3000, topo, bathy ,maxi, maxj, maxk
-  use ocn_grid, only : zro, zw, dx, dy, dz, dxv, ocn_area, ocn_area_tot, ocn_vol, ocn_vol_tot, rdy, dphi, phi0, s, sv
+  use ocn_grid, only : zro, zw, dx, dy, dz, dza, dxv, ocn_area, ocn_area_tot, ocn_vol, ocn_vol_tot, rdy, dphi, phi0, s, sv
   use ocn_grid, only: maxisles, n_isles
   use ocn_grid, only : map_isles, map_edge
   use ocn_params, only : l_daily_output, l_output_extended
@@ -3709,6 +3709,11 @@ contains
     call nc_write_dim(fnm,dim_isles,x=1._wp,dx=1._wp,nx=maxisles,ncid=ncid)
     call nc_write_dim(fnm,dim_type,x=1._wp,dx=1._wp,nx=5,units="[tot,adv,diff,over,gyre]",ncid=ncid)
     call nc_write_dim(fnm,dim_month,x=1._wp,dx=1._wp,nx=13,units="months",ncid=ncid)
+    call nc_write(fnm,"dx", dx, dims=[dim_lat],start=[1],count=[maxj],long_name="longitude grid distance at cell centers",units="m",ncid=ncid)
+    call nc_write(fnm,"dxv", dxv, dims=["latv1"],start=[1],count=[maxj+1],long_name="longitude grid distance at cell edges on v-grid",units="m",ncid=ncid)
+    call nc_write(fnm,"dy", dy, long_name="latitudinal grid distance at cell centers and cell edges",units="m",ncid=ncid)
+    call nc_write(fnm,"dz", dz(maxk:1:-1), dims=["lev"],start=[1],count=[maxk],long_name="thickness of grid cells",units="m",ncid=ncid)
+    call nc_write(fnm,"dzw", dza(maxk:1:-1), dims=["levw"],start=[1],count=[maxk],long_name="thickness between layer centers",units="m",ncid=ncid)
     call nc_close(ncid)
 
    return
