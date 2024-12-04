@@ -94,7 +94,7 @@ module ocn_out
   type ts_out
      integer :: ncells
      real(wp) :: area, vol
-     real(wp) :: sst, sss, t, s, cons
+     real(wp) :: sst, sss, t, s, cons, age, dye
      real(wp) :: tdocn, tdocn_atl, tdocn_pac, tdocn_ind, tdocn_so
      real(wp), dimension(6) :: ohc, ohc700, ohc2000
      real(wp) :: amoc26N, omaxa, omina, oinfa, omaxp, ominp, omaxs, omins
@@ -1024,7 +1024,7 @@ contains
     real(wp) :: dxz(maxj,maxk), dxza(maxj,maxk), dxzp(maxj,maxk) 
     real(wp) :: hfto(maxj), hfao(maxj), hfpo(maxj), hftg(maxj), hfag(maxj), hfpg(maxj)
     real(wp) :: fwto(maxj), fwao(maxj), fwpo(maxj), fwtg(maxj), fwag(maxj), fwpg(maxj)
-    real(wp) :: global_tocn, global_socn, global_sst, global_sss, global_cons
+    real(wp) :: global_tocn, global_socn, global_sst, global_sss, global_cons, global_age, global_dye
     real(wp), dimension(6) :: ohc, ohc700, ohc2000
     real(wp) :: tdocn, tdocn_atl, tdocn_pac, tdocn_ind, tdocn_so
     real(wp) :: ocnvol_tot, ocnvol_atl, ocnvol_pac, ocnvol_ind, ocnvol_so
@@ -1078,6 +1078,8 @@ contains
     ocnvol_ind = 0._wp
     ocnvol_so = 0._wp
     global_cons = 0._wp
+    global_age = 0._wp
+    global_dye = 0._wp
     global_cfc11 = 0.0_wp
     global_cfc12 = 0.0_wp
     sl_steric = 0._wp
@@ -1105,7 +1107,9 @@ contains
     endif
 
     !$omp parallel do collapse(2) private(i,j,k,l,ocnvol,tv2,tv3,bmask) &
-    !$omp reduction(+:sum_2d,sum_3d,ohc,ohc700,ohc2000,tdocn,tdocn_atl,tdocn_pac,tdocn_ind,tdocn_so,ocnvol_tot,ocnvol_atl,ocnvol_pac,ocnvol_ind,ocnvol_so,global_cons,global_cfc11,global_cfc12,sl_steric,fw,fw_corr,fw_noise,p_e,runoff,runoff_veg,runoff_ice,runoff_lake,calving,bmelt,vsf,flx,hft,hfp,hfa,fwt,fwp,fwa)
+    !$omp reduction(+:sum_2d,sum_3d,ohc,ohc700,ohc2000,tdocn,tdocn_atl,tdocn_pac,tdocn_ind,tdocn_so,ocnvol_tot) &
+    !$omp reduction(+:ocnvol_atl,ocnvol_pac,ocnvol_ind,ocnvol_so,global_cons,global_age,global_dye,global_cfc11,global_cfc12) &
+    !$omp reduction(+:sl_steric,fw,fw_corr,fw_noise,p_e,runoff,runoff_veg,runoff_ice,runoff_lake,calving,bmelt,vsf,flx,hft,hfp,hfa,fwt,fwp,fwa)
     do i=1,maxi
       do j=1,maxj
         bmask = basin_mask(i,j)
@@ -1340,6 +1344,10 @@ contains
             endif
             ! conservative tracer
             if (cons_tracer) global_cons = global_cons + ocn%ts(i,j,k,i_cons)*ocnvol
+            ! age tracer
+            if (age_tracer) global_age = global_age + ocn%ts(i,j,k,i_age)*ocnvol/ocn_vol_tot
+            ! dye tracer
+            if (dye_tracer) global_dye = global_dye + ocn%ts(i,j,k,i_dye)*ocnvol/ocn_vol_tot
             ! steric sea level
             sl_steric = sl_steric + ocnvol*rho0/ocn%rho(i,j,k) / ocn_area_tot0     ! m
           endif
@@ -1985,6 +1993,8 @@ contains
       ann_ts(y)%tdocn_ind = 0._wp
       ann_ts(y)%tdocn_so = 0._wp
       ann_ts(y)%cons= 0._wp
+      ann_ts(y)%age= 0._wp
+      ann_ts(y)%dye= 0._wp
       ann_ts(y)%ohc   = 0._wp
       ann_ts(y)%ohc700   = 0._wp
       ann_ts(y)%ohc2000  = 0._wp
@@ -2125,6 +2135,8 @@ contains
     ann_ts(y)%tdocn_ind  = ann_ts(y)%tdocn_ind  + tdocn_ind        * ann_avg ! °C
     ann_ts(y)%tdocn_so   = ann_ts(y)%tdocn_so   + tdocn_so         * ann_avg ! °C
     if (cons_tracer) ann_ts(y)%cons = ann_ts(y)%cons + global_cons  * ann_avg
+    if (age_tracer) ann_ts(y)%age = ann_ts(y)%age + global_age  * ann_avg
+    if (dye_tracer) ann_ts(y)%dye = ann_ts(y)%dye + global_dye  * ann_avg
     ann_ts(y)%ohc = ann_ts(y)%ohc + ohc        * ann_avg ! J
     ann_ts(y)%ohc700 = ann_ts(y)%ohc700 + ohc700        * ann_avg ! J
     ann_ts(y)%ohc2000 = ann_ts(y)%ohc2000 + ohc2000        * ann_avg ! J
@@ -3431,6 +3443,8 @@ contains
     call nc_write(fnm,"t_deep_ind",  vars%tdocn_ind,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Indian ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
     call nc_write(fnm,"t_deep_so ",  vars%tdocn_so ,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Southern ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
     if (cons_tracer) call nc_write(fnm,"cons",    vars%cons,   dim1=dim_time,start=[ndat],count=[y],long_name="conservative tracer",units="/",ncid=ncid)
+    if (age_tracer) call nc_write(fnm,"age",    vars%age,   dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged ideal age tracer",units="years",ncid=ncid)
+    if (dye_tracer) call nc_write(fnm,"dye",    vars%dye,   dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged dye tracer",units="/",ncid=ncid)
     call nc_write(fnm,"ohc",vars%ohc(1),dim1=dim_time,start=[ndat],count=[y],long_name="global ocean heat content ",units="J",ncid=ncid)
     call nc_write(fnm,"ohc_atl", vars%ohc(2),dim1=dim_time,start=[ndat],count=[y],long_name="Atlantic ocean heat content ",units="J",ncid=ncid)
     call nc_write(fnm,"ohc_natl",vars%ohc(6),dim1=dim_time,start=[ndat],count=[y],long_name="North Atlantic ocean heat content ",units="J",ncid=ncid)
