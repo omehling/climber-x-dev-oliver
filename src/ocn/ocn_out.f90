@@ -1538,30 +1538,6 @@ contains
     fov = fovs-fovn
     faz = fazs-fazn
 
-    do k=1,maxk
-      do i=1,maxi
-        j = jan(i)
-        if (lon(i).gt.-125._wp .and. lon(i).lt.100._wp .and. basin_mask(i,j).eq.i_atlantic) then
-          if (mask_v(i,j,k).eq.1) then
-            ! zonal integral of baroclinic meridional velocity
-            vzab = vzab + (ocn%u(2,i,j,k)-ocn%ub(2,i,j))*dxv(j) ! m2/s
-            ! zonal mean meridional velocity
-            vzam = vzam + ocn%u(2,i,j,k) ! m/s
-            ! zonal mean salinity
-            sza1 = sza1 + ocn%ts(i,j,k,2)
-            sza2 = sza2 + ocn%ts(i,j+1,k,2)
-            nxa = nxa+1
-          endif
-        endif
-      enddo
-      if (nxa>0) sza1 = sza1/nxa
-      if (nxa>0) sza2 = sza2/nxa
-      if (nxa>0) vzam = vzam/nxa
-      ! integrate vertically
-      fovn = fovn - vzab*0.5_wp*(sza1+sza2)*dz(k)    ! m3/s * psu
-      fazn = fazn - fazz*dz(k)    ! m3/s * psu
-    enddo
-
     ! global buoyancy flux
     buoyT = 0._wp
     buoyS = 0._wp
