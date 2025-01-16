@@ -69,7 +69,7 @@
     zb_deep_1           = -1000.0 !-2000.0           ! [m] Bedrock elevation to end transition to deep ocean
     zb_sigma            = 100e3             ! [m] Gaussian filtering of bedrock for calving transition to deep ocean
     dmb_alpha_max       = 60.0              ! [deg] Maximum angle of slope from coast at which to allow discharge
-    dmb_tau             = 20.0              ! [yr]  Discharge timescale
+    dmb_tau             = 30.0              ! [yr]  Discharge timescale
     dmb_sigma_ref       = 300.0             ! [m]   Reference bed roughness
     dmb_m_d             = 3.0               ! [-]   Discharge distance scaling exponent
     dmb_m_r             = 0.0               ! [-]   Discharge resolution scaling exponent
