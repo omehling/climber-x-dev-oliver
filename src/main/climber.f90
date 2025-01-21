@@ -240,7 +240,7 @@ program climber
        else
          n_tracers_bgc = 0
        endif
-       call ocn_init(ocn,geo%f_ocn,geo%z_bed,geo%ocn_vol_tot,geo%A_bering,l_daily_input_save_ocn)
+       call ocn_init(ocn,geo%f_ocn,geo%z_bed,geo%z_ocn_max_q,geo%mask_coast2,geo%ocn_vol_tot,geo%A_bering,l_daily_input_save_ocn)
        call ocn_diag_init
     endif
 

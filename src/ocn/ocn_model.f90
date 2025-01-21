@@ -39,7 +39,7 @@ module ocn_model
     use ocn_grid, only : grid_class, ocn_grid_init, ocn_grid_update
     use ocn_grid, only : maxi, maxj, maxk, maxisles, c, dzz, zw, zro, dz, dza, mask_ocn, k1, k1_pot, k_mix_brines, ocn_area, ocn_area_tot, ocn_vol
     use ocn_params, only : ocn_params_init, i_init, dbl
-    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines, frac_brines
+    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines, i_brines_z, frac_brines
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, n_tracers_bgc, idx_tracers_trans, age_tracer, dye_tracer, cons_tracer, l_cfc
     use ocn_params, only : i_age, i_dye, i_cons, i_cfc11, i_cfc12
     use ocn_params, only : l_mld, l_hosing, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
@@ -86,12 +86,12 @@ contains
 
     type(ocn_class) :: ocn
 
-    integer :: i, j, k, n, k_mix, n_mix
+    integer :: i, j, k, n, k_mix, n_mix, k1_max
     logical :: flag_brines
     real(wp) :: tau
     real(wp) :: vsf_saln0, vsf_saloc
     logical :: error, error_eq, error_noneq
-    real(wp) :: avg
+    real(wp) :: avg, tv1
 
     !$ logical, parameter :: print_omp = .false.
     !$ real(wp) :: time1,time2
@@ -305,20 +305,45 @@ contains
               ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%saln0/rho0   ! kg/m2/s -> m/s*psu
             else if (i_fw.eq.2) then
               ! virtual salinity flux using local salinity, compensate over the whole surface ocean to conserve salinity
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)-frac_brines*ocn%fw_brines(i,j)*ocn%saln0)/rho0 + ocn%dvsf  ! kg/m2/s -> m/s*psu 
             else if (i_fw.eq.3) then
               ! virtual salinity flux using local salinity
-              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)-frac_brines*ocn%fw_brines(i,j))*ocn%ts(i,j,maxk,2)/rho0   ! kg/m2/s -> m/s*psu 
+              ocn%flx_sur(i,j,2) = (ocn%fw_corr(i,j)*ocn%ts(i,j,maxk,2)-frac_brines*ocn%fw_brines(i,j)*ocn%saln0)/rho0  ! kg/m2/s -> m/s*psu 
             endif
 
             ! put brines at ocean bottom
-            k = k1(i,j)
-            if (i_fw.eq.1) then
+            if (i_brines_z.eq.1) then
+              k = k1(i,j)
               ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
-            else if (i_fw.eq.2) then
-              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
-            else if (i_fw.eq.3) then
-              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%ts(i,j,maxk,2)/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            else if (i_brines_z.eq.2) then
+              k1_max = k1(i,j)
+              tv1 = 5000._wp
+              do k=maxk,1,-1
+                if (abs(ocn%z_ocn_max(i,j)-zw(k-1)).lt.tv1) then
+                  k1_max = k
+                  tv1 = abs(ocn%z_ocn_max(i,j)-zw(k-1))
+                endif
+              enddo
+              k = max(k1(i,j),k1_max)
+              ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+            else if (i_brines_z.eq.3) then
+              k1_max = k1(i,j)
+              tv1 = 5000._wp
+              do k=maxk,1,-1
+                if (abs(ocn%z_ocn_max(i,j)-zw(k-1)).lt.tv1) then
+                  k1_max = k
+                  tv1 = abs(ocn%z_ocn_max(i,j)-zw(k-1))
+                endif
+              enddo
+              ! distribute freshwater flux from brine rejection over several layers and update salinity
+              k1_max = max(k1(i,j),k1_max)
+              do k=k1_max,maxk
+                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*dz(k)/sum(dz(k1_max:maxk))*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+              enddo
+            else if (i_brines_z.eq.4) then
+              do k=k1(i,j),maxk
+                ocn%ts(i,j,k,2) = ocn%ts(i,j,k,2) - frac_brines*ocn%fw_brines(i,j)*dz(k)/sum(dz(k1(i,j):maxk))*ocn%saln0/rho0/dz(k)*dt  ! kg/m2/s * psu  * m3/kg / m * s -> psu 
+              enddo
             endif
 
           else
@@ -430,9 +455,9 @@ contains
     !enddo
     !$ time1 = omp_get_wtime()
     call transport(ocn%l_tracers_trans,ocn%l_tracer_dic,ocn%l_tracers_isodiff,ocn%grid%l_large_vol_change, &
-                  ocn%u,ocn%ke_tau,ocn%flx_sur,ocn%flx_bot,ocn%f_ocn,ocn%mask_coast, &
+                  ocn%u,ocn%ke_tau,ocn%flx_sur,ocn%flx_bot,ocn%f_ocn,ocn%mask_coast,ocn%z_ocn_max, &
                   ocn%ts,ocn%rho,ocn%nconv,ocn%dconv,ocn%kven,ocn%dven,ocn%conv_pe, &
-                  ocn%mld,ocn%fdx,ocn%fdy,ocn%fdz,ocn%fax,ocn%fay,ocn%faz, ocn%error)
+                  ocn%mld,ocn%fdx,ocn%fdy,ocn%fdz,ocn%fax,ocn%fay,ocn%faz,ocn%dts_dt_adv,ocn%dts_dt_diff, ocn%error)
     !$ time2 = omp_get_wtime()
     !$ if(print_omp) print *,'transport',time2-time1
     !print *,'after'
@@ -491,7 +516,7 @@ contains
   !   Subroutine :  o c n _ i n i t
   !   Purpose    :  initialize ocean
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine ocn_init(ocn,f_ocn,z_ocn,ocn_vol_tot_real,A_bering,l_daily_input_save)
+  subroutine ocn_init(ocn,f_ocn,z_ocn,z_ocn_max,mask_coast,ocn_vol_tot_real,A_bering,l_daily_input_save)
 
     use ncio
 
@@ -500,6 +525,8 @@ contains
     type(ocn_class), intent(out) :: ocn
     real(wp), dimension(:,:), intent(in) :: f_ocn   !! ocean fraction including floating ice
     real(wp), dimension(:,:), intent(in) :: z_ocn   !! 'real' ocean bathymetry [m]
+    real(wp), dimension(:,:), intent(in) :: z_ocn_max   !! 'real' ocean bathymetry [m]
+    integer, dimension(:,:), intent(in) :: mask_coast   !! 'real' ocean bathymetry [m]
     real(dp), intent(in) :: ocn_vol_tot_real
     real(dp), intent(in) :: A_bering
     logical, intent(in) :: l_daily_input_save
@@ -520,7 +547,7 @@ contains
     !------------------------------------------------------------------------
     ! setup grid 
     !------------------------------------------------------------------------
-    call ocn_grid_init(f_ocn,z_ocn,ocn_vol_tot_real,ocn%grid)
+    call ocn_grid_init(f_ocn,z_ocn,z_ocn_max,mask_coast,ocn_vol_tot_real,ocn%grid)
 
     !------------------------------------------------------------------------
     ! number and index of tracers
@@ -853,6 +880,7 @@ contains
     allocate(ocn%l_tracer_dic(n_tracers_tot))
     allocate(ocn%l_tracers_isodiff(n_tracers_tot))
 
+    allocate(ocn%z_ocn_max(maxi,maxj))
     allocate(ocn%f_ocn(maxi,maxj))
     allocate(ocn%f_ocn2(maxi,maxj))
     allocate(ocn%f_sic(maxi,maxj))
@@ -887,6 +915,8 @@ contains
     allocate(ocn%fax(0:maxi,0:maxj,0:maxk,n_tracers_tot))
     allocate(ocn%fay(0:maxi,0:maxj,0:maxk,n_tracers_tot))
     allocate(ocn%faz(0:maxi,0:maxj,0:maxk,n_tracers_tot))
+    allocate(ocn%dts_dt_adv(maxi,maxj,maxk,n_tracers_tot))
+    allocate(ocn%dts_dt_diff(maxi,maxj,maxk,n_tracers_tot))
     allocate(ocn%sst_min(maxi,maxj))
     allocate(ocn%sst_max(maxi,maxj))
     allocate(ocn%flx_sur(maxi,maxj,n_tracers_tot))
@@ -1020,6 +1050,7 @@ contains
     type(ocn_class) :: ocn
 
 
+    deallocate(ocn%z_ocn_max)
     deallocate(ocn%f_ocn)
     deallocate(ocn%f_ocn2)
     deallocate(ocn%f_sic)
@@ -1046,6 +1077,8 @@ contains
     deallocate(ocn%fax)
     deallocate(ocn%fay)
     deallocate(ocn%faz)
+    deallocate(ocn%dts_dt_adv)
+    deallocate(ocn%dts_dt_diff)
     deallocate(ocn%flx_sur)
     deallocate(ocn%flx_bot)
     deallocate(ocn%tau)

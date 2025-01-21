@@ -168,6 +168,7 @@ module coupler
       integer, dimension(:,:),   allocatable :: mask_smb  !! mask of coupler grid points covered by smb domain(s) []
       integer, dimension(:,:),   allocatable :: mask_ice   !! mask of coupler grid points covered by ice sheet domain(s) []
       integer, dimension(:,:),   allocatable :: mask_coast   !! mask of coastal cells []
+      integer, dimension(:,:),   allocatable :: mask_coast2   !! mask of coastal cells []
       real(wp), dimension(:,:),   allocatable :: f_ocn  !! ocean fraction of grid cell, including floating ice []
       real(wp), dimension(:,:),   allocatable :: f_ocn2  !! ocean fraction of grid cell, excluding floating ice []
       real(wp), dimension(:,:),   allocatable :: f_sic  !! sea ice fraction of ocean fraction (f_ocn2) []
@@ -185,6 +186,7 @@ module coupler
       real(wp), dimension(:,:,:), allocatable :: f_astp  !! surface types fraction in atmosphere model []
       real(wp), dimension(:,:),   allocatable :: z_sur   !! mean surface elevation of grid cell [m]
       real(wp), dimension(:,:,:), allocatable :: z_sur_n   !! mean surface elevation of each surface type in atmosphere model [m]
+      real(wp), dimension(:,:),   allocatable :: z_ocn_max   !! max elevation of ocean, Q10 [m]
       real(wp), dimension(:,:),   allocatable :: z_veg   !! mean surface elevation of ice free land [m]
       real(wp), dimension(:,:),   allocatable :: z_veg_min   !! min surface elevation of ice free land [m]
       real(wp), dimension(:,:),   allocatable :: z_veg_max   !! max surface elevation of ice free land [m]
@@ -739,9 +741,10 @@ contains
       ocn%f_ocn_old = ocn%f_ocn
       ocn%grid%ocn_area_old = ocn%grid%ocn_area
       ocn%grid%ocn_vol_old  = ocn%grid%ocn_vol
+      ocn%z_ocn_max = cmn%z_ocn_max
       ocn%f_ocn     = cmn%f_ocn
       ocn%f_ocn2    = cmn%f_ocn2
-      ocn%mask_coast= cmn%mask_coast
+      ocn%mask_coast= cmn%mask_coast2
       ocn%grid%mask_ocn = cmn%mask_ocn
       ocn%cfc11_atm = cmn%cfc11
       ocn%cfc12_atm = cmn%cfc12
@@ -3158,6 +3161,7 @@ contains
       cmn%mask_ocn = 0
     endwhere
     cmn%mask_coast = geo%mask_coast
+    cmn%mask_coast2 = geo%mask_coast2
     ! total ocean volume
     cmn%ocn_vol_tot = geo%ocn_vol_tot
 
@@ -3220,6 +3224,7 @@ contains
 
     ! surface elevation on common grid
     cmn%z_sur = geo%z_sur
+    cmn%z_ocn_max = geo%z_ocn_max_q
     cmn%z_veg = geo%z_veg
     cmn%z_veg_min = geo%z_veg_min
     cmn%z_veg_max = geo%z_veg_max
@@ -3977,6 +3982,7 @@ contains
     cmn%f_lake= 0._wp
     cmn%z_sur = 0._wp
     cmn%z_sur_n = 0._wp
+    cmn%z_ocn_max = 0._wp
     cmn%z_veg = 0._wp
     cmn%z_veg_min = 0._wp
     cmn%z_veg_max = 0._wp
@@ -4137,6 +4143,7 @@ contains
     allocate(cmn%mask_smb(ni,nj))
     allocate(cmn%mask_ice(ni,nj))
     allocate(cmn%mask_coast(ni,nj))
+    allocate(cmn%mask_coast2(ni,nj))
     allocate(cmn%f_ocn(ni,nj))
     allocate(cmn%f_ocn2(ni,nj))
     allocate(cmn%f_sic(ni,nj))
@@ -4151,6 +4158,7 @@ contains
     allocate(cmn%disturbance(5,ni,nj))    
     allocate(cmn%z_sur(ni,nj))    
     allocate(cmn%z_sur_n(ni,nj,nsurf_macro))    
+    allocate(cmn%z_ocn_max(ni,nj))    
     allocate(cmn%z_veg(ni,nj))    
     allocate(cmn%z_veg_min(ni,nj))    
     allocate(cmn%z_veg_max(ni,nj))    

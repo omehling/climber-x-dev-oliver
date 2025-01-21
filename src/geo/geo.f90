@@ -156,6 +156,10 @@ contains
     allocate(geo%z_sur(ni,nj))
     allocate(geo%z_sur_std(ni,nj))
     allocate(geo%z_sur_smooth_std(ni,nj))
+    allocate(geo%z_ocn(ni,nj))
+    allocate(geo%z_ocn_min(ni,nj))
+    allocate(geo%z_ocn_max(ni,nj))
+    allocate(geo%z_ocn_max_q(ni,nj))
     allocate(geo%z_veg(ni,nj))
     allocate(geo%z_veg_min(ni,nj))
     allocate(geo%z_veg_max(ni,nj))
@@ -165,6 +169,7 @@ contains
     allocate(geo%z_lake(ni,nj))
     allocate(geo%z_bed(ni,nj))
     allocate(geo%mask_coast(ni,nj))
+    allocate(geo%mask_coast2(ni,nj))
     allocate(geo%i_coast_nbr(ni,nj,n_coast_cells))
     allocate(geo%j_coast_nbr(ni,nj,n_coast_cells))
     allocate(geo%coast_nbr(ni,nj))
@@ -839,7 +844,7 @@ contains
   call hires_to_lowres(geo%n_lakes, geo%hires%mask, geo%hires%mask_lake, geo%hires%z_topo, geo%hires%z_topo_fil, geo%hires%z_bed, geo%hires%z_sur, & ! in
     geo%hires%map_runoff, geo%hires%i_runoff_coarse, geo%hires%j_runoff_coarse, &   ! in
     geo%f_ocn, geo%f_ocn2, geo%f_lnd, geo%f_ice, geo%f_ice_grd, geo%f_ice_flt, geo%f_lake, geo%f_lake_n, &
-    geo%z_sur, geo%z_ice, geo%z_lake, geo%z_veg, geo%z_veg_min, geo%z_veg_max, geo%z_bed, &     ! out
+    geo%z_sur, geo%z_ocn, geo%z_ocn_min, geo%z_ocn_max, geo%z_ocn_max_q, geo%z_ice, geo%z_lake, geo%z_veg, geo%z_veg_min, geo%z_veg_max, geo%z_bed, & ! out
     geo%z_sur_std, geo%z_sur_smooth_std, geo%z_veg_std, geo%z_sur_lnd_std, &    ! out
     geo%f_drain_veg, geo%f_drain_ice, geo%i_runoff, geo%j_runoff, geo%i_runoff_veg, geo%j_runoff_veg, geo%i_runoff_ice, geo%j_runoff_ice)   ! out
   !$ time2 = omp_get_wtime()
@@ -880,7 +885,7 @@ contains
   !-------------------------------------------------------------------
   !$ time1 = omp_get_wtime()
   call coast_cells(geo%f_lnd, geo%i_runoff, geo%j_runoff, &      ! in
-    geo%mask_coast, geo%i_coast_nbr, geo%j_coast_nbr, geo%coast_nbr)   ! out
+    geo%mask_coast, geo%mask_coast2, geo%i_coast_nbr, geo%j_coast_nbr, geo%coast_nbr)   ! out
   !$ time2 = omp_get_wtime()
   !$ if(l_write_timer) print *,'coast_cells',time2-time1
 
@@ -1004,6 +1009,10 @@ contains
     deallocate(geo%z_sur)
     deallocate(geo%z_sur_std)
     deallocate(geo%z_sur_smooth_std)
+    deallocate(geo%z_ocn)
+    deallocate(geo%z_ocn_min)
+    deallocate(geo%z_ocn_max)
+    deallocate(geo%z_ocn_max_q)
     deallocate(geo%z_veg)
     deallocate(geo%z_veg_min)
     deallocate(geo%z_veg_max)
@@ -1013,6 +1022,7 @@ contains
     deallocate(geo%z_lake)
     deallocate(geo%z_bed)
     deallocate(geo%mask_coast)
+    deallocate(geo%mask_coast2)
     deallocate(geo%i_coast_nbr)
     deallocate(geo%j_coast_nbr)
     deallocate(geo%coast_nbr)
