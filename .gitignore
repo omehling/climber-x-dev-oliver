@@ -22,6 +22,7 @@ src/yelmo*
 src/vilma
 bench
 matlab
+julia
 data
 *.sh
 !run_bench_cx.sh
