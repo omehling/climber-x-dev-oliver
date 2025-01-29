@@ -104,6 +104,7 @@ module ocn_params
      integer :: n_cells_dist_calving
      integer :: n_cells_dist_weath
      logical :: l_fw_corr
+     logical :: l_fw_melt_ice_sep
      integer :: i_fw
      integer :: i_brines
      integer :: i_brines_z
@@ -292,6 +293,7 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","n_cells_dist_calving",n_cells_dist_calving)
     call nml_read(filename,"ocn_par","n_cells_dist_weath",n_cells_dist_weath)
     call nml_read(filename,"ocn_par","l_fw_corr",l_fw_corr)
+    call nml_read(filename,"ocn_par","l_fw_melt_ice_sep",l_fw_melt_ice_sep)
     call nml_read(filename,"ocn_par","i_fw",i_fw)
     call nml_read(filename,"ocn_par","init3_peak",init3_peak)
     call nml_read(filename,"ocn_par","init3_bg",init3_bg)

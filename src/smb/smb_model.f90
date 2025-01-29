@@ -294,6 +294,8 @@ contains
               smb%ann_refreezing(i,j)= smb%simple%melt_star(i,j)*sec_year   ! kg/m2 ! fixme?
               ! monthly runoff, same for all months
               smb%mon_runoff(i,j,:)      = smb%simple%runoff(i,j)   ! kg/m2/s
+              ! monthly icemelt, same for all months, simply taken as half of the runoff
+              smb%mon_icemelt(i,j,:)      = 0.5_wp*smb%simple%runoff(i,j)   ! kg/m2/s
               ! 10m firn temperature
               smb%t_ice(i,j)         = smb%simple%t_ice(i,j) ! degC
             endif
@@ -355,6 +357,7 @@ contains
 
       ! initialize
       smb%mon_runoff = 0._wp
+      smb%mon_icemelt = 0._wp
       smb%t_ice = 0._wp
 
     endif  
@@ -706,6 +709,8 @@ contains
       smb%runoff(i,j) = smb%snowmelt(i,j) + smb%icemelt(i,j) + smb%rain(i,j) - smb%refreezing(i,j)
       ! cumulate runoff values for each month
       smb%mon_runoff(i,j,mon) = smb%mon_runoff(i,j,mon) + smb%runoff(i,j)
+      ! cumulate icemelt values for each month
+      smb%mon_icemelt(i,j,mon) = smb%mon_icemelt(i,j,mon) + smb%icemelt(i,j)
       ! annual mean ice temperature
       smb%t_ice(i,j) = smb%t_ice(i,j) + smb%t_prof(i,j,nl) ! bottom layer
 
@@ -731,10 +736,12 @@ contains
     !$ time2 = omp_get_wtime()
     !$ if(l_write_timer) print *,'smb',time2-time1
 
-    ! Monthly mean runoff
+    ! Monthly mean runoff and icemelt
     if (time_eom_smb) then
-      smb%mon_runoff(:,:,mon) = smb%mon_runoff(:,:,mon)/real(nstep_mon_smb,wp) ! kg/m2/s
-      where (smb%mon_runoff.lt.0._wp) smb%mon_runoff = 0._wp
+      smb%mon_runoff(:,:,mon)  = smb%mon_runoff(:,:,mon)/real(nstep_mon_smb,wp) ! kg/m2/s
+      smb%mon_icemelt(:,:,mon) = smb%mon_icemelt(:,:,mon)/real(nstep_mon_smb,wp) ! kg/m2/s
+      where (smb%mon_runoff.lt.0._wp)  smb%mon_runoff  = 0._wp
+      where (smb%mon_icemelt.lt.0._wp) smb%mon_icemelt = 0._wp
     endif
 
     if (time_eoy_smb) then
@@ -844,6 +851,7 @@ contains
 
         ! set to zero, not available for this SMB scheme
         smb%mon_runoff(:,:,:) = 0._wp
+        smb%mon_icemelt(:,:,:) = 0._wp
         smb%ann_prc(:,:)  = 0._wp
         smb%ann_runoff(:,:) = 0._wp
       endif
@@ -1268,6 +1276,7 @@ contains
     allocate(smb%t_prof(smb%grid%G%nx,smb%grid%G%ny,0:nl))
     allocate(smb%t_prof_old(smb%grid%G%nx,smb%grid%G%ny,0:nl))
     allocate(smb%mon_runoff(smb%grid%G%nx,smb%grid%G%ny,nmon_year))
+    allocate(smb%mon_icemelt(smb%grid%G%nx,smb%grid%G%ny,nmon_year))
 
     call grid_allocate(smb%grid, smb%simple%pdd             )
     call grid_allocate(smb%grid, smb%simple%t2m_cum         )
@@ -1454,7 +1463,8 @@ contains
       smb%t2m            = T0+5._wp
 
       smb%t_ice            = T0 
-      smb%mon_runoff           = 0._wp
+      smb%mon_runoff       = 0._wp
+      smb%mon_icemelt      = 0._wp
 
       smb%snowmelt         = 0._wp 
       smb%icemelt          = 0._wp 
@@ -1755,6 +1765,7 @@ contains
     deallocate(smb%t_prof)
     deallocate(smb%t_prof_old)
     deallocate(smb%mon_runoff)
+    deallocate(smb%mon_icemelt)
 
     deallocate(smb%simple%pdd             )
     deallocate(smb%simple%t2m_cum         )
@@ -1828,6 +1839,9 @@ contains
 
     call nc_write(fnm,"runoff", smb%mon_runoff, dims=[dim_x,dim_y,dim_month],start=[1,1,1],count=[nx,ny,nmon_year], &
       long_name="monthly mean runoff",grid_mapping="polar_stereographic",units="kg/m2/s",ncid=ncid)    
+
+    call nc_write(fnm,"mon_icemelt", smb%mon_icemelt, dims=[dim_x,dim_y,dim_month],start=[1,1,1],count=[nx,ny,nmon_year], &
+      long_name="monthly mean icemelt",grid_mapping="polar_stereographic",units="kg/m2/s",ncid=ncid)    
 
     call nc_write(fnm,"snowmelt", smb%snowmelt, dims=[dim_x,dim_y],start=[1,1],count=[nx,ny], &
       long_name="snowmelt",grid_mapping="polar_stereographic",units="kg/m2/s",ncid=ncid)    
@@ -1912,6 +1926,8 @@ contains
     call nc_read(fnm,"t_ice", smb%t_ice)
 
     call nc_read(fnm,"runoff", smb%mon_runoff)
+
+    call nc_read(fnm,"mon_icemelt", smb%mon_icemelt)
 
     call nc_read(fnm,"snowmelt", smb%snowmelt)
 

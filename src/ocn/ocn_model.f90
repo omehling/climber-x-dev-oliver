@@ -37,9 +37,9 @@ module ocn_model
     use constants, only : pi, cap_w, Lf, omega
     use climber_grid, only : lon, lat
     use ocn_grid, only : grid_class, ocn_grid_init, ocn_grid_update
-    use ocn_grid, only : maxi, maxj, maxk, maxisles, c, dzz, zw, zro, dz, dza, mask_ocn, k1, k1_pot, k_mix_brines, ocn_area, ocn_area_tot, ocn_vol
+    use ocn_grid, only : maxi, maxj, maxk, maxisles, c, dzz, zw, zro, dz, dza, mask_ocn, mask_c, k1, k1_pot, k_mix_brines, ocn_area, ocn_area_tot, ocn_vol
     use ocn_params, only : ocn_params_init, i_init, dbl
-    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, i_brines, i_brines_z, frac_brines
+    use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, l_fw_melt_ice_sep, i_brines, i_brines_z, frac_brines
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, n_tracers_bgc, idx_tracers_trans, age_tracer, dye_tracer, cons_tracer, l_cfc
     use ocn_params, only : i_age, i_dye, i_cons, i_cfc11, i_cfc12
     use ocn_params, only : l_mld, l_hosing, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
@@ -89,6 +89,7 @@ contains
     integer :: i, j, k, n, k_mix, n_mix, k1_max
     logical :: flag_brines
     real(wp) :: tau
+    real(wp) :: sal_before, sal_after
     real(wp) :: vsf_saln0, vsf_saloc
     logical :: error, error_eq, error_noneq
     real(wp) :: avg, tv1
@@ -215,8 +216,13 @@ contains
 
     !$ time1 = omp_get_wtime()
 
-    ! add runoff, calving and basal melt freshwater fluxes
-    ocn%fw = ocn%fw + ocn%runoff + ocn%calving + ocn%bmelt_grd + ocn%bmelt_flt
+    if (l_fw_melt_ice_sep) then
+      ! add runoff (with contribution by melting of ice sheets removed), calving and basal melt freshwater fluxes
+      ocn%fw = ocn%fw + (ocn%runoff-ocn%melt_ice) + ocn%calving + ocn%bmelt_grd + ocn%bmelt_flt
+    else
+      ! add runoff, calving and basal melt freshwater fluxes
+      ocn%fw = ocn%fw + ocn%runoff + ocn%calving + ocn%bmelt_grd + ocn%bmelt_flt
+    endif
 
     if (l_fw_corr) then
       ! compute annual net freshwater flux to be used for correction
@@ -229,11 +235,28 @@ contains
       ocn%fw_corr = ocn%fw
     endif
 
+    if (l_fw_melt_ice_sep) then
+      ! apply freshwater flux from ice sheet melt and update salinity
+      ! total salinity before
+      sal_before = sum(ocn%ts(:,:,:,2)*ocn_vol)
+      where (mask_ocn.eq.1)
+        ! change in surface salinity due to applied freshwater flux from ice sheet melt
+        ocn%ts(:,:,maxk,2) = ocn%ts(:,:,maxk,2) - ocn%melt_ice(:,:)*ocn%ts(:,:,maxk,2)/rho0/dz(maxk)*dt   ! kg/m2/s * psu * m3/kg / m * s = psu
+      endwhere
+      ! total salinity after
+      sal_after = sum(ocn%ts(:,:,:,2)*ocn_vol)
+      ! make sure net effect of ice sheet meltwater on total ocean salinity is zero
+      where (mask_c.eq.1) 
+        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) - (sal_after-sal_before)/ocn%grid%ocn_vol_tot
+      endwhere
+      !print *,'sal_before,sal_mid,sal_after',sal_before/ocn%grid%ocn_vol_tot,sal_after/ocn%grid%ocn_vol_tot,sum(ocn%ts(:,:,:,2)*ocn_vol)/ocn%grid%ocn_vol_tot
+    endif
+
     ! update freshwater hosing and add it to freshwater flux, if needed
     if (l_hosing .and. time_soy_ocn) then
       call hosing_update(real(year,wp),ocn%f_ocn,ocn%amoc,ocn%hosing,ocn%fw_hosing)
     endif
-    ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing
+    ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing 
 
     ! remove latent heat needed to melt ice reaching the ocean through calving and basal melt below ice shelfs
     ocn%flx = ocn%flx - ocn%calving*Lf - ocn%bmelt_flt*Lf    ! kg/m2/s * J/kg = W/m2 
@@ -844,6 +867,8 @@ contains
       ocn%noise_flx = 0._wp
     endif
 
+    ocn%melt_ice(:,:) = 0._wp
+
     ocn%amoc = 0._wp
 
     ocn%A_bering = A_bering
@@ -900,6 +925,7 @@ contains
     allocate(ocn%runoff_veg(maxi,maxj))
     allocate(ocn%runoff_ice(maxi,maxj))
     allocate(ocn%runoff_lake(maxi,maxj))
+    allocate(ocn%melt_ice(maxi,maxj))
     allocate(ocn%calving(maxi,maxj))
     allocate(ocn%bmelt(maxi,maxj))
     allocate(ocn%bmelt_grd(maxi,maxj))

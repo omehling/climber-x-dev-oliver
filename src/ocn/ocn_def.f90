@@ -103,6 +103,7 @@ module ocn_def
      real(wp), allocatable :: runoff(:,:)   !! runoff into the ocean [kg/m2/s] 
      real(wp), allocatable :: runoff_veg(:,:)   !! runoff into the ocean [kg/m2/s] 
      real(wp), allocatable :: runoff_ice(:,:)   !! runoff into the ocean [kg/m2/s] 
+     real(wp), allocatable :: melt_ice(:,:)   !! freshwater flux into the ocean from ice sheet melt [kg/m2/s] 
      real(wp), allocatable :: runoff_lake(:,:)   !! runoff into the ocean [kg/m2/s] 
      real(wp), allocatable :: calving(:,:)   !! ice calving into the ocean [kg/m2/s] 
      real(wp), allocatable :: bmelt(:,:)   !! basal melt of ice into the ocean [kg/m2/s] 

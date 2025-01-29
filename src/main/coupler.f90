@@ -281,14 +281,15 @@ module coupler
       real(wp), dimension(:,:),   allocatable :: runoff_veg  !! runoff from vegetated grid cell parts [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_veg !! calving from vegetated grid cell parts [kg/s]
       real(wp), dimension(:,:),   allocatable :: runoff_ice  !! runoff from ice sheets [kg/s]
+      real(wp), dimension(:,:),   allocatable :: melt_ice  !! ice sheet melt [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice !! calving from ice sheets [kg/s]
       real(wp), dimension(:,:),   allocatable :: bmelt_grd !! basal melt from grounded ice sheets [kg/s]
       real(wp), dimension(:,:),   allocatable :: bmelt_flt !! basal melt from floating ice shelfs [kg/s]
       real(wp), dimension(:,:),   allocatable :: runoff_ice_l  !! runoff from ice sheets computed by land model [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice_l !! calving from ice sheets computed by land model [kg/s]
-      real(wp), dimension(:,:,:), allocatable :: melt_ice_i_mon  !! monthly ice sheet melt from prescribed bnd ice thickness changes [kg/s]
+      real(wp), dimension(:,:,:), allocatable :: melt_ice_i_mon  !! monthly ice sheet melt [kg/s]
       real(wp), dimension(:,:,:), allocatable :: acc_ice_i_mon  !! monthly ice sheet net accumulation from prescribed bnd ice thickness changes [kg/s]
-      real(wp), dimension(:,:,:), allocatable :: runoff_ice_i_mon  !! monthly runoff from ice sheets computed by smb model [kg/s]
+      real(wp), dimension(:,:,:), allocatable :: runoff_ice_i_mon  !! monthly runoff from ice sheets [kg/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice_i !! calving from ice sheets computed by ice model [kg/s]
       real(wp), dimension(:,:),   allocatable :: bmelt_grd_i !! basal melt from grounded ice sheets computed by ice model [kg/s]
       real(wp), dimension(:,:),   allocatable :: bmelt_flt_i !! basal melt from floating ice shelfs computed by ice model [kg/s]
@@ -301,6 +302,7 @@ module coupler
       real(wp), dimension(:,:),   allocatable :: runoff_veg_o  !! runoff from vegetated grid cell parts on ocean domain [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: calving_veg_o !! calving from vegetated grid cell parts on ocean domain [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: runoff_ice_o  !! runoff from ice sheets on ocean domain [kg/m2/s]
+      real(wp), dimension(:,:),   allocatable :: melt_ice_o  !! freshwater flux to the ocean from ice sheet melt [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: calving_ice_o !! calving from ice sheets on ocean domain [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: runoff_lake_o  !! runoff from lakes on ocean domain [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: calving_lake_o !! calving from lakes on ocean domain [kg/m2/s]
@@ -832,6 +834,7 @@ contains
         ocn%runoff_veg    = cmn%runoff_veg_o
         ocn%runoff_ice    = cmn%runoff_ice_o
         ocn%runoff_lake   = cmn%runoff_lake_o
+        ocn%melt_ice  = cmn%melt_ice_o
         ocn%calving   = cmn%calving_o
         ocn%bmelt_grd = cmn%bmelt_grd_o
         ocn%bmelt_flt = cmn%bmelt_flt_o
@@ -2253,6 +2256,7 @@ contains
     logical, save :: firstcall = .true.
 
     real(wp), allocatable, dimension(:,:,:) :: runoff_ice_i_mon
+    real(wp), allocatable, dimension(:,:,:) :: melt_ice_i_mon
 
 
     if (firstcall .or. time_eoy_smb) then
@@ -2261,15 +2265,17 @@ contains
 
       ! initialize runoff to 0 only where smb domain covers coupler grid (to avoid overwriting possible other ice sheet domains)
       allocate(runoff_ice_i_mon(cmn%grid%G%nx,cmn%grid%G%ny,nmon_year))
+      allocate(melt_ice_i_mon(cmn%grid%G%nx,cmn%grid%G%ny,nmon_year))
       do i=1,cmn%grid%G%nx
         do j=1,cmn%grid%G%ny
           if (smb%grid_smb_to_cmn%ncells(i,j)>0) then
             runoff_ice_i_mon(i,j,:) = 0._wp
+            melt_ice_i_mon(i,j,:) = 0._wp
           endif
         enddo
       enddo
 
-      ! integrate runoff over grid-cell smb ice sheet area
+      ! integrate runoff and icemelt over grid-cell smb ice sheet area
       !!$omp parallel do private(ii,jj,i,j)
       do ii=1,smb%grid%G%nx
         do jj=1,smb%grid%G%ny
@@ -2278,6 +2284,7 @@ contains
             i = smb%grid_smb_to_cmn%i_lowres(ii,jj)
             j = smb%grid_smb_to_cmn%j_lowres(ii,jj)
             runoff_ice_i_mon(i,j,:) = runoff_ice_i_mon(i,j,:) + smb%mon_runoff(ii,jj,:)*smb%grid%area(ii,jj)*1.e6_wp  ! kg/m2/s * m2 -> kg/s 
+            melt_ice_i_mon(i,j,:)   = melt_ice_i_mon(i,j,:)   + smb%mon_icemelt(ii,jj,:)*smb%grid%area(ii,jj)*1.e6_wp  ! kg/m2/s * m2 -> kg/s 
           endif
         enddo
       enddo
@@ -2288,11 +2295,13 @@ contains
         do j=1,cmn%grid%G%ny
           if (smb%grid_smb_to_cmn%ncells(i,j)>0) then
             cmn%runoff_ice_i_mon(i,j,:) = relax_run*cmn%runoff_ice_i_mon(i,j,:) + (1._wp-relax_run)*runoff_ice_i_mon(i,j,:)
+            cmn%melt_ice_i_mon(i,j,:)   = relax_run*cmn%melt_ice_i_mon(i,j,:)   + (1._wp-relax_run)*melt_ice_i_mon(i,j,:)
           endif
         enddo
       enddo
 
       deallocate(runoff_ice_i_mon)
+      deallocate(melt_ice_i_mon)
 
     endif
 
@@ -3668,11 +3677,15 @@ contains
       do i=1,ni
 
         if (cmn%mask_smb(i,j).eq.0) then
-          ! grid cell not covered by smb model domain(s), use runoff computed in the land model + melt from prescribed ice sheet changes (if applicable)
-          cmn%runoff_ice(i,j) = cmn%runoff_ice_l(i,j) + scale_runoff_ice*cmn%melt_ice_i_mon(i,j,mon)
+          ! grid cell not covered by smb model domain(s) 
+          ! melt from prescribed ice sheet changes (if applicable)
+          cmn%melt_ice(i,j) = scale_runoff_ice*cmn%melt_ice_i_mon(i,j,mon)
+          ! use runoff computed in the land model + melt from prescribed ice sheet changes (if applicable)
+          cmn%runoff_ice(i,j) = cmn%runoff_ice_l(i,j) + cmn%melt_ice(i,j)
         else
-          ! grid cell covered by smb model domain(s), use monthly runoff computed by smb 
-          cmn%runoff_ice(i,j)  = scale_runoff_ice*cmn%runoff_ice_i_mon(i,j,mon)
+          ! grid cell covered by smb model domain(s), use monthly runoff and icemelt computed by smb 
+          cmn%runoff_ice(i,j) = scale_runoff_ice*cmn%runoff_ice_i_mon(i,j,mon)
+          cmn%melt_ice(i,j)   = scale_runoff_ice*cmn%melt_ice_i_mon(i,j,mon)  
         endif
 
         if (cmn%mask_ice(i,j).eq.0) then
@@ -3715,6 +3728,7 @@ contains
     cmn%runoff_veg_o  = 0._wp
     cmn%calving_veg_o = 0._wp
     cmn%runoff_ice_o  = 0._wp
+    cmn%melt_ice_o    = 0._wp
     cmn%calving_ice_o = 0._wp
     cmn%runoff_lake_o  = 0._wp
     cmn%calving_lake_o = 0._wp
@@ -3783,6 +3797,8 @@ contains
             jj = cmn%j_coast_nbr(ir,jr,n)
             cmn%runoff_ice_o(ii,jj) = cmn%runoff_ice_o(ii,jj) &
               + cmn%runoff_ice(i,j) * cmn%f_drain_ice(0,i,j) / area_nbr     ! kg/m2/s
+            cmn%melt_ice_o(ii,jj)   = cmn%melt_ice_o(ii,jj) &
+              + cmn%melt_ice(i,j) * cmn%f_drain_ice(0,i,j) / area_nbr     ! kg/m2/s
             cmn%bmelt_grd_o(ii,jj) = cmn%bmelt_grd_o(ii,jj) &
               + cmn%bmelt_grd(i,j) * cmn%f_drain_ice(0,i,j) / area_nbr    ! kg/m2/s
             cmn%bmelt_flt_o(ii,jj) = cmn%bmelt_flt_o(ii,jj) &
@@ -4058,6 +4074,7 @@ contains
     cmn%runoff_veg = 0._wp
     cmn%calving_veg = 0._wp
     cmn%runoff_ice = 0._wp
+    cmn%melt_ice = 0._wp
     cmn%calving_ice = 0._wp
     cmn%bmelt_grd = 0._wp
     cmn%bmelt_flt = 0._wp
@@ -4078,6 +4095,7 @@ contains
     cmn%runoff_veg_o = 0._wp
     cmn%calving_veg_o = 0._wp
     cmn%runoff_ice_o = 0._wp
+    cmn%melt_ice_o = 0._wp
     cmn%calving_ice_o = 0._wp
     cmn%runoff_lake_o = 0._wp
     cmn%calving_lake_o = 0._wp
@@ -4247,6 +4265,7 @@ contains
     allocate(cmn%runoff_veg(ni,nj)) 
     allocate(cmn%calving_veg(ni,nj))
     allocate(cmn%runoff_ice(ni,nj)) 
+    allocate(cmn%melt_ice(ni,nj)) 
     allocate(cmn%calving_ice(ni,nj))
     allocate(cmn%bmelt_grd(ni,nj))
     allocate(cmn%bmelt_flt(ni,nj))
@@ -4267,6 +4286,7 @@ contains
     allocate(cmn%runoff_veg_o(ni,nj)) 
     allocate(cmn%calving_veg_o(ni,nj))
     allocate(cmn%runoff_ice_o(ni,nj)) 
+    allocate(cmn%melt_ice_o(ni,nj)) 
     allocate(cmn%calving_ice_o(ni,nj)) 
     allocate(cmn%runoff_lake_o(ni,nj)) 
     allocate(cmn%calving_lake_o(ni,nj)) 
