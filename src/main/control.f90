@@ -56,8 +56,6 @@ module control
 
   logical :: l_feedbacks
 
-  integer :: i_map
-
   integer :: iorbit
   real(wp) :: ecc_const, obl_const, per_const
   character (len=256) :: orbit_file
@@ -234,7 +232,6 @@ contains
     call nml_read(filename,"control","ocn_restore_sal",ocn_restore_sal)
     call nml_read(filename,"control","ocn_restore_temp",ocn_restore_temp)
     call nml_read(filename,"control","atm_fix_tau",atm_fix_tau)
-    call nml_read(filename,"control","i_map",i_map)
 
     call nml_read(filename,"control","iorbit",iorbit)
     call nml_read(filename,"control","ecc_const",ecc_const)

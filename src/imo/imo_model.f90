@@ -30,12 +30,11 @@ module imo_model
   use precision, only : wp, dp
   use constants, only : rho_i, rho_sw, Lf, cap_w
   use timer, only : nmon_year, nstep_year_imo, time_soy_imo, time_eoy_imo
-  use control, only : out_dir, restart_in_dir, imo_restart, i_map
+  use control, only : out_dir, restart_in_dir, imo_restart
   use imo_grid, only : imo_grid_init
   use imo_params, only : imo_params_init, dt, i_imo, imo_const, k_1, k_2, l_fix_depth, fix_depth, depth_disc, l_depth_scale, zl_ref, l_bm_lake
   use imo_def, only : imo_class
   use coord, only : grid_allocate, grid_class
-  use coord, only : map_init, map_class, map_field
   use coord, only : map_scrip_init, map_scrip_class, map_scrip_field
 
   implicit none
@@ -144,21 +143,12 @@ contains
   if (.not.allocated(imo%s_ocn)) allocate(imo%s_ocn(imo%grid%G%nx,imo%grid%G%ny,nk_ocn))
 
   ! map shelf temperature and salinity to ice sheet grid
-  if (i_map==1) then
-    !$omp parallel do private(k)
-    do k=1,nk_ocn
-      call map_field(imo%map_cmn_to_ice,"t_ocn",imo%t_ocn_in(:,:,k), imo%t_ocn(:,:,k),method="bilinear")
-      call map_field(imo%map_cmn_to_ice,"s_ocn",imo%s_ocn_in(:,:,k), imo%s_ocn(:,:,k),method="bilinear")
-    enddo
-    !$omp end parallel do 
-  else if (i_map==2) then
-    !$omp parallel do private(k)
-    do k=1,nk_ocn
-      call map_scrip_field(imo%maps_cmn_to_ice,"t_ocn",imo%t_ocn_in(:,:,k), imo%t_ocn(:,:,k),method="mean",missing_value=-9999._dp)
-      call map_scrip_field(imo%maps_cmn_to_ice,"s_ocn",imo%s_ocn_in(:,:,k), imo%s_ocn(:,:,k),method="mean",missing_value=-9999._dp)
-    enddo
-    !$omp end parallel do 
-  endif
+  !$omp parallel do private(k)
+  do k=1,nk_ocn
+    call map_scrip_field(imo%maps_cmn_to_ice,"t_ocn",imo%t_ocn_in(:,:,k), imo%t_ocn(:,:,k),method="mean",missing_value=-9999._dp)
+    call map_scrip_field(imo%maps_cmn_to_ice,"s_ocn",imo%s_ocn_in(:,:,k), imo%s_ocn(:,:,k),method="mean",missing_value=-9999._dp)
+  enddo
+  !$omp end parallel do 
 
 
   !---------------------------
@@ -220,21 +210,12 @@ contains
   if (.not.allocated(imo%s_lake)) allocate(imo%s_lake(imo%grid%G%nx,imo%grid%G%ny,nk_lake))
 
   ! map lake temperature and salinity to ice sheet grid
-  if (i_map==1) then
-    !$omp parallel do private(k)
-    do k=1,nk_lake
-      call map_field(imo%map_cmn_to_ice,"t_lake",imo%t_lake_in(:,:,k), imo%t_lake(:,:,k),method="bilinear")
-      call map_field(imo%map_cmn_to_ice,"s_lake",imo%s_lake_in(:,:,k), imo%s_lake(:,:,k),method="bilinear")
-    enddo
-    !$omp end parallel do 
-  else if (i_map==2) then
-    !$omp parallel do private(k)
-    do k=1,nk_lake
-      call map_scrip_field(imo%maps_cmn_to_ice,"t_lake",imo%t_lake_in(:,:,k), imo%t_lake(:,:,k),method="mean",missing_value=-9999._dp)
-      call map_scrip_field(imo%maps_cmn_to_ice,"s_lake",imo%s_lake_in(:,:,k), imo%s_lake(:,:,k),method="mean",missing_value=-9999._dp)
-    enddo
-    !$omp end parallel do 
-  endif
+  !$omp parallel do private(k)
+  do k=1,nk_lake
+    call map_scrip_field(imo%maps_cmn_to_ice,"t_lake",imo%t_lake_in(:,:,k), imo%t_lake(:,:,k),method="mean",missing_value=-9999._dp)
+    call map_scrip_field(imo%maps_cmn_to_ice,"s_lake",imo%s_lake_in(:,:,k), imo%s_lake(:,:,k),method="mean",missing_value=-9999._dp)
+  enddo
+  !$omp end parallel do 
 
   ! index of fix_depth 
   k_fix_ocn = minloc(abs(imo%z_ocn_in-fix_depth),1)
@@ -395,11 +376,7 @@ contains
     imo%grid = grid
 
     ! Generate mapping from cmn to imo/ice
-    if (i_map==1) then
-      call map_init(imo%map_cmn_to_ice,cmn_grid,imo%grid,max_neighbors=4,lat_lim=10._dp,dist_max=1.e6_dp)
-    else if (i_map==2) then
-      call map_scrip_init(imo%maps_cmn_to_ice,cmn_grid,imo%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-    endif
+    call map_scrip_init(imo%maps_cmn_to_ice,cmn_grid,imo%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
 
     imo%grid_in = cmn_grid
 

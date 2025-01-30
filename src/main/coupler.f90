@@ -44,12 +44,10 @@ module coupler
     use control, only : l_weathering
     use control, only : restart_in_dir
     use control, only : l_aqua_slab
-    use control, only : i_map
     use constants, only : fqsat, q_sat_w, q_sat_i, Le, Lf, frac_vu
     use constants, only : rho_w, rho_sw, cap_w, rho_i, T0, c13_c12_std, c14_c_std, pi, ppm_to_PgC
     use constants, only : sigma, cap_a
     use coord, only : grid_class, grid_init
-    use coord, only : map_class, map_init, map_field
     use coord, only : map_scrip_class, map_scrip_init, map_scrip_field
     use ncio
     use filter, only : filter1d, smooth2
@@ -2389,7 +2387,6 @@ contains
     type(geo_class) :: geo
     type(smb_class) :: smb
 
-    type(map_class) :: map_geo_to_smb
     type(map_scrip_class) :: maps_geo_to_smb
 
     real(wp), allocatable :: h_ice(:,:)
@@ -2397,37 +2394,28 @@ contains
 
     ! no ice model, use ice sheets from bnd
     allocate(h_ice(smb%grid%G%nx,smb%grid%G%ny))
-    if (i_map==1) then
-      ! initialize map
-      call map_init(map_geo_to_smb,geo%hires%grid,smb%grid, &
-        lat_lim=2._dp*(geo%hires%grid%lat(1,2)-geo%hires%grid%lat(1,1)),dist_max=2.e5_dp,max_neighbors=1)
-      ! map surface elevation
-      call map_field(map_geo_to_smb,"topo",geo%hires%z_topo,smb%z_sur,method="nn") 
-      ! map ice thickness
-      call map_field(map_geo_to_smb,"h_ice",geo%hires%h_ice,h_ice,method="nn") 
-    else if (i_map==2) then
-      call map_scrip_init(maps_geo_to_smb,geo%hires%grid,smb%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
-      ! map surface elevation
-      call map_scrip_field(maps_geo_to_smb,"topo",geo%hires%z_topo,smb%z_sur,method="mean",missing_value=-9999._dp, &
-        filt_method="none",filt_par=[5._dp*smb%grid%G%dx,smb%grid%G%dx])
-      ! map ice thickness
-      call map_scrip_field(maps_geo_to_smb,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
-        filt_method="none",filt_par=[5._dp*smb%grid%G%dx,smb%grid%G%dx])
-      where (h_ice<10._wp) h_ice = 0._wp
-      endif
-      where (smb%z_sur.lt.0._wp) 
-        smb%z_sur = 0._Wp
-      endwhere
-      ! generate ice mask
-      where (h_ice.gt.0._wp) 
-        smb%mask_ice = 1
-      elsewhere
-        smb%mask_ice = 0
-      endwhere
-      smb%mask_ice_old = smb%mask_ice
-      ! ice thickness
-      smb%h_ice = h_ice
-      deallocate(h_ice)
+    call map_scrip_init(maps_geo_to_smb,geo%hires%grid,smb%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
+    ! map surface elevation
+    call map_scrip_field(maps_geo_to_smb,"topo",geo%hires%z_topo,smb%z_sur,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*smb%grid%G%dx,smb%grid%G%dx])
+    ! map ice thickness
+    call map_scrip_field(maps_geo_to_smb,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*smb%grid%G%dx,smb%grid%G%dx])
+    where (h_ice<10._wp) h_ice = 0._wp
+
+    where (smb%z_sur.lt.0._wp) 
+      smb%z_sur = 0._Wp
+    endwhere
+    ! generate ice mask
+    where (h_ice.gt.0._wp) 
+      smb%mask_ice = 1
+    elsewhere
+      smb%mask_ice = 0
+    endwhere
+    smb%mask_ice_old = smb%mask_ice
+    ! ice thickness
+    smb%h_ice = h_ice
+    deallocate(h_ice)
 
 
     return
@@ -2605,7 +2593,6 @@ contains
     type(geo_class) :: geo
     type(imo_class) :: imo
 
-    type(map_class) :: map_geo_to_imo
     type(map_scrip_class) :: maps_geo_to_imo
 
     real(wp), allocatable :: h_ice(:,:)
@@ -2615,37 +2602,27 @@ contains
     ! no ice model, use ice sheets from bnd
     allocate(h_ice(imo%grid%G%nx,imo%grid%G%ny))
     allocate(z_bed(imo%grid%G%nx,imo%grid%G%ny))
-    if (i_map==1) then
-      ! initialize map
-      call map_init(map_geo_to_imo,geo%hires%grid,imo%grid, &
-        lat_lim=2._dp*(geo%hires%grid%lat(1,2)-geo%hires%grid%lat(1,1)),dist_max=2.e5_dp,max_neighbors=1)
-      ! map ice base elevation
-      call map_field(map_geo_to_imo,"zb",geo%hires%z_topo-geo%hires%h_ice,imo%zb,method="nn") 
-      ! map ice thickness and bedrock elevation
-      call map_field(map_geo_to_imo,"h_ice",geo%hires%h_ice,h_ice,method="nn") 
-      call map_field(map_geo_to_imo,"z_bed",geo%hires%z_bed,z_bed,method="nn") 
-    else if (i_map==2) then
-      ! initialize map
-      call map_scrip_init(maps_geo_to_imo,geo%hires%grid,imo%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
-      ! map ice base elevation
-      call map_scrip_field(maps_geo_to_imo,"zb",geo%hires%z_topo-geo%hires%h_ice,imo%zb,method="mean",missing_value=-9999._dp, &
+    ! initialize map
+    call map_scrip_init(maps_geo_to_imo,geo%hires%grid,imo%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
+    ! map ice base elevation
+    call map_scrip_field(maps_geo_to_imo,"zb",geo%hires%z_topo-geo%hires%h_ice,imo%zb,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
+    ! map ice thickness and bedrock elevation
+    call map_scrip_field(maps_geo_to_imo,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
+    where (h_ice<10._wp) h_ice = 0._wp
+      call map_scrip_field(maps_geo_to_imo,"z_bed",geo%hires%z_bed,z_bed,method="mean",missing_value=-9999._dp, &
         filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
-      ! map ice thickness and bedrock elevation
-      call map_scrip_field(maps_geo_to_imo,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
-        filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
-      where (h_ice<10._wp) h_ice = 0._wp
-        call map_scrip_field(maps_geo_to_imo,"z_bed",geo%hires%z_bed,z_bed,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
-      endif
-      ! generate ice shelf mask
-      where (h_ice.gt.0._wp .and. h_ice.lt.(-z_bed*rho_sw/rho_i) .and. z_bed.lt.0._wp)
-        imo%mask_ice_shelf = 1
-      elsewhere
-        imo%mask_ice_shelf = 0
-      endwhere
-      imo%zl_fil = z_bed
-      deallocate(h_ice)
-      deallocate(z_bed)
+
+    ! generate ice shelf mask
+    where (h_ice.gt.0._wp .and. h_ice.lt.(-z_bed*rho_sw/rho_i) .and. z_bed.lt.0._wp)
+      imo%mask_ice_shelf = 1
+    elsewhere
+      imo%mask_ice_shelf = 0
+    endwhere
+    imo%zl_fil = z_bed
+    deallocate(h_ice)
+    deallocate(z_bed)
 
 
     return
@@ -2771,7 +2748,6 @@ contains
     real(wp), save :: V_ice_af_old
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
-    type(map_class), save, allocatable, dimension(:) :: map_ice_to_geo
     type(map_scrip_class), save, allocatable, dimension(:) :: maps_hice_to_geo
     type(map_scrip_class), save, allocatable, dimension(:) :: maps_mask_to_geo
 
@@ -2782,19 +2758,11 @@ contains
     ! initialize map
     !----------------------------------------------------------------
     if (firstcall) then
-      if (i_map==1) then
-        allocate(map_ice_to_geo(n_ice_domain))
-      else if (i_map==2) then
-        allocate(maps_hice_to_geo(n_ice_domain))
-        allocate(maps_mask_to_geo(n_ice_domain))
-      endif
+      allocate(maps_hice_to_geo(n_ice_domain))
+      allocate(maps_mask_to_geo(n_ice_domain))
       do n=1,n_ice_domain
-        if (i_map==1) then
-          call map_init(map_ice_to_geo(n),ice(n)%grid,geo%hires%grid,lat_lim=abs(5._dp*(ice(n)%grid%lat(1,2)-ice(n)%grid%lat(1,1))),dist_max=1.e5_dp,max_neighbors=4)
-        else if (i_map==2) then
-          call map_scrip_init(maps_hice_to_geo(n),ice(n)%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          call map_scrip_init(maps_mask_to_geo(n),ice(n)%grid,geo%hires%grid,method="nn",fldr="maps",load=.TRUE.,clean=.FALSE.)
-        endif
+        call map_scrip_init(maps_hice_to_geo(n),ice(n)%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
+        call map_scrip_init(maps_mask_to_geo(n),ice(n)%grid,geo%hires%grid,method="nn",fldr="maps",load=.TRUE.,clean=.FALSE.)
       enddo
     endif
 
@@ -2804,29 +2772,25 @@ contains
     !!$omp parallel do
     do n=1,n_ice_domain
       ! ice thickness
-      if (i_map==1) then
-        call map_field(map_ice_to_geo(n),"hice",ice(n)%H_ice,geo%hires%h_ice,method="nn") 
-      else if (i_map==2) then
-        call map_scrip_field(maps_hice_to_geo(n),"hice",ice(n)%H_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
-          filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-        allocate(mask_ice(ice(n)%grid%G%nx,ice(n)%grid%G%ny))
-        allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
-        where (ice(n)%H_ice>h_ice_min) 
-          mask_ice = 1.
-        elsewhere
-          mask_ice = 0.
-        endwhere
-        mask_ice_geo = 1.
-        call map_scrip_field(maps_hice_to_geo(n),"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._dp,reset=.false., &
-          filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-        where (mask_ice_geo<0.5) geo%hires%h_ice = 0._wp
-        !mask_ice_geo = 0._wp
-        !call map_scrip_field(maps_hice_to_geo(n),"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._wp,reset=.false., &
-        !  filt_method="none",filt_par=[5.0*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-        !where (mask_ice_geo>0.5_wp) mask_ice_geo = 1._wp
-        deallocate(mask_ice)
-        deallocate(mask_ice_geo)
-      endif
+      call map_scrip_field(maps_hice_to_geo(n),"hice",ice(n)%H_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
+        filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
+      allocate(mask_ice(ice(n)%grid%G%nx,ice(n)%grid%G%ny))
+      allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
+      where (ice(n)%H_ice>h_ice_min) 
+        mask_ice = 1.
+      elsewhere
+        mask_ice = 0.
+      endwhere
+      mask_ice_geo = 1.
+      call map_scrip_field(maps_hice_to_geo(n),"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._dp,reset=.false., &
+        filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
+      where (mask_ice_geo<0.5) geo%hires%h_ice = 0._wp
+      !mask_ice_geo = 0._wp
+      !call map_scrip_field(maps_hice_to_geo(n),"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._wp,reset=.false., &
+      !  filt_method="none",filt_par=[5.0*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
+      !where (mask_ice_geo>0.5_wp) mask_ice_geo = 1._wp
+      deallocate(mask_ice)
+      deallocate(mask_ice_geo)
       !print *,'ice vol ice',sum(ice(n)%H_ice(:,:)*ice(n)%grid%area(:,:)) * 1.e6_wp ! m3
       !print *,'ice vol geo',sum(geo%hires%h_ice(:,:)*geo%hires%grid%area(:,:), mask=mask_ice_geo==1._wp) * 1.e6_wp ! m3
 
@@ -2900,7 +2864,6 @@ contains
     type(ice_class) :: ice(:)
 
     integer :: n 
-    type(map_class), save, allocatable, dimension(:) :: map_geo_to_ice
     type(map_scrip_class), save, allocatable, dimension(:) :: maps_geo_to_ice
     type(map_scrip_class), save, allocatable, dimension(:) :: maps_geo_to_ice_nn
 
@@ -2911,20 +2874,11 @@ contains
     ! initialize map
     !----------------------------------------------------------------
     if (firstcall) then
-      if (i_map==1) then
-        allocate(map_geo_to_ice(n_ice_domain))
-      else if (i_map==2) then
-        allocate(maps_geo_to_ice(n_ice_domain))
-        allocate(maps_geo_to_ice_nn(n_ice_domain))
-      endif
+      allocate(maps_geo_to_ice(n_ice_domain))
+      allocate(maps_geo_to_ice_nn(n_ice_domain))
       do n=1,n_ice_domain
-        if (i_map==1) then
-        call map_init(map_geo_to_ice(n),geo%hires%grid,ice(n)%grid, &
-          lat_lim=2._dp*(geo%hires%grid%lat(1,2)-geo%hires%grid%lat(1,1)),dist_max=1.e5_dp,max_neighbors=4)
-        else if (i_map==2) then
-          call map_scrip_init(maps_geo_to_ice(n),geo%hires%grid,ice(n)%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          call map_scrip_init(maps_geo_to_ice_nn(n),geo%hires%grid,ice(n)%grid,method="nn",fldr="maps",load=.TRUE.,clean=.FALSE.)
-        endif
+        call map_scrip_init(maps_geo_to_ice(n),geo%hires%grid,ice(n)%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
+        call map_scrip_init(maps_geo_to_ice_nn(n),geo%hires%grid,ice(n)%grid,method="nn",fldr="maps",load=.TRUE.,clean=.FALSE.)
       enddo
     endif
 
@@ -2933,55 +2887,32 @@ contains
     !----------------------------------------------------------------
     do n=1,n_ice_domain
 
-      if (i_map==1) then
-        !$omp parallel sections
-        !$omp section
-        ! map ocean/lake mask to ice grid
-        call map_field(map_geo_to_ice(n),"mask_ocn_lake",geo%hires%mask_ocn_lake,ice(n)%mask_ocn_lake,method="nn") 
-        !$omp section
-        ! map sea (lake) level to ice grid, sea level over ocean is ==0
-        call map_field(map_geo_to_ice(n),"z_sl",geo%hires%z_lake,ice(n)%z_sl,method="bilinear") 
-        !$omp section
-        ! map lithosphere elevation relative to contemporary sea level (geoid)
-        call map_field(map_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed,method="bilinear") 
-        !$omp section
-        ! map lithosphere elevation relative to contemporary sea level (geoid), filtered
-        call map_field(map_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed_fil,method="bilinear") 
-        !$omp section
-        ! map geothermal heat flux to ice grid
-        call map_field(map_geo_to_ice(n),"q_geo",geo%hires%q_geo,ice(n)%q_geo,method="bilinear")
-        !$omp section
-        ! map sediment mask to ice grid
-        call map_field(map_geo_to_ice(n),"h_sed",geo%hires%h_sed,ice(n)%H_sed,method="bilinear")
-        !$omp end parallel sections
-      else if (i_map==2) then
-        !$omp parallel sections
-        !$omp section
-        ! map ocean/lake mask to ice grid
-        call map_scrip_field(maps_geo_to_ice_nn(n),"mask_ocn_lake",geo%hires%mask_ocn_lake,ice(n)%mask_ocn_lake,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[100._dp,ice(n)%grid%G%dx])
-        !$omp section
-        ! map sea (lake) level to ice grid, sea level over ocean is ==0
-        call map_scrip_field(maps_geo_to_ice(n),"z_sl",geo%hires%z_sea_lake,ice(n)%z_sl,method="mean",missing_value=-9999._dp, &
-          filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
-        !$omp section
-        ! map lithosphere elevation relative to contemporary sea level (geoid)
-        call map_scrip_field(maps_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[5._dp*ice(n)%grid%G%dx,ice(n)%grid%G%dx])
-        !$omp section
-        ! map lithosphere elevation relative to contemporary sea level (geoid), filtered
-        call map_scrip_field(maps_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed_fil,method="mean",missing_value=-9999._dp, &
-          filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
-        !$omp section
-        ! map geothermal heat flux to ice grid
-        call map_scrip_field(maps_geo_to_ice(n),"q_geo",geo%hires%q_geo,ice(n)%q_geo,method="mean",missing_value=-9999._dp, &
-          filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
-        !$omp section
-        ! map sediment mask to ice grid
-        call map_scrip_field(maps_geo_to_ice(n),"h_sed",geo%hires%h_sed,ice(n)%H_sed,method="mean",missing_value=-9999._dp, &
-          filt_method="none",filt_par=[100._dp,ice(n)%grid%G%dx])
-        !$omp end parallel sections
-      endif
+      !$omp parallel sections
+      !$omp section
+      ! map ocean/lake mask to ice grid
+      call map_scrip_field(maps_geo_to_ice_nn(n),"mask_ocn_lake",geo%hires%mask_ocn_lake,ice(n)%mask_ocn_lake,method="mean",missing_value=-9999._dp, &
+        filt_method="none",filt_par=[100._dp,ice(n)%grid%G%dx])
+      !$omp section
+      ! map sea (lake) level to ice grid, sea level over ocean is ==0
+      call map_scrip_field(maps_geo_to_ice(n),"z_sl",geo%hires%z_sea_lake,ice(n)%z_sl,method="mean",missing_value=-9999._dp, &
+        filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
+      !$omp section
+      ! map lithosphere elevation relative to contemporary sea level (geoid)
+      call map_scrip_field(maps_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed,method="mean",missing_value=-9999._dp, &
+        filt_method="none",filt_par=[5._dp*ice(n)%grid%G%dx,ice(n)%grid%G%dx])
+      !$omp section
+      ! map lithosphere elevation relative to contemporary sea level (geoid), filtered
+      call map_scrip_field(maps_geo_to_ice(n),"zbed",geo%hires%z_bed,ice(n)%z_bed_fil,method="mean",missing_value=-9999._dp, &
+        filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
+      !$omp section
+      ! map geothermal heat flux to ice grid
+      call map_scrip_field(maps_geo_to_ice(n),"q_geo",geo%hires%q_geo,ice(n)%q_geo,method="mean",missing_value=-9999._dp, &
+        filt_method="gaussian",filt_par=[100._dp,ice(n)%grid%G%dx])
+      !$omp section
+      ! map sediment mask to ice grid
+      call map_scrip_field(maps_geo_to_ice(n),"h_sed",geo%hires%h_sed,ice(n)%H_sed,method="mean",missing_value=-9999._dp, &
+        filt_method="none",filt_par=[100._dp,ice(n)%grid%G%dx])
+      !$omp end parallel sections
 
     enddo
 
@@ -3005,8 +2936,6 @@ contains
 
     real(wp), allocatable, dimension(:,:) :: mask_ice
     real(wp), allocatable, dimension(:,:) :: mask_ice_geo
-    type(map_class), save :: map_bndice_to_geo
-    type(map_class), save :: map_bndgeo_to_geo
     type(map_scrip_class), save :: maps_bndice_to_geo
     type(map_scrip_class), save :: maps_bndgeo_to_geo
 
@@ -3027,12 +2956,7 @@ contains
           ! grids are different
           l_samegrid_geo_bndice = .false.
           ! initialize map
-          if (i_map==1) then
-            call map_init(map_bndice_to_geo,bnd%ice%grid,geo%hires%grid, &
-              lat_lim=2._dp*(bnd%ice%grid%lat(1,2)-bnd%ice%grid%lat(1,1)),dist_max=1.e6_dp,max_neighbors=1)
-          else if (i_map==2) then
-            call map_scrip_init(maps_bndice_to_geo,bnd%ice%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          endif
+          call map_scrip_init(maps_bndice_to_geo,bnd%ice%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
         endif
       endif
 
@@ -3045,12 +2969,7 @@ contains
           ! grids are different
           l_samegrid_geo_bndgeo = .false.
           ! initialize map
-          if (i_map==1) then
-            call map_init(map_bndgeo_to_geo,bnd%geo%grid,geo%hires%grid, &
-              lat_lim=5._dp*(bnd%geo%grid%lat(1,2)-bnd%geo%grid%lat(1,1)),dist_max=1.e6_dp,max_neighbors=10)
-          else if (i_map==2) then
-            call map_scrip_init(maps_bndgeo_to_geo,bnd%geo%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
-          endif
+          call map_scrip_init(maps_bndgeo_to_geo,bnd%geo%grid,geo%hires%grid,method="bil",fldr="maps",load=.TRUE.,clean=.FALSE.)
         endif
       endif
 
@@ -3061,25 +2980,21 @@ contains
       if (l_samegrid_geo_bndice) then
         geo%hires%h_ice = bnd%ice%h_ice
       else
-        if (i_map==1) then
-          call map_field(map_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="nn") 
-        else if (i_map==2) then
-          call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
-            filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-          allocate(mask_ice(bnd%ice%grid%G%nx,bnd%ice%grid%G%ny))
-          allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
-          where (bnd%ice%h_ice>h_ice_min) 
-            mask_ice = 1.
-          elsewhere
-            mask_ice = 0.
-          endwhere
-          mask_ice_geo = 1.
-          call map_scrip_field(maps_bndice_to_geo,"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._dp,reset=.false., &
-            filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-          where (mask_ice_geo<0.5) geo%hires%h_ice = 0._wp
-          deallocate(mask_ice)
-          deallocate(mask_ice_geo)
-        endif
+        call map_scrip_field(maps_bndice_to_geo,"hice",bnd%ice%h_ice,geo%hires%h_ice,method="mean",missing_value=-9999._dp,reset=.false., &
+          filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
+        allocate(mask_ice(bnd%ice%grid%G%nx,bnd%ice%grid%G%ny))
+        allocate(mask_ice_geo(geo%hires%grid%G%nx,geo%hires%grid%G%ny))
+        where (bnd%ice%h_ice>h_ice_min) 
+          mask_ice = 1.
+        elsewhere
+          mask_ice = 0.
+        endwhere
+        mask_ice_geo = 1.
+        call map_scrip_field(maps_bndice_to_geo,"mask",mask_ice,mask_ice_geo,method="mean",missing_value=-9999._dp,reset=.false., &
+          filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
+        where (mask_ice_geo<0.5) geo%hires%h_ice = 0._wp
+        deallocate(mask_ice)
+        deallocate(mask_ice_geo)
       endif
     endif
 
@@ -3090,12 +3005,8 @@ contains
         bnd%geo%z_bed_ref = bnd%geo%z_bed
       else
         ! map bedrock topography to geo
-        if (i_map==1) then
-          call map_field(map_bndgeo_to_geo,"zbed",bnd%geo%z_bed-bnd%geo%z_bed_ref,z_bed_anom,method="quadrant") 
-        else if (i_map==2) then
-          call map_scrip_field(maps_bndgeo_to_geo,"zbed",bnd%geo%z_bed-bnd%geo%z_bed_ref,z_bed_anom,method="mean",missing_value=-9999._dp, &
-            filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
-        endif
+        call map_scrip_field(maps_bndgeo_to_geo,"zbed",bnd%geo%z_bed-bnd%geo%z_bed_ref,z_bed_anom,method="mean",missing_value=-9999._dp, &
+          filt_method="none",filt_par=[5._dp*geo%hires%grid%G%dx,geo%hires%grid%G%dx])
         geo%hires%z_bed = geo%hires%z_bed_ref + z_bed_anom 
       endif
     endif

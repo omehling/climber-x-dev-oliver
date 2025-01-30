@@ -37,10 +37,6 @@
  ocn_restore_temp = F        ! use surface temperature restoring for ocean model?
  atm_fix_tau = F
 
- i_map = 2                   ! mapping method to use: 
-                             ! 1 = coordinates internal mapping routine
-                             ! 2 = mapping weights computed by external call to cdo (v1.9.6 or higher required)
-
  !-------------------------------------------------------
  ! model timer settings
  !-------------------------------------------------------
