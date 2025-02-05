@@ -48,10 +48,10 @@ include config/Makefile_climber.mk
 
 # Compile the static libraries using their own Makefiles
 coord-static: 
-	$(MAKE) -C $(COORDROOT) coord-static parallel=$(openmp)
+	$(MAKE) -C $(COORDROOT) coord-static openmp=$(openmp)
 
 yelmo-static: 
-	$(MAKE) -C $(YELMOROOT) yelmo-static parallel=$(openmp)
+	$(MAKE) -C $(YELMOROOT) yelmo-static openmp=$(openmp)
 #	cp $(YELMOROOT)/git_yelmo.txt ./
 
 climber-clim: FFLAGS = $(FFLAGS_CLIM)
