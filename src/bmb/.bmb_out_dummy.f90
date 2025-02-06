@@ -1,42 +1,42 @@
-module imo_out
+module bmb_out
 
-  use imo_def, only : imo_class
+  use bmb_def, only : bmb_class
 
   implicit none
 
   private
-  public :: imo_diag, imo_diag_init
+  public :: bmb_diag, bmb_diag_init
 
 
 contains
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Function :  i m o _ d i a g _ i n i t
-  ! Purpose  :  Initialize netcdf output for imo
+  ! Function :  b m b _ d i a g _ i n i t
+  ! Purpose  :  Initialize netcdf output for bmb
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_diag_init(imo)
+  subroutine bmb_diag_init(bmb)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
    return
 
-  end subroutine imo_diag_init
+  end subroutine bmb_diag_init
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  !   Subroutine :  i m o _ d i a g
+  !   Subroutine :  b m b _ d i a g
   !   Purpose    :  sea ice diagnostics
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_diag(imo)
+  subroutine bmb_diag(bmb)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
    return
 
-  end subroutine imo_diag
+  end subroutine bmb_diag
 
-end module imo_out
+end module bmb_out

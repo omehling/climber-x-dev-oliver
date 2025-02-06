@@ -37,7 +37,7 @@ module coupler
     use climber_grid, only : lon, lat, basin_mask, i_atlantic, i_pacific
     use control, only : ico2_rad, ich4_rad, id13c, iD14c, prc_forcing
     use control, only : ocn_restore_temp, ocn_restore_sal, atm_fix_tau
-    use control, only : flag_co2, flag_ch4, flag_atm, flag_ocn, flag_bgc, flag_sic, flag_lnd, flag_dust, flag_smb, flag_imo, flag_ice, flag_geo, flag_lakes
+    use control, only : flag_co2, flag_ch4, flag_atm, flag_ocn, flag_bgc, flag_sic, flag_lnd, flag_dust, flag_smb, flag_bmb, flag_ice, flag_geo, flag_lakes
     use control, only : geo_restart
     use control, only : ifake_ice
     use control, only : l_spinup_cc
@@ -61,7 +61,7 @@ module coupler
     use co2_def, only : co2_class
     use ch4_def, only : ch4_class
     use smb_def, only : smb_in_class, smb_class
-    use imo_def, only : imo_class
+    use bmb_def, only : bmb_class
     use bnd_mod, only : bnd_class
     use geo_def, only : geo_class
     use lake_mod, only : lake_type
@@ -93,9 +93,9 @@ module coupler
     public :: cmn_to_lnd, lnd_to_cmn
     public :: cmn_to_smb, smb_to_cmn
     public :: ice_to_smb, smb_to_ice 
-    public :: cmn_to_imo, imo_to_cmn
-    public :: ice_to_imo, imo_to_ice 
-    public :: geo_to_imo
+    public :: cmn_to_bmb, bmb_to_cmn
+    public :: ice_to_bmb, bmb_to_ice 
+    public :: geo_to_bmb
     public :: ice_to_cmn
     public :: ice_to_geo, geo_to_ice
     public :: geo_to_smb, geo_to_cmn
@@ -207,10 +207,10 @@ module coupler
       real(wp), dimension(:,:),   allocatable :: p_e_sic_ocn !! freshwater flux into the ocean (excluding runoff) [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: fw_brines !! freshwater flux related to brine rejection [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: t_shelf    !! temperature on ocean shelf surface [K]
-      real(wp), dimension(:),     allocatable :: z_ocn_imo    !! depth of ocean layers for basal melt [m]
-      integer,  dimension(:,:,:), allocatable :: mask_ocn_imo    !! ocean mask for basal melt [1]
-      real(wp), dimension(:,:,:), allocatable :: t_ocn_imo    !! ocean temperature for basal melt [degC]
-      real(wp), dimension(:,:,:), allocatable :: s_ocn_imo    !! ocean salinity for basal melt [psu]
+      real(wp), dimension(:),     allocatable :: z_ocn_bmb    !! depth of ocean layers for basal melt [m]
+      integer,  dimension(:,:,:), allocatable :: mask_ocn_bmb    !! ocean mask for basal melt [1]
+      real(wp), dimension(:,:,:), allocatable :: t_ocn_bmb    !! ocean temperature for basal melt [degC]
+      real(wp), dimension(:,:,:), allocatable :: s_ocn_bmb    !! ocean salinity for basal melt [psu]
       real(wp), dimension(:,:,:), allocatable :: taux   !! zonal surface wind stress [N/m2]
       real(wp), dimension(:,:,:), allocatable :: tauy   !! meridional surface wind stress [N/m2] 
       real(wp), dimension(:,:),   allocatable :: tauxo  !! zonal sea ice stress on ocean [N/m2]
@@ -313,10 +313,10 @@ module coupler
       real(wp), dimension(:,:),   allocatable :: lake_p_e  !! P-E for lake [kg/m2/s]
       real(wp), dimension(:,:),   allocatable :: h_lake  !! average lake(s) depth on coupler grid [m]
       real(wp), dimension(:,:),   allocatable :: f_ice_lake  !! ice fraction over lake [1]
-      real(wp), dimension(:),     allocatable :: z_lake_imo    !! depth of lake layers for basal melt [m]
-      integer,  dimension(:,:), allocatable :: mask_lake_imo    !! lake mask for basal melt [1]
-      real(wp), dimension(:,:,:), allocatable :: t_lake_imo    !! lake temperature for basal melt [degC]
-      real(wp), dimension(:,:,:), allocatable :: s_lake_imo    !! lake salinity for basal melt [psu]
+      real(wp), dimension(:),     allocatable :: z_lake_bmb    !! depth of lake layers for basal melt [m]
+      integer,  dimension(:,:), allocatable :: mask_lake_bmb    !! lake mask for basal melt [1]
+      real(wp), dimension(:,:,:), allocatable :: t_lake_bmb    !! lake temperature for basal melt [degC]
+      real(wp), dimension(:,:,:), allocatable :: s_lake_bmb    !! lake salinity for basal melt [psu]
       integer, dimension(:), allocatable :: idivide_pac_atl 
       integer, dimension(:), allocatable :: idivide_atl_indpac
       real(wp) :: eccentricity
@@ -974,18 +974,18 @@ contains
     type(cmn_class) :: cmn
     type(ocn_class) :: ocn
 
-    integer :: i, j, k, ii, jj, iii, jjj, n, nk, kshelf, k_imo
+    integer :: i, j, k, ii, jj, iii, jjj, n, nk, kshelf, k_bmb
 
 
     ! find index of top 1 km ocean layers for basal melt
-    if (flag_imo) then
-      k_imo = minloc(abs(ocn%grid%zro+1000._wp),1)
-      nk = ocn%grid%nk - k_imo + 1
-      if (.not.allocated(cmn%z_ocn_imo)) allocate(cmn%z_ocn_imo(nk))
-      if (.not.allocated(cmn%mask_ocn_imo)) allocate(cmn%mask_ocn_imo(ni,nj,nk))
-      if (.not.allocated(cmn%t_ocn_imo)) allocate(cmn%t_ocn_imo(ni,nj,nk))
-      if (.not.allocated(cmn%s_ocn_imo)) allocate(cmn%s_ocn_imo(ni,nj,nk))
-      cmn%z_ocn_imo = -ocn%grid%zro(ocn%grid%nk:k_imo:-1)
+    if (flag_bmb) then
+      k_bmb = minloc(abs(ocn%grid%zro+1000._wp),1)
+      nk = ocn%grid%nk - k_bmb + 1
+      if (.not.allocated(cmn%z_ocn_bmb)) allocate(cmn%z_ocn_bmb(nk))
+      if (.not.allocated(cmn%mask_ocn_bmb)) allocate(cmn%mask_ocn_bmb(ni,nj,nk))
+      if (.not.allocated(cmn%t_ocn_bmb)) allocate(cmn%t_ocn_bmb(ni,nj,nk))
+      if (.not.allocated(cmn%s_ocn_bmb)) allocate(cmn%s_ocn_bmb(ni,nj,nk))
+      cmn%z_ocn_bmb = -ocn%grid%zro(ocn%grid%nk:k_bmb:-1)
     endif
 
     !$omp parallel do collapse(2) private(i,j,kshelf,ii,jj,iii,jjj,n)
@@ -1002,11 +1002,11 @@ contains
           kshelf = max(ocn%grid%k1(i,j),k1_shelf)  
           cmn%t_shelf(i,j) = ocn%ts(i,j,kshelf,1) + T0  ! K
         endif
-        if (flag_imo) then
+        if (flag_bmb) then
           ! temperature and salinity for ice shelf basal melt
-          cmn%mask_ocn_imo(i,j,1:nk) = ocn%grid%mask_c(i,j,ocn%grid%nk:k_imo:-1)
-          cmn%t_ocn_imo(i,j,1:nk) = ocn%ts(i,j,ocn%grid%nk:k_imo:-1,1)  ! degC
-          cmn%s_ocn_imo(i,j,1:nk) = ocn%ts(i,j,ocn%grid%nk:k_imo:-1,2)  ! psu
+          cmn%mask_ocn_bmb(i,j,1:nk) = ocn%grid%mask_c(i,j,ocn%grid%nk:k_bmb:-1)
+          cmn%t_ocn_bmb(i,j,1:nk) = ocn%ts(i,j,ocn%grid%nk:k_bmb:-1,1)  ! degC
+          cmn%s_ocn_bmb(i,j,1:nk) = ocn%ts(i,j,ocn%grid%nk:k_bmb:-1,2)  ! psu
         endif
       enddo
     enddo
@@ -1367,13 +1367,13 @@ contains
 
 
     ! find index of top 1 km ocean layers for basal melt
-    if (flag_imo) then
+    if (flag_bmb) then
       nk = size(lnd%z_lake)
-      if (.not.allocated(cmn%z_lake_imo)) allocate(cmn%z_lake_imo(nk))
-      if (.not.allocated(cmn%mask_lake_imo)) allocate(cmn%mask_lake_imo(ni,nj))
-      if (.not.allocated(cmn%t_lake_imo)) allocate(cmn%t_lake_imo(ni,nj,nk))
-      if (.not.allocated(cmn%s_lake_imo)) allocate(cmn%s_lake_imo(ni,nj,nk))
-      cmn%z_lake_imo = lnd%z_lake
+      if (.not.allocated(cmn%z_lake_bmb)) allocate(cmn%z_lake_bmb(nk))
+      if (.not.allocated(cmn%mask_lake_bmb)) allocate(cmn%mask_lake_bmb(ni,nj))
+      if (.not.allocated(cmn%t_lake_bmb)) allocate(cmn%t_lake_bmb(ni,nj,nk))
+      if (.not.allocated(cmn%s_lake_bmb)) allocate(cmn%s_lake_bmb(ni,nj,nk))
+      cmn%z_lake_bmb = lnd%z_lake
     endif
 
     !$omp parallel do collapse(2) private(i,j,n,ir,jr)
@@ -1422,15 +1422,15 @@ contains
         cmn%runoff_ice_l(i,j)  = lnd%l2d(i,j)%runoff(is_ice)  * area(i,j)*cmn%f_ice(i,j)  ! kg/m2/s -> kg/s
         cmn%calving_ice_l(i,j) = lnd%l2d(i,j)%calving(is_ice) * area(i,j)*cmn%f_ice(i,j)  ! kg/m2/s -> kg/s
 
-        if (flag_imo) then
+        if (flag_bmb) then
           ! temperature and salinity for ice shelf basal melt
           if (cmn%f_lake(i,j).gt.0._wp) then
-            cmn%mask_lake_imo(i,j) = 1
+            cmn%mask_lake_bmb(i,j) = 1
           else
-            cmn%mask_lake_imo(i,j) = 0
+            cmn%mask_lake_bmb(i,j) = 0
           endif
-          cmn%t_lake_imo(i,j,1:nk) = lnd%l2d(i,j)%t_lake(1:nk)-T0  ! degC
-          cmn%s_lake_imo(i,j,1:nk) = 0._wp  ! psu, assume fresh lake
+          cmn%t_lake_bmb(i,j,1:nk) = lnd%l2d(i,j)%t_lake(1:nk)-T0  ! degC
+          cmn%s_lake_bmb(i,j,1:nk) = 0._wp  ! psu, assume fresh lake
         endif
 
         ! lake ice fraction
@@ -2491,55 +2491,55 @@ contains
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine :  c m n _ t o _ i m o
-  ! Purpose    :  transfer common grid variables to imo
+  ! Subroutine :  c m n _ t o _ b m b
+  ! Purpose    :  transfer common grid variables to bmb
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine cmn_to_imo(cmn,imo)
+  subroutine cmn_to_bmb(cmn,bmb)
 
     implicit none
 
     type(cmn_class) :: cmn
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
     integer :: nk_ocn, nk_lake
 
 
-    nk_ocn = size(cmn%z_ocn_imo)
-    if (.not.allocated(imo%z_ocn_in)) allocate(imo%z_ocn_in(nk_ocn))
-    if (.not.allocated(imo%t_ocn_in)) allocate(imo%t_ocn_in(ni,nj,nk_ocn))
-    if (.not.allocated(imo%s_ocn_in)) allocate(imo%s_ocn_in(ni,nj,nk_ocn))
-    if (.not.allocated(imo%mask_ocn_in)) allocate(imo%mask_ocn_in(ni,nj,nk_ocn))
+    nk_ocn = size(cmn%z_ocn_bmb)
+    if (.not.allocated(bmb%z_ocn_in)) allocate(bmb%z_ocn_in(nk_ocn))
+    if (.not.allocated(bmb%t_ocn_in)) allocate(bmb%t_ocn_in(ni,nj,nk_ocn))
+    if (.not.allocated(bmb%s_ocn_in)) allocate(bmb%s_ocn_in(ni,nj,nk_ocn))
+    if (.not.allocated(bmb%mask_ocn_in)) allocate(bmb%mask_ocn_in(ni,nj,nk_ocn))
 
-    nk_lake = size(cmn%z_lake_imo)
-    if (.not.allocated(imo%z_lake_in)) allocate(imo%z_lake_in(nk_lake))
-    if (.not.allocated(imo%t_lake_in)) allocate(imo%t_lake_in(ni,nj,nk_lake))
-    if (.not.allocated(imo%s_lake_in)) allocate(imo%s_lake_in(ni,nj,nk_lake))
-    if (.not.allocated(imo%mask_lake_in)) allocate(imo%mask_lake_in(ni,nj))
+    nk_lake = size(cmn%z_lake_bmb)
+    if (.not.allocated(bmb%z_lake_in)) allocate(bmb%z_lake_in(nk_lake))
+    if (.not.allocated(bmb%t_lake_in)) allocate(bmb%t_lake_in(ni,nj,nk_lake))
+    if (.not.allocated(bmb%s_lake_in)) allocate(bmb%s_lake_in(ni,nj,nk_lake))
+    if (.not.allocated(bmb%mask_lake_in)) allocate(bmb%mask_lake_in(ni,nj))
 
-    imo%z_ocn_in = cmn%z_ocn_imo
-    imo%t_ocn_in(:,:,:) = cmn%t_ocn_imo(:,:,:)
-    imo%s_ocn_in(:,:,:) = cmn%s_ocn_imo(:,:,:)
-    imo%mask_ocn_in(:,:,:) = cmn%mask_ocn_imo(:,:,:)
+    bmb%z_ocn_in = cmn%z_ocn_bmb
+    bmb%t_ocn_in(:,:,:) = cmn%t_ocn_bmb(:,:,:)
+    bmb%s_ocn_in(:,:,:) = cmn%s_ocn_bmb(:,:,:)
+    bmb%mask_ocn_in(:,:,:) = cmn%mask_ocn_bmb(:,:,:)
 
-    imo%z_lake_in = cmn%z_lake_imo
-    imo%t_lake_in(:,:,:) = cmn%t_lake_imo(:,:,:)
-    imo%s_lake_in(:,:,:) = cmn%s_lake_imo(:,:,:)
-    imo%mask_lake_in(:,:) = cmn%mask_lake_imo(:,:)
+    bmb%z_lake_in = cmn%z_lake_bmb
+    bmb%t_lake_in(:,:,:) = cmn%t_lake_bmb(:,:,:)
+    bmb%s_lake_in(:,:,:) = cmn%s_lake_bmb(:,:,:)
+    bmb%mask_lake_in(:,:) = cmn%mask_lake_bmb(:,:)
 
     return
 
-  end subroutine cmn_to_imo
+  end subroutine cmn_to_bmb
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine :  i m o _ t o _ c m n
-  ! Purpose    :  transfer imo to common grid 
+  ! Subroutine :  b m b _ t o _ c m n
+  ! Purpose    :  transfer bmb to common grid 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_to_cmn(imo,cmn)
+  subroutine bmb_to_cmn(bmb,cmn)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
     type(cmn_class) :: cmn
 
 
@@ -2547,113 +2547,113 @@ contains
 
     return
 
-  end subroutine imo_to_cmn
+  end subroutine bmb_to_cmn
 
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine :  i c e _ t o _ i m o
-  ! Purpose    :  transfer ice to imo
+  ! Subroutine :  i c e _ t o _ b m b
+  ! Purpose    :  transfer ice to bmb
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine ice_to_imo(ice,imo)
+  subroutine ice_to_bmb(ice,bmb)
 
     implicit none
 
     type(ice_class) :: ice
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
 
     ! ice base elevation
-    imo%zb = ice%z_base
+    bmb%zb = ice%z_base
     ! filtered lithosphere elevation
-    imo%zl_fil = ice%z_bed_fil
+    bmb%zl_fil = ice%z_bed_fil
     ! ocean/lake mask
-    imo%mask_ocn_lake = ice%mask_ocn_lake
+    bmb%mask_ocn_lake = ice%mask_ocn_lake
     ! ice shelf mask
     where (ice%h_ice.gt.0._wp .and. ice%h_ice.lt.(-ice%z_bed*rho_sw/rho_i) .and. ice%z_bed.lt.0._wp)
-      imo%mask_ice_shelf = 1
+      bmb%mask_ice_shelf = 1
     elsewhere
-      imo%mask_ice_shelf = 0
+      bmb%mask_ice_shelf = 0
     endwhere
 
 
     return
 
-  end subroutine ice_to_imo
+  end subroutine ice_to_bmb
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine :  g e o _ t o _ i m o
-  ! Purpose    :  transfer geo to imo
+  ! Subroutine :  g e o _ t o _ b m b
+  ! Purpose    :  transfer geo to bmb
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine geo_to_imo(geo,imo)
+  subroutine geo_to_bmb(geo,bmb)
 
     implicit none
 
     type(geo_class) :: geo
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
-    type(map_scrip_class) :: maps_geo_to_imo
+    type(map_scrip_class) :: maps_geo_to_bmb
 
     real(wp), allocatable :: h_ice(:,:)
     real(wp), allocatable :: z_bed(:,:)
 
 
     ! no ice model, use ice sheets from bnd
-    allocate(h_ice(imo%grid%G%nx,imo%grid%G%ny))
-    allocate(z_bed(imo%grid%G%nx,imo%grid%G%ny))
+    allocate(h_ice(bmb%grid%G%nx,bmb%grid%G%ny))
+    allocate(z_bed(bmb%grid%G%nx,bmb%grid%G%ny))
     ! initialize map
-    call map_scrip_init(maps_geo_to_imo,geo%hires%grid,imo%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
+    call map_scrip_init(maps_geo_to_bmb,geo%hires%grid,bmb%grid,method="con",fldr="maps",load=.TRUE.,clean=.FALSE.)
     ! map ice base elevation
-    call map_scrip_field(maps_geo_to_imo,"zb",geo%hires%z_topo-geo%hires%h_ice,imo%zb,method="mean",missing_value=-9999._dp, &
-      filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
+    call map_scrip_field(maps_geo_to_bmb,"zb",geo%hires%z_topo-geo%hires%h_ice,bmb%zb,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*bmb%grid%G%dx,bmb%grid%G%dx])
     ! map ice thickness and bedrock elevation
-    call map_scrip_field(maps_geo_to_imo,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
-      filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
+    call map_scrip_field(maps_geo_to_bmb,"h_ice",geo%hires%h_ice,h_ice,method="mean",missing_value=-9999._dp, &
+      filt_method="none",filt_par=[5._dp*bmb%grid%G%dx,bmb%grid%G%dx])
     where (h_ice<10._wp) h_ice = 0._wp
-      call map_scrip_field(maps_geo_to_imo,"z_bed",geo%hires%z_bed,z_bed,method="mean",missing_value=-9999._dp, &
-        filt_method="none",filt_par=[5._dp*imo%grid%G%dx,imo%grid%G%dx])
+      call map_scrip_field(maps_geo_to_bmb,"z_bed",geo%hires%z_bed,z_bed,method="mean",missing_value=-9999._dp, &
+        filt_method="none",filt_par=[5._dp*bmb%grid%G%dx,bmb%grid%G%dx])
 
     ! generate ice shelf mask
     where (h_ice.gt.0._wp .and. h_ice.lt.(-z_bed*rho_sw/rho_i) .and. z_bed.lt.0._wp)
-      imo%mask_ice_shelf = 1
+      bmb%mask_ice_shelf = 1
     elsewhere
-      imo%mask_ice_shelf = 0
+      bmb%mask_ice_shelf = 0
     endwhere
-    imo%zl_fil = z_bed
+    bmb%zl_fil = z_bed
     deallocate(h_ice)
     deallocate(z_bed)
 
 
     return
 
-  end subroutine geo_to_imo
+  end subroutine geo_to_bmb
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine :  i m o _ t o _ i c e
-  ! Purpose    :  transfer imo to ice
+  ! Subroutine :  b m b _ t o _ i c e
+  ! Purpose    :  transfer bmb to ice
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_to_ice(imo,ice)
+  subroutine bmb_to_ice(bmb,ice)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
     type(ice_class) :: ice
 
 
-    ! basal melting of floating ice
-    ice%Q_bm_float = imo%imo_ann/sec_year / rho_i ! kg/m2/a -> m(ice equivalent)/s
+    ! basal mass balance of floating ice
+    ice%bmb_shlf = bmb%bmb_ann/sec_year / rho_i ! kg/m2/a -> m(ice equivalent)/s
 
     ! ocean temperature for small-scale discharge parameterisation
-    ice%t_ocn = imo%t_disc     ! degC
+    ice%t_ocn = bmb%t_disc     ! degC
     ! ocean salinity for small-scale discharge parameterisation
-    ice%s_ocn = imo%s_disc     ! psu
+    ice%s_ocn = bmb%s_disc     ! psu
 
 
     return
 
-  end subroutine imo_to_ice
+  end subroutine bmb_to_ice
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -3196,7 +3196,7 @@ contains
     type(cmn_class) :: cmn
     integer, optional :: ini
 
-    integer :: i, j, ii, jj, n, k_imo
+    integer :: i, j, ii, jj, n, k_bmb
     real(wp) :: tacl, ftemp, frcold
     real(wp), parameter :: tshift = 5._wp
 
@@ -3314,14 +3314,14 @@ contains
       if (flag_lnd .and. .not.l_spinup_cc) then
         cmn%t_shelf = bnd%ocn%t_shelf  ! K         
       endif
-      if (flag_imo) then
-        k_imo = minloc(abs(bnd%ocn%depth-1000._wp),1)
-        if (.not.allocated(cmn%z_ocn_imo)) allocate(cmn%z_ocn_imo(k_imo))
-        if (.not.allocated(cmn%t_ocn_imo)) allocate(cmn%t_ocn_imo(ni,nj,k_imo))
-        if (.not.allocated(cmn%s_ocn_imo)) allocate(cmn%s_ocn_imo(ni,nj,k_imo))
-        cmn%z_ocn_imo = bnd%ocn%depth(1:k_imo)
-        cmn%t_ocn_imo = bnd%ocn%t(:,:,1:k_imo)  ! K         
-        cmn%s_ocn_imo = bnd%ocn%s(:,:,1:k_imo)  ! psu
+      if (flag_bmb) then
+        k_bmb = minloc(abs(bnd%ocn%depth-1000._wp),1)
+        if (.not.allocated(cmn%z_ocn_bmb)) allocate(cmn%z_ocn_bmb(k_bmb))
+        if (.not.allocated(cmn%t_ocn_bmb)) allocate(cmn%t_ocn_bmb(ni,nj,k_bmb))
+        if (.not.allocated(cmn%s_ocn_bmb)) allocate(cmn%s_ocn_bmb(ni,nj,k_bmb))
+        cmn%z_ocn_bmb = bnd%ocn%depth(1:k_bmb)
+        cmn%t_ocn_bmb = bnd%ocn%t(:,:,1:k_bmb)  ! K         
+        cmn%s_ocn_bmb = bnd%ocn%s(:,:,1:k_bmb)  ! psu
       endif
     endif
 

@@ -1,8 +1,8 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
 !
-!  Module : i m o _ g r i d 
+!  Module : b m b _ g r i d 
 !
-!  Purpose : grid definitions fro IMO model
+!  Purpose : grid definitions fro BMB model
 !
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !
@@ -23,7 +23,7 @@
 ! along with CLIMBER-X.  If not, see <http://www.gnu.org/licenses/>.
 !
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-module imo_grid
+module bmb_grid
 
   use precision, only : wp
 
@@ -37,7 +37,7 @@ module imo_grid
 
 contains
 
-  subroutine imo_grid_init
+  subroutine bmb_grid_init
 
   implicit none
 
@@ -73,9 +73,9 @@ contains
 
   return
 
-  end subroutine imo_grid_init
+  end subroutine bmb_grid_init
 
-end module imo_grid
+end module bmb_grid
 
 
 

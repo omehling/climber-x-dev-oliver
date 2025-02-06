@@ -1,76 +1,76 @@
-module imo_model
+module bmb_model
 
   use precision, only : wp, dp
   use coord, only : grid_class
-  use imo_def, only : imo_class
+  use bmb_def, only : bmb_class
 
   implicit none
 
   private
-  public :: imo_init, imo_update, imo_end, imo_write_restart
+  public :: bmb_init, bmb_update, bmb_end, bmb_write_restart
 
 contains
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  !   Subroutine :  i m o _ u p d a t e
+  !   Subroutine :  b m b _ u p d a t e
   !   Purpose    :  update ice melt to ocean
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_update(imo)
+  subroutine bmb_update(bmb)
 
   !$  use omp_lib
 
   implicit none
 
-  type(imo_class) :: imo
+  type(bmb_class) :: bmb
 
   return
 
-  end subroutine imo_update
+  end subroutine bmb_update
       
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  !   Subroutine :  i m o _ i n i t
+  !   Subroutine :  b m b _ i n i t
   !   Purpose    :  initialize ice melt to ocean 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_init(imo,grid,cmn_grid)
+  subroutine bmb_init(bmb,grid,cmn_grid)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
     type(grid_class), intent(in) :: grid 
     type(grid_class), intent(in) :: cmn_grid 
 
   return
 
-  end subroutine imo_init
+  end subroutine bmb_init
       
      
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Function :  i m o _ e n d 
-  ! Purpose  :  end imo
+  ! Function :  b m b _ e n d 
+  ! Purpose  :  end bmb
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_end(imo)
+  subroutine bmb_end(bmb)
 
     implicit none
 
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
     return
 
-  end subroutine imo_end
+  end subroutine bmb_end
 
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Function :  i m o _ w r i t e _ r e s t a r t
+  ! Function :  b m b _ w r i t e _ r e s t a r t
   ! Purpose  :  Write restart file
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine imo_write_restart(fnm,imo)
+  subroutine bmb_write_restart(fnm,bmb)
 
     implicit none
 
     character (len=*) :: fnm
-    type(imo_class) :: imo
+    type(bmb_class) :: bmb
 
-  end subroutine imo_write_restart
+  end subroutine bmb_write_restart
 
-end module imo_model
+end module bmb_model

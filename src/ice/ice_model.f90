@@ -537,9 +537,8 @@ contains
         ! annual surface mass balance [m(ice equivalent)/s] => [m(ice equivalent)/yr]
         ylmo%bnd%smb = ice%smb*ylmo%bnd%c%sec_year 
 
-        ! basal melt of floating ice [m(ice equivalent)/s] => [! m(ice equivalent)/yr]
-        ! (convert to basal mass balance with melt negative)
-        ylmo%bnd%bmb_shlf = -ice%Q_bm_float*ylmo%bnd%c%sec_year 
+        ! basal mass balance of floating ice [m(ice equivalent)/s] => [! m(ice equivalent)/yr]
+        ylmo%bnd%bmb_shlf = ice%bmb_shlf*ylmo%bnd%c%sec_year 
 
         ! ice surface temperature [degC] => [K] 
         ylmo%bnd%T_srf = min(0.0_wp,ice%temp_s) + 273.15_wp
@@ -628,7 +627,7 @@ contains
             ! annual runoff
             sico%state%runoff(j-1,i-1) = ice%runoff(i,j)    ! m(ice equivalent)/s
             ! basal melt of floating ice 
-            sico%state%Q_bm_float(j-1,i-1) = ice%Q_bm_float(i,j) ! m(ice equivalent)/s
+            sico%state%Q_bm_float(j-1,i-1) = -ice%bmb_shlf(i,j) ! m(ice equivalent)/s
             ! ice surface temperature
             sico%state%temp_s(j-1,i-1) = min(-0.001_wp,ice%temp_s(i,j)) ! degC
             ! ground temperature
@@ -784,7 +783,7 @@ contains
         allocate(ice%mask_extent(nx,ny))
         allocate(ice%calv(nx,ny))
         allocate(ice%Q_b(nx,ny))
-        allocate(ice%Q_bm_float(nx,ny))
+        allocate(ice%bmb_shlf(nx,ny))
         allocate(ice%smb(nx,ny))
         allocate(ice%accum(nx,ny))
         allocate(ice%runoff(nx,ny))
@@ -807,7 +806,7 @@ contains
         ice%mask_extent = 0.0_wp
         ice%calv        = 0.0_wp
         ice%Q_b         = 0.0_wp
-        ice%Q_bm_float  = 0.0_wp
+        ice%bmb_shlf    = 0.0_wp
         ice%smb         = 0.0_wp
         ice%accum       = 0.0_wp
         ice%runoff      = 0.0_wp
@@ -841,7 +840,7 @@ contains
         if (allocated(ice%mask_extent)) deallocate(ice%mask_extent)
         if (allocated(ice%calv))        deallocate(ice%calv)
         if (allocated(ice%Q_b))         deallocate(ice%Q_b)
-        if (allocated(ice%Q_bm_float))  deallocate(ice%Q_bm_float)
+        if (allocated(ice%bmb_shlf))    deallocate(ice%bmb_shlf)
         if (allocated(ice%smb))         deallocate(ice%smb)
         if (allocated(ice%accum))       deallocate(ice%accum)
         if (allocated(ice%runoff))      deallocate(ice%runoff)
