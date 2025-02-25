@@ -444,6 +444,28 @@ contains
           f_wet = f_sat
         endif
 
+      elseif( hydro_par%i_fwet .eq. 4 ) then
+
+        ! TOPMODEL following Kleinen et al 2020
+        cti_lim = hydro_par%cti_min + hydro_par%f_wtab*w_table   ! NOTE: w_table is positive!
+        cti_lim = max(1._wp,cti_lim)
+        if (cti_lim.gt.14._wp) then
+          f_sat = 0._wp
+        else
+          i1 = cti_lim
+          i2 = i1+1
+          w2 = (cti_lim-i1)/(i2-i1)
+          w1 = 1._wp-w2
+          f_sat = 1._wp-(w1*cti_cdf(i1)+w2*cti_cdf(i2))
+        endif
+        ! no inundation if CTI lower than critical value (5.5 in Kleinen 2020)
+        if (cti_mean.le.hydro_par%cti_mean_crit) f_sat = 0._wp 
+        if( mask_snow(is_veg) .eq. 1 ) then
+          f_wet = 0._wp ! no wetland where snow
+        else
+          f_wet = f_sat
+        endif
+        
       endif
 
       f_wet_cum = f_wet_cum + f_wet
