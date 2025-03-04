@@ -77,7 +77,7 @@
   pcmin = 0.2                   ! top pressure level for compensation of mass in the column 
   pcmax = 0.3                   ! bottom pressure level for compensation of mass in the column
   ptopdyn = 0.25                ! pressure level above which geostrophic wind components are disregarded 
-  i_pbl = 1                     ! PBL for ageostrophic wind:
+  i_pbl = 2                     ! PBL for ageostrophic wind:
                                 ! 1 = PBL follows topography
                                 ! 2 = PBL assumed to start from sea level
   i_kata_wind = 1               ! katabatic winds:

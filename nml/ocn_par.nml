@@ -168,7 +168,8 @@
  relax_run = 0.               ! relaxation factor for runoff from ice sheets: 0 = no relaxation, -> 1 = strong relaxation
  relax_calv = 0.              ! relaxation factor for calving fluxes from ice sheets: 0 = no relaxation, -> 1 = strong relaxation
  relax_bmelt = 0.             ! relaxation factor for basal melt fluxes from ice sheets: 0 = no relaxation, -> 1 = strong relaxation
- scale_runoff_ice = 1.        ! scaling factor for runoff from ice sheets, only applied to interactive ice sheet (smb) model domain(s)
+ scale_runoff_ice = 1.        ! scaling factor for runoff from ice sheets
+ scale_dhdt_ice = 0.          ! scaling factor for freshwater flux from changes in ice sheet thickness, only used if ice sheet evolution is prescribed (ifake_ice==T)
 
  !-------------------------------------------------------------------------------------------
  ! additional tracers
