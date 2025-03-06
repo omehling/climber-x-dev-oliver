@@ -588,7 +588,7 @@ def jobscript(executable,partition,outfldr,username,usergroup,classub,wtime,jobn
 #SBATCH --no-requeue
 ##SBATCH --constraint=%s
 
-export GMON_OUT_PREFIX=%s/gmon
+export GMON_OUT_PREFIX=%sgmon
 
 ulimit -s unlimited
 
@@ -666,7 +666,7 @@ export MKL_NUM_THREADS=%s
 #export OMP_PLACES=cores
 #export OMP_DISPLAY_AFFINITY=TRUE
 
-export GMON_OUT_PREFIX=%s/gmon
+export GMON_OUT_PREFIX=%sgmon
 
 ulimit -s unlimited
 #ulimit -c unlimited
@@ -678,6 +678,8 @@ ulimit -v unlimited
 ulimit -a
 
 srun %sclimber.x %s
+
+jobinfo
 
 """  % (classub,outfldr,outfldr,wtime,partition,threads,threads,threads,outfldr,outfldr,outfldr)
 
