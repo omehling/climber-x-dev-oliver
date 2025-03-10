@@ -11,15 +11,21 @@ INC_NC  = -I${NETCDF_FORTRANROOT}/include
 # the -rpath options ensure that the same shared libraries are found at runtime
 LIB_NC  = -L${NETCDF_FORTRANROOT}/lib -Wl\,-rpath=${NETCDF_FORTRANROOT}/lib -lnetcdff -L${NETCDF_CROOT}/lib -Wl\,-rpath=${NETCDF_CROOT}/lib -lnetcdf
 
-FFTWROOT = src/utils/exlib/fftw-omp
-INC_FFTW = -I${FFTWROOT}/include
-#LIB_FFTW = -L${FFTWROOT}/lib -lfftw3_omp -lfftw3 -lfftw3f_omp -lfftw3f
-LIB_FFTW = -L${FFTWROOT}/lib -lfftw3
-
 # coordinates
 COORDROOT = src/utils/coordinates
 INC_COORD = -I${COORDROOT}/libcoordinates/include
 LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
+
+# FESM-UTILS
+#FESMUTILSROOT=src/utils/fesm-utils/utils
+#INC_FESMUTILS = -I${FESMUTILSROOT}/include-omp
+#LIB_FESMUTILS = -L${FESMUTILSROOT}/include-omp -lfesmutils
+
+# FFTW
+FFTWROOT = src/utils/exlib/fftw-omp
+INC_FFTW = -I${FFTWROOT}/include
+#LIB_FFTW = -L${FFTWROOT}/lib -lfftw3
+LIB_FFTW = -L${FFTWROOT}/lib -lfftw3_omp -lfftw3 #-lfftw3f_omp -lfftw3f
 
 # LIS
 LISROOT = src/utils/exlib/lis-omp
