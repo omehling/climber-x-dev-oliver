@@ -588,8 +588,6 @@ def jobscript(executable,partition,outfldr,username,usergroup,classub,wtime,jobn
 #SBATCH --no-requeue
 ##SBATCH --constraint=%s
 
-export GMON_OUT_PREFIX=%sgmon
-
 ulimit -s unlimited
 
 %sclimber.x %s
@@ -614,8 +612,6 @@ def jobscriptvtune(executable,partition,outfldr,username,usergroup,classub,wtime
 #SBATCH --mem=6000
 #SBATCH --no-requeue
 ##SBATCH --constraint=%s
-
-export GMON_OUT_PREFIX=%s/gmon
 
 ulimit -s unlimited
 
@@ -666,8 +662,6 @@ export MKL_NUM_THREADS=%s
 #export OMP_PLACES=cores
 #export OMP_DISPLAY_AFFINITY=TRUE
 
-export GMON_OUT_PREFIX=%sgmon
-
 ulimit -s unlimited
 #ulimit -c unlimited
 #ulimit -s unlimited
@@ -712,8 +706,6 @@ export OMP_PROC_BIND=true # make sure our threads stick to cores
 export OMP_NUM_THREADS=%s  # matches how many cpus-per-task we asked for
 export OMP_STACKSIZE=256M
 export MKL_NUM_THREADS=%s
-
-export GMON_OUT_PREFIX=%s/gmon
 
 ulimit -s unlimited
 #ulimit -c unlimited
