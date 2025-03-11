@@ -17,18 +17,17 @@ INC_COORD = -I${COORDROOT}/libcoordinates/include
 LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
 # FESM-UTILS
-#FESMUTILSROOT=src/utils/fesm-utils/utils
-#INC_FESMUTILS = -I${FESMUTILSROOT}/include-omp
-#LIB_FESMUTILS = -L${FESMUTILSROOT}/include-omp -lfesmutils
+FESMUTILSROOT=src/utils/fesm-utils/utils
+INC_FESMUTILS = -I${FESMUTILSROOT}/include-omp
+LIB_FESMUTILS = -L${FESMUTILSROOT}/include-omp -lfesmutils
 
 # FFTW
-FFTWROOT = src/utils/exlib/fftw-omp
+FFTWROOT = src/utils/fesm-utils/fftw-omp
 INC_FFTW = -I${FFTWROOT}/include
-#LIB_FFTW = -L${FFTWROOT}/lib -lfftw3
 LIB_FFTW = -L${FFTWROOT}/lib -lfftw3_omp -lfftw3 #-lfftw3f_omp -lfftw3f
 
 # LIS
-LISROOT = src/utils/exlib/lis-omp
+LISROOT = src/utils/fesm-utils/lis-omp
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
@@ -54,10 +53,10 @@ DFLAGS_NODEBUG = -Ofast -traceback
 DFLAGS_DEBUG   = -C  -fp-model precise -traceback -ftrapuv -fpe0 -check all -init=snan,arrays -warn -debug extended -gen-interfaces -warn interfaces -check arg_temp_created
 DFLAGS_PROFILE = -O3 -pg -g 
 
-FFLAGS_FULL = -module $(objdir) -sox -L$(objdir) $(INC_NC) $(INC_LIS) $(INC_COORD) $(INC_YELMO) $(INC_VILMA) $(INC_FFTW)
-FFLAGS_CLIM = -module $(objdir) -L$(objdir) $(INC_NC) $(INC_COORD) $(INC_FFTW)
+FFLAGS_FULL = -module $(objdir) -sox -L$(objdir) $(INC_NC) $(INC_FESMUTILS) $(INC_LIS) $(INC_COORD) $(INC_YELMO) $(INC_VILMA) $(INC_FFTW)
+FFLAGS_CLIM = -module $(objdir) -L$(objdir) $(INC_NC) $(INC_FESMUTILS) $(INC_COORD) $(INC_FFTW)
 FFLAGS_OPENMP  = -qopenmp 
 
-LFLAGS_FULL  = $(LIB_NC) $(LIB_COORD) $(LIB_FFTW) $(LIB_LIS) $(LIB_YELMO) $(LIB_VILMA) -Wl,-zmuldefs
-LFLAGS_CLIM  = $(LIB_NC) $(LIB_COORD) $(LIB_FFTW) -Wl,-zmuldefs
+LFLAGS_FULL  = $(LIB_NC) $(LIB_COORD) $(LIB_FFTW) $(LIB_LIS) $(LIB_YELMO) $(LIB_VILMA) $(LIB_FESMUTILS) -Wl,-zmuldefs
+LFLAGS_CLIM  = $(LIB_NC) $(LIB_COORD) $(LIB_FESMUTILS) $(LIB_FFTW) -Wl,-zmuldefs
 
