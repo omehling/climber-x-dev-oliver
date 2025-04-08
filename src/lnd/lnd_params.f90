@@ -30,6 +30,7 @@ module lnd_params
   use timer, only : dt_lnd, nmon_year, nday_year, sec_year, sec_day
   use control, only : out_dir
   use lnd_grid, only : nx, ny, npft, nl, nsurf, z, z_int, lat
+  use lnd_grid, only : flag_tree, flag_grass, flag_shrub
 
   implicit none
 
@@ -98,7 +99,7 @@ module lnd_params
     real(wp) :: p_psi_max
     real(wp) :: kappa_max = 10._wp   ! kg/m2/day
     real(wp) :: theta_min = 0.01_wp ! m3/m3
-    real(wp) :: alpha_int_w ! interception factor for water, CLM, TUNABLE
+    real(wp), dimension(npft) :: alpha_int_w ! interception factor for water, CLM, TUNABLE
     real(wp) :: alpha_int_s ! interception factor for snow
     real(wp) :: can_max_w      ! kg/m2, canopy interception capacity parameter Verseghy 1991
     real(wp) :: can_max_s      ! kg/m2, canopy interception capacity parameter for snow
@@ -660,11 +661,12 @@ subroutine lnd_par_load
 
     implicit none 
 
-    integer :: k
+    integer :: k, n
     real(wp) :: sla_nl, sla_bl, sla_c3, sla_c4, sla_sh
     real(wp) :: gamma_dist_tree, gamma_dist_grass, gamma_dist_shrub
     real(wp) :: tau_fire
     real(wp) :: alb_ice
+    real(wp) :: alpha_int_w_tree, alpha_int_w_grass
 
     character (len=256) :: filename
 
@@ -746,7 +748,15 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","cti_min",hydro_par%cti_min)
     call nml_read(filename,"lnd_par","fmax_crit",hydro_par%fmax_crit)
     call nml_read(filename,"lnd_par","cti_mean_crit",hydro_par%cti_mean_crit)
-    call nml_read(filename,"lnd_par","alpha_int_w",hydro_par%alpha_int_w)
+    call nml_read(filename,"lnd_par","alpha_int_w_tree",alpha_int_w_tree)
+    call nml_read(filename,"lnd_par","alpha_int_w_grass",alpha_int_w_grass)
+    do n=1,npft
+      if (flag_tree(n) .or. flag_shrub(n)) then
+        hydro_par%alpha_int_w(n) = alpha_int_w_tree
+      else
+        hydro_par%alpha_int_w(n) = alpha_int_w_grass
+      endif
+    enddo
     call nml_read(filename,"lnd_par","alpha_int_s",hydro_par%alpha_int_s)
     call nml_read(filename,"lnd_par","can_max_w",hydro_par%can_max_w  )
     call nml_read(filename,"lnd_par","can_max_s",hydro_par%can_max_s  )

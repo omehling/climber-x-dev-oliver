@@ -49,7 +49,7 @@ contains
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   subroutine canopy_water(frac_surf,lai,sai,r_a,t_skin,pressure,qair,rain,snow, &
                          w_can,w_can_old,s_can,s_can_old, &
-                         rain_ground,snow_ground,evap_can,subl_can,f_snow_can)
+                         rain_ground,snow_ground,evap_can,subl_can,f_wat_can,f_snow_can)
 
     implicit none
 
@@ -59,7 +59,7 @@ contains
     real(wp), dimension(:), intent(in) :: rain, snow
     real(wp), dimension(:), intent(inout) :: w_can, w_can_old, s_can, s_can_old
     real(wp), dimension(:), intent(inout) :: rain_ground, snow_ground, evap_can, subl_can
-    real(wp), dimension(:), intent(inout) :: f_snow_can
+    real(wp), dimension(:), intent(inout) :: f_wat_can, f_snow_can
 
     integer :: n
     real(wp) :: fac_e_w, fac_e_s, fac_i_w, fac_i_s, w_can_max, s_can_max
@@ -100,7 +100,7 @@ contains
             fac_e_w = rhoa/r_a(n) * (q_sat_w(t_skin(n),pressure(n)) - qair(n)) ! evaporation factor
           endif
 
-          fac_i_w = hydro_par%alpha_int_w * fac_lai ! interception factor for water
+          fac_i_w = hydro_par%alpha_int_w(n) * fac_lai ! interception factor for water
 
           ! update canopy water
           w_can(n) = (fac_i_w*rain(n) + w_can(n)*rdt) / (1._wp*rdt + fac_e_w/w_can_max + 1._wp/hydro_par%tau_w)
@@ -115,10 +115,14 @@ contains
 
           rain_ground(n) = rain(n) - evap_can(n) - (w_can(n) - w_can_old(n)) * rdt
 
+          ! fraction of water-covered canopy
+          f_wat_can(n) = w_can(n)/w_can_max
+
         else
 
           rain_ground(n) = rain(n)
           evap_can(n) = 0._wp
+          f_wat_can(n) = 0._wp
 
         endif
 
@@ -182,6 +186,7 @@ contains
         subl_can(n) = 0._wp
         w_can(n)    = 0._wp
         s_can(n)    = 0._wp
+        f_wat_can(n) = 0._wp
         f_snow_can(n) = 0._wp
 
       endif
@@ -193,6 +198,7 @@ contains
         snow_ground = snow
         evap_can = 0._wp
         subl_can = 0._wp
+        f_wat_can = 0._wp
         f_snow_can = 0._wp
     endwhere
 

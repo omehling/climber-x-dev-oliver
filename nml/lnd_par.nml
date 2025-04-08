@@ -62,7 +62,8 @@
     l_prc_intercept = T         ! allow for precipitation interception by vegetation?
     tau_w = 1.                  ! days, removal time scale of water from canopy
     tau_s = 1.                  ! days, removal time scale of snow from canopy
-    alpha_int_w = 0.2           ! interception factor for water, CLM, TUNABLE
+    alpha_int_w_tree = 0.2      ! interception factor for water, CLM, TUNABLE
+    alpha_int_w_grass = 0.0     ! interception factor for water, CLM, TUNABLE
     alpha_int_s = 0.5           ! interception factor for snow
     can_max_w = 0.2             ! kg/m2, canopy interception capacity parameter Verseghy 1991
     can_max_s = 0.2             ! kg/m2, canopy interception capacity parameter for snow
