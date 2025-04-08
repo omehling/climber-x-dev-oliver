@@ -592,7 +592,7 @@ ulimit -s unlimited
 
 %sclimber.x %s
 
-"""  % (classub,outfldr,outfldr,wtime,partition,outfldr,outfldr,outfldr)
+"""  % (classub,outfldr,outfldr,wtime,partition,outfldr,outfldr)
 
     return script
 
@@ -617,7 +617,7 @@ ulimit -s unlimited
 
 srun amplxe-cl -c hotspots -r %s -- %sclimber.x %s
 
-"""  % (classub,jobname,usergroup,outfldr,outfldr,username,wtime,partition,outfldr,outfldr,outfldr,outfldr)
+"""  % (classub,jobname,usergroup,outfldr,outfldr,username,wtime,partition,outfldr,outfldr,outfldr)
 
     return script
 
@@ -675,7 +675,7 @@ srun %sclimber.x %s
 
 jobinfo
 
-"""  % (classub,outfldr,outfldr,wtime,partition,threads,threads,threads,outfldr,outfldr,outfldr)
+"""  % (classub,outfldr,outfldr,wtime,partition,threads,threads,threads,outfldr,outfldr)
 
     return script
 
@@ -719,7 +719,7 @@ ulimit -s unlimited
 #-knob analyze-openmp=true --run-pass-thru=--profiling-signal=33 
 srun amplxe-cl -c hotspots -r %s -- %sclimber.x %s
 
-"""  % (classub,jobname,usergroup,outfldr,outfldr,username,wtime,partition,threads,threads,threads,outfldr,outfldr,outfldr,outfldr)
+"""  % (classub,jobname,usergroup,outfldr,outfldr,username,wtime,partition,threads,threads,threads,outfldr,outfldr,outfldr)
 
     return script
 
