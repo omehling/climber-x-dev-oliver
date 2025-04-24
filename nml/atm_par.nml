@@ -89,7 +89,7 @@
   !-----------------------------------------------------------
   ! lapse rate parameters
   !-----------------------------------------------------------
-  c_gam_1 = 3.8e-3              ! K/m, background lapse rate
+  c_gam_1 = 3.7e-3              ! K/m, background lapse rate
   c_gam_2 = 0.02                ! K/m, moisture dependence of lapse rate
   c_gam_3 = 6.e-3               ! K/m, increase on background lapse rate at top of troposphere
   c_gam_4 = 5.e-3               ! K/m/K, slope of surface lapse rate dependence on temperature gradient over ocean

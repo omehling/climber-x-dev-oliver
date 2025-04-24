@@ -95,6 +95,8 @@ module lnd_params
     logical :: l_runoff_icemelt
     integer :: i_evp_soil
     real(wp) :: theta_crit_evp
+    real(wp) :: dz_evp
+    real(wp) :: frac_inf_2
     real(wp) :: p_psi_min
     real(wp) :: p_psi_max
     real(wp) :: kappa_max = 10._wp   ! kg/m2/day
@@ -741,6 +743,8 @@ subroutine lnd_par_load
     call nml_read(filename,"lnd_par","i_fwet",hydro_par%i_fwet)
     call nml_read(filename,"lnd_par","i_evp_soil",hydro_par%i_evp_soil)
     call nml_read(filename,"lnd_par","theta_crit_evp",hydro_par%theta_crit_evp)
+    call nml_read(filename,"lnd_par","dz_evp",hydro_par%dz_evp)
+    call nml_read(filename,"lnd_par","frac_inf_2",hydro_par%frac_inf_2)
     call nml_read(filename,"lnd_par","p_psi_min",hydro_par%p_psi_min)
     call nml_read(filename,"lnd_par","p_psi_max",hydro_par%p_psi_max)
     call nml_read(filename,"lnd_par","wtab_scale",hydro_par%wtab_scale)
