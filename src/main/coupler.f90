@@ -1997,6 +1997,8 @@ contains
       ch4%dch4lnd_dt   = 0._wp 
     endif
 
+    ch4%t2m_glob_ann = cmn%t2m_glob_ann
+
     return
     
   end subroutine cmn_to_ch4
