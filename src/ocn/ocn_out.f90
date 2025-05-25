@@ -96,6 +96,7 @@ module ocn_out
      real(wp) :: area, vol
      real(wp) :: sst, sss, t, s, cons, age, dye
      real(wp) :: tdocn, tdocn_atl, tdocn_pac, tdocn_ind, tdocn_so
+     real(wp) :: sdocn, sdocn_atl, sdocn_pac, sdocn_ind, sdocn_so
      real(wp), dimension(6) :: ohc, ohc700, ohc2000
      real(wp) :: amoc26N, omaxa, omina, oinfa, omaxp, ominp, omaxs, omins
      real(wp) :: hmaxa, h55a, hmaxs, h60s, hmaxp, fmaxa
@@ -1058,6 +1059,7 @@ contains
     real(wp) :: global_tocn, global_socn, global_sst, global_sss, global_cons, global_age, global_dye
     real(wp), dimension(6) :: ohc, ohc700, ohc2000
     real(wp) :: tdocn, tdocn_atl, tdocn_pac, tdocn_ind, tdocn_so
+    real(wp) :: sdocn, sdocn_atl, sdocn_pac, sdocn_ind, sdocn_so
     real(wp) :: ocnvol_tot, ocnvol_atl, ocnvol_pac, ocnvol_ind, ocnvol_so
     real(wp) :: global_cfc11, global_cfc12
     real(wp), save :: ocn_area_tot0
@@ -1103,6 +1105,11 @@ contains
     tdocn_pac = 0._wp
     tdocn_ind = 0._wp
     tdocn_so = 0._wp
+    sdocn = 0._wp
+    sdocn_atl = 0._wp
+    sdocn_pac = 0._wp
+    sdocn_ind = 0._wp
+    sdocn_so = 0._wp
     ocnvol_tot = 0._wp
     ocnvol_atl = 0._wp
     ocnvol_pac = 0._wp
@@ -1145,7 +1152,7 @@ contains
     endif
 
     !$omp parallel do collapse(2) private(i,j,k,l,ocnvol,tv2,tv3,bmask,bmask2) &
-    !$omp reduction(+:sum_2d,sum_3d,ohc,ohc700,ohc2000,tdocn,tdocn_atl,tdocn_pac,tdocn_ind,tdocn_so,ocnvol_tot) &
+    !$omp reduction(+:sum_2d,sum_3d,ohc,ohc700,ohc2000,tdocn,tdocn_atl,tdocn_pac,tdocn_ind,tdocn_so,sdocn,sdocn_atl,sdocn_pac,sdocn_ind,sdocn_so,ocnvol_tot) &
     !$omp reduction(+:ocnvol_atl,ocnvol_pac,ocnvol_ind,ocnvol_so,global_cons,global_age,global_dye,global_cfc11,global_cfc12) &
     !$omp reduction(+:sl_steric,fw,fw_corr,fw_noise,p_e_sic,runoff,runoff_veg,runoff_ice,runoff_lake,icemelt,calving,bmelt,vsf,flx) &
     !$omp reduction(+:hft,hfp,hfa,hftz,hfpz,hfaz,fwt,fwp,fwa,fwtz,fwpz,fwaz)
@@ -1326,22 +1333,27 @@ contains
           enddo
           do k=k1(i,j),maxk
             ! deep ocean temperatures
-            if (zro(k).le.-2500._wp) then
+            if (zro(k).le.-1000._wp) then
               ocnvol = ocn_vol(i,j,k)
               ocnvol_tot = ocnvol_tot + ocnvol
               tdocn = tdocn + ocn%ts(i,j,k,1)*ocnvol
+              sdocn = sdocn + ocn%ts(i,j,k,2)*ocnvol
               if (bmask.eq.i_atlantic) then
                 ocnvol_atl = ocnvol_atl + ocnvol
                 tdocn_atl = tdocn_atl + ocn%ts(i,j,k,1)*ocnvol
+                sdocn_atl = sdocn_atl + ocn%ts(i,j,k,2)*ocnvol
               else if (bmask.eq.i_pacific) then
                 ocnvol_pac = ocnvol_pac + ocnvol
                 tdocn_pac = tdocn_pac + ocn%ts(i,j,k,1)*ocnvol
+                sdocn_pac = sdocn_pac + ocn%ts(i,j,k,2)*ocnvol
               else if (bmask.eq.i_indian) then
                 ocnvol_ind = ocnvol_ind + ocnvol
                 tdocn_ind = tdocn_ind + ocn%ts(i,j,k,1)*ocnvol
+                sdocn_ind = sdocn_ind + ocn%ts(i,j,k,2)*ocnvol
               else if (bmask.eq.i_southern) then
                 ocnvol_so = ocnvol_so + ocnvol
                 tdocn_so = tdocn_so + ocn%ts(i,j,k,1)*ocnvol
+                sdocn_so = sdocn_so + ocn%ts(i,j,k,2)*ocnvol
               endif
             endif
           enddo
@@ -1438,6 +1450,11 @@ contains
     tdocn_ind = tdocn_ind/ocnvol_ind
     tdocn_so  = tdocn_so /ocnvol_so 
 
+    sdocn     = sdocn/ocnvol_tot
+    sdocn_atl = sdocn_atl/ocnvol_atl
+    sdocn_pac = sdocn_pac/ocnvol_pac
+    sdocn_ind = sdocn_ind/ocnvol_ind
+    sdocn_so  = sdocn_so /ocnvol_so 
 
     ! calculate meridional overturning streamfunctions
 
@@ -2035,6 +2052,11 @@ contains
       ann_ts(y)%tdocn_pac = 0._wp
       ann_ts(y)%tdocn_ind = 0._wp
       ann_ts(y)%tdocn_so = 0._wp
+      ann_ts(y)%sdocn = 0._wp
+      ann_ts(y)%sdocn_atl = 0._wp
+      ann_ts(y)%sdocn_pac = 0._wp
+      ann_ts(y)%sdocn_ind = 0._wp
+      ann_ts(y)%sdocn_so = 0._wp
       ann_ts(y)%cons= 0._wp
       ann_ts(y)%age= 0._wp
       ann_ts(y)%dye= 0._wp
@@ -2181,6 +2203,11 @@ contains
     ann_ts(y)%tdocn_pac  = ann_ts(y)%tdocn_pac  + tdocn_pac        * ann_avg ! °C
     ann_ts(y)%tdocn_ind  = ann_ts(y)%tdocn_ind  + tdocn_ind        * ann_avg ! °C
     ann_ts(y)%tdocn_so   = ann_ts(y)%tdocn_so   + tdocn_so         * ann_avg ! °C
+    ann_ts(y)%sdocn      = ann_ts(y)%sdocn      + sdocn            * ann_avg ! psu 
+    ann_ts(y)%sdocn_atl  = ann_ts(y)%sdocn_atl  + sdocn_atl        * ann_avg ! psu 
+    ann_ts(y)%sdocn_pac  = ann_ts(y)%sdocn_pac  + sdocn_pac        * ann_avg ! psu 
+    ann_ts(y)%sdocn_ind  = ann_ts(y)%sdocn_ind  + sdocn_ind        * ann_avg ! psu 
+    ann_ts(y)%sdocn_so   = ann_ts(y)%sdocn_so   + sdocn_so         * ann_avg ! psu 
     if (cons_tracer) ann_ts(y)%cons = ann_ts(y)%cons + global_cons  * ann_avg
     if (age_tracer) ann_ts(y)%age = ann_ts(y)%age + global_age  * ann_avg
     if (dye_tracer) ann_ts(y)%dye = ann_ts(y)%dye + global_dye  * ann_avg
@@ -3522,11 +3549,16 @@ contains
     call nc_write(fnm,"sss",     vars%sss,    dim1=dim_time,start=[ndat],count=[y],long_name="sea surface salinity",units="psu",ncid=ncid)
     call nc_write(fnm,"tvol",    vars%t,      dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged ocean potential temperature",units="C",ncid=ncid)
     call nc_write(fnm,"svol",    vars%s,      dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged ocean salinity",units="psu",ncid=ncid)
-    call nc_write(fnm,"t_deep",  vars%tdocn,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
-    call nc_write(fnm,"t_deep_atl",  vars%tdocn_atl,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Atlantic ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
-    call nc_write(fnm,"t_deep_pac",  vars%tdocn_pac,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Pacific ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
-    call nc_write(fnm,"t_deep_ind",  vars%tdocn_ind,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Indian ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
-    call nc_write(fnm,"t_deep_so ",  vars%tdocn_so ,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Southern ocean potential temperature (below 2500 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"t_deep",  vars%tdocn,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep ocean potential temperature (below 1000 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"t_deep_atl",  vars%tdocn_atl,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Atlantic ocean potential temperature (below 1000 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"t_deep_pac",  vars%tdocn_pac,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Pacific ocean potential temperature (below 1000 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"t_deep_ind",  vars%tdocn_ind,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Indian ocean potential temperature (below 1000 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"t_deep_so ",  vars%tdocn_so ,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Southern ocean potential temperature (below 1000 m)",units="C",ncid=ncid)
+    call nc_write(fnm,"s_deep",      vars%sdocn,      dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep ocean salinity (below 1000 m)",units="psu",ncid=ncid)
+    call nc_write(fnm,"s_deep_atl",  vars%sdocn_atl,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Atlantic ocean salinity (below 1000 m)",units="psu",ncid=ncid)
+    call nc_write(fnm,"s_deep_pac",  vars%sdocn_pac,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Pacific ocean salinity (below 1000 m)",units="psu",ncid=ncid)
+    call nc_write(fnm,"s_deep_ind",  vars%sdocn_ind,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Indian ocean salinity (below 1000 m)",units="psu",ncid=ncid)
+    call nc_write(fnm,"s_deep_so ",  vars%sdocn_so ,  dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged deep Southern ocean salinity (below 1000 m)",units="psu",ncid=ncid)
     if (cons_tracer) call nc_write(fnm,"cons",    vars%cons,   dim1=dim_time,start=[ndat],count=[y],long_name="conservative tracer",units="/",ncid=ncid)
     if (age_tracer) call nc_write(fnm,"age",    vars%age,   dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged ideal age tracer",units="years",ncid=ncid)
     if (dye_tracer) call nc_write(fnm,"dye",    vars%dye,   dim1=dim_time,start=[ndat],count=[y],long_name="volume averaged dye tracer",units="/",ncid=ncid)
