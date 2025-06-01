@@ -174,7 +174,7 @@ module ocn_out
      real(wp), dimension(:,:), allocatable :: fwtz, fwpz, fwaz
      real(wp), dimension(:,:), allocatable :: fayti, fdyti
      real(wp), dimension(:,:), allocatable :: faysi, fdysi 
-     real(wp), dimension(:,:), allocatable :: mld, mldmax, mldst, ke_tau
+     real(wp), dimension(:,:), allocatable :: mld, mldmax, mldst, conv_pe, conv_pe_max, ke_tau
      real(wp), dimension(:,:), allocatable :: dconv, dven, nconv, kven
      real(wp), dimension(:,:), allocatable :: ssh
      real(wp), dimension(:,:), allocatable :: q_geo
@@ -342,6 +342,8 @@ contains
     allocate(ann_o%mldmax(maxi,maxj))
     allocate(ann_o%mldst(maxi,maxj))
     allocate(ann_o%ke_tau(maxi,maxj))
+    allocate(ann_o%conv_pe(maxi,maxj))
+    allocate(ann_o%conv_pe_max(maxi,maxj))
     allocate(ann_o%ssh(maxi,maxj))
     allocate(ann_o%q_geo(maxi,maxj))
 
@@ -434,6 +436,7 @@ contains
      allocate(mon_o(k)%dven(maxi,maxj))
      allocate(mon_o(k)%mld(maxi,maxj))
      allocate(mon_o(k)%mldst(maxi,maxj))
+     allocate(mon_o(k)%conv_pe(maxi,maxj))
      allocate(mon_o(k)%ke_tau(maxi,maxj))
      allocate(mon_o(k)%ssh(maxi,maxj))
     enddo
@@ -2916,6 +2919,7 @@ contains
             mon_o(m)%mld   = 0._wp
             mon_o(m)%mldst = 0._wp
             mon_o(m)%ke_tau = 0._wp
+            mon_o(m)%conv_pe = 0._wp
           elsewhere
             mon_o(m)%dt_dt_flxsur = missing_value 
             mon_o(m)%ds_dt_flxsur = missing_value 
@@ -2941,7 +2945,8 @@ contains
             mon_o(m)%dven  = missing_value
             mon_o(m)%mld   = missing_value
             mon_o(m)%mldst = missing_value
-            mon_o(m)%ke_tau   = missing_value
+            mon_o(m)%ke_tau  = missing_value
+            mon_o(m)%conv_pe = missing_value
           endwhere
           do n=1,n_isles
             mon_o(m)%ubisl(:,:,n) = 0._wp
@@ -3260,6 +3265,7 @@ contains
       mon_o(mon)%dven  = mon_o(mon)%dven  + ocn%dven                             * mon_avg
       mon_o(mon)%mld   = mon_o(mon)%mld   + (-ocn%mld)                           * mon_avg
       mon_o(mon)%ke_tau = mon_o(mon)%ke_tau   + ocn%ke_tau/dt*1000._wp     * mon_avg ! mW/m2
+      mon_o(mon)%conv_pe = mon_o(mon)%conv_pe + ocn%conv_pe                      * mon_avg ! J/m2
     elsewhere
       mon_o(mon)%sst         = missing_value 
       mon_o(mon)%sss         = missing_value 
@@ -3285,6 +3291,7 @@ contains
       mon_o(mon)%dven        = missing_value 
       mon_o(mon)%mld         = missing_value 
       mon_o(mon)%ke_tau      = missing_value 
+      mon_o(mon)%conv_pe     = missing_value 
     endwhere
     do n=1,n_isles
       mon_o(mon)%ubisl(:,:,n) = mon_o(mon)%ubisl(:,:,n) + ocn%ub_isl(1,1:maxi,1:maxj,n)         * mon_avg ! m/s
@@ -3388,8 +3395,10 @@ contains
      do j=1,maxj
        do i=1,maxi
          ann_o%mldmax(i,j) = 0._wp
+         ann_o%conv_pe_max(i,j) = 0._wp
          do m=1,nmon_year
            ann_o%mldmax(i,j) = max(ann_o%mldmax(i,j),mon_o(m)%mld(i,j))
+           ann_o%conv_pe_max(i,j) = max(ann_o%conv_pe_max(i,j),mon_o(m)%conv_pe(i,j))
          enddo
        enddo
      enddo
@@ -3889,6 +3898,7 @@ contains
     call nc_write(fnm,"map_isles",    vars%map_isles,  dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[maxi,maxj,1],long_name="island map",units="/",missing_value=int(missing_value),ncid=ncid)
     call nc_write(fnm,"map_edge",    vars%map_edge,  dims=[dim_lon,dim_lat,dim_isles,dim_time],start=[1,1,1,nout],count=[maxi,maxj,maxisles,1],long_name="island edges",units="/",missing_value=int(missing_value),ncid=ncid)
     call nc_write(fnm,"mldmax",    sngl(vars%mldmax),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[maxi,maxj,1],long_name="maximum mixed layer depth from mixed layer scheme",units="m",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"conv_pe_max", sngl(vars%conv_pe_max),dims=[dim_lon,dim_lat,dim_time],start=[1,1,nout],count=[maxi,maxj,1],long_name="maximum potential energy released by convection",units="J/m2",missing_value=missing_value,ncid=ncid)
     endif
     call nc_write(fnm,"t",        sngl(vars%t),  dims=[dim_lon,dim_lat,"lev",dim_month,dim_time],start=[1,1,1,ndat,nout],count=[maxi,maxj,maxk,1,1],long_name="potential temperature",units="C",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"sst", sngl(vars%sst),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="sea surface temperature",units="C",missing_value=missing_value,ncid=ncid)
@@ -4000,6 +4010,7 @@ contains
     call nc_write(fnm,"mld",       sngl(vars%mld),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="mixed layer depth from mixed layer scheme",units="m",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"mldst",     sngl(vars%mldst),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="mixed layer depth from sigma-t criterion",units="m",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"ke_tau",  sngl(vars%ke_tau),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="kinetic energy input into the ocean by wind stress",units="mW/m2",missing_value=missing_value,ncid=ncid)
+    call nc_write(fnm,"conv_pe", sngl(vars%conv_pe),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="potential energy released by convection",units="J/m2",missing_value=missing_value,ncid=ncid)
     call nc_write(fnm,"ssh",      sngl(vars%ssh),dims=[dim_lon,dim_lat,dim_month,dim_time],start=[1,1,ndat,nout],count=[maxi,maxj,1,1],long_name="elevation of the free surface",units="m",missing_value=missing_value,ncid=ncid)
 
     if (l_output_extended) then
@@ -4182,6 +4193,7 @@ contains
     ave%mld   = 0._wp
     ave%mldst = 0._wp
     ave%ke_tau   = 0._wp
+    ave%conv_pe  = 0._wp
     ave%ssh = 0._wp
 
     ! Loop over the time indices to sum up and average (if necessary)
@@ -4273,6 +4285,7 @@ contains
        ave%mld     = ave%mld      + d(k)%mld      / div
        ave%mldst   = ave%mldst    + d(k)%mldst    / div
        ave%ke_tau= ave%ke_tau + d(k)%ke_tau / div
+       ave%conv_pe = ave%conv_pe  + d(k)%conv_pe  / div
        ave%ssh = ave%ssh  + d(k)%ssh  / div
     end do
 
