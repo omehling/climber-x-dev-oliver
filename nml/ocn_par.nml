@@ -189,7 +189,9 @@
  lat_max_hosing = 70          ! higher latitude bound for region of freshwater flux
  lon_min_hosing = -175        ! western longitude bound for region of freshwater flux
  lon_max_hosing = 175         ! eastern longitude bound for region of freshwater flux
+ l_hosing_comp_vol = F        ! volume compensation (T) or surface compensation (F)?
  hosing_comp_basin = 2        ! ocean basin where to compensate the hosing freshwater. -1 = no comp, 0 = Global, 1 = Atlantic, 2 = Pacific, 3 = Southern Ocean
+                              ! (used only for surface compensation; set to -1 when using l_hosing_comp_vol = T)
  lat_min_hosing_comp = -30    ! lower latitude bound for region of freshwater flux compensation (used only if hosing_comp_basin>0)
  lat_max_hosing_comp = 30     ! higher latitude bound for region of freshwater flux compensation (used only if hosing_comp_basin>0)
  lon_min_hosing_comp = -175   ! western longitude bound for region of freshwater flux compensation (used only if hosing_comp_basin>0)

@@ -136,6 +136,7 @@ module ocn_params
      real(wp) :: hosing_ini, hosing_trend, hosing_sigma
      real(wp) :: lat_min_hosing, lat_max_hosing
      real(wp) :: lon_min_hosing, lon_max_hosing
+     logical :: l_hosing_comp_vol
      integer :: hosing_comp_basin
      real(wp) :: lat_min_hosing_comp, lat_max_hosing_comp
      real(wp) :: lon_min_hosing_comp, lon_max_hosing_comp
@@ -320,7 +321,11 @@ subroutine ocn_par_load(filename)
     call nml_read(filename,"ocn_par","lat_max_hosing",lat_max_hosing)
     call nml_read(filename,"ocn_par","lon_min_hosing",lon_min_hosing)
     call nml_read(filename,"ocn_par","lon_max_hosing",lon_max_hosing)
+    call nml_read(filename,"ocn_par","l_hosing_comp_vol",l_hosing_comp_vol)
     call nml_read(filename,"ocn_par","hosing_comp_basin",hosing_comp_basin)
+    if (l_hosing_comp_vol) then
+      hosing_comp_basin = -1 ! no surface compensation if volume compensation is applied
+    endif
     call nml_read(filename,"ocn_par","lat_min_hosing_comp",lat_min_hosing_comp)
     call nml_read(filename,"ocn_par","lat_max_hosing_comp",lat_max_hosing_comp)
     call nml_read(filename,"ocn_par","lon_min_hosing_comp",lon_min_hosing_comp)

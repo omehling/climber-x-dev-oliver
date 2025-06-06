@@ -42,7 +42,7 @@ module ocn_model
     use ocn_params, only : dt, rho0, init3_peak, init3_bg, i_saln0, saln0_const, i_fw, l_fw_corr, l_fw_melt_ice_sep, i_brines, i_brines_z, frac_brines
     use ocn_params, only : n_tracers_tot, n_tracers_ocn, n_tracers_bgc, idx_tracers_trans, age_tracer, dye_tracer, cons_tracer, l_cfc
     use ocn_params, only : i_age, i_dye, i_cons, i_cfc11, i_cfc12
-    use ocn_params, only : l_mld, l_hosing, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
+    use ocn_params, only : l_mld, l_hosing, l_hosing_comp_vol, hosing_ini, l_flux_adj_atl, l_flux_adj_ant, l_flux_adj_pac, l_salinity_restore, l_q_geo
     use ocn_params, only : l_ocn_input_fix, i_ocn_input_fix, l_ocn_input_fix_write, ocn_input_fix_file
     use ocn_params, only : l_noise_fw, l_noise_flx
     use ocn_params, only : tau_scale, ke_tau_coeff
@@ -91,6 +91,7 @@ contains
     real(wp) :: tau
     real(wp) :: sal_before, sal_after
     real(wp) :: vsf_saln0, vsf_saloc
+    real(wp) :: vsf_hosing
     logical :: error, error_eq, error_noneq
     real(wp) :: avg, tv1
 
@@ -257,6 +258,15 @@ contains
       call hosing_update(real(year,wp),ocn%f_ocn,ocn%amoc,ocn%hosing,ocn%fw_hosing)
     endif
     ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing 
+
+    ! volume compensation for freshwater hosing
+    ! TODO: check that vsf_hosing has correct value and (especially) sign!
+    if (l_hosing_comp_vol) then
+      vsf_hosing = sum(ocn%fw_hosing(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn%grid%ocn_vol_tot ! hosing correction per unit volume F_tot(t)/V
+      where (mask_c.eq.1)
+        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) + vsf_hosing
+      endwhere
+    endif
 
     ! remove latent heat needed to melt ice reaching the ocean through calving and basal melt below ice shelfs
     ocn%flx = ocn%flx - ocn%calving*Lf - ocn%bmelt_flt*Lf    ! kg/m2/s * J/kg = W/m2 
