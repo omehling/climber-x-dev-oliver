@@ -63,13 +63,10 @@
   !-------------------------------------------------------------------
   ! mapping method
   !-------------------------------------------------------------------
-  map_method = "bil"          ! for i_map==1 (in control.nml): 
-                                ! bilinear 
-                                ! nng = nearest neighbour + gaussian filtering with sigma=filt_sigma
-                              ! for i_map==2(in control.nml): 
-                                ! con = conservative
-                                ! bil = bilinear
-                                ! bic = bicubic
+  map_method = "bil"          ! mapping method
+                              ! con = conservative
+                              ! bil = bilinear
+                              ! bic = bicubic
   filt_sigma = 100            ! km, sigma for Gaussian smoothing
 
   ! regional climate forcing? only with flag_atm==false
