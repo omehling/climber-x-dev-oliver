@@ -120,7 +120,7 @@ module ocn_out
      real(wp) :: drhoatl2, drhoTatl2, drhoSatl2
      real(wp) :: drhoatl3, drhoTatl3, drhoSatl3
      real(wp) :: saln0, dvsf
-     real(wp), dimension(10) :: flx, fw, fw_corr, vsf, p_e_sic, runoff, runoff_veg, runoff_ice, runoff_lake, calving, bmelt, icemelt
+     real(wp), dimension(10) :: flx, fw, fw_corr, vsf, p_e_sic, runoff, runoff_veg, runoff_ice, runoff_lake, calving, bmelt, icemelt, fw_dhdt_ice
      real(wp) :: drake, bering, davis, fram, denmark, medi, indo, agulhas
      real(wp) :: fw_bering, fw_davis, fw_fram, fw_denmark
      real(wp) :: shelf
@@ -1047,7 +1047,7 @@ contains
     real(wp) :: opsip(0:maxj,0:maxk)
     real(wp) :: opsii(0:maxj,0:maxk)
     integer :: iposa(2)
-    real(wp), dimension(10) :: fw, fw_corr, p_e_sic, runoff, runoff_veg, runoff_ice, runoff_lake, calving, bmelt, icemelt, flx, vsf
+    real(wp), dimension(10) :: fw, fw_corr, p_e_sic, runoff, runoff_veg, runoff_ice, runoff_lake, calving, bmelt, icemelt, fw_dhdt_ice, flx, vsf
     real(wp) :: fw_noise
     real(wp) :: hft(3,maxj), hfp(3,maxj), hfa(3,maxj)
     real(wp) :: hftz(maxj,maxk), hfpz(maxj,maxk), hfaz(maxj,maxk)
@@ -1135,6 +1135,7 @@ contains
     icemelt = 0._wp
     calving = 0._wp
     bmelt = 0._wp
+    fw_dhdt_ice = 0._wp
     vsf = 0._wp
     flx = 0._wp
     hft = 0._wp
@@ -1157,7 +1158,7 @@ contains
     !$omp parallel do collapse(2) private(i,j,k,l,ocnvol,tv2,tv3,bmask,bmask2) &
     !$omp reduction(+:sum_2d,sum_3d,ohc,ohc700,ohc2000,tdocn,tdocn_atl,tdocn_pac,tdocn_ind,tdocn_so,sdocn,sdocn_atl,sdocn_pac,sdocn_ind,sdocn_so,ocnvol_tot) &
     !$omp reduction(+:ocnvol_atl,ocnvol_pac,ocnvol_ind,ocnvol_so,global_cons,global_age,global_dye,global_cfc11,global_cfc12) &
-    !$omp reduction(+:sl_steric,fw,fw_corr,fw_noise,p_e_sic,runoff,runoff_veg,runoff_ice,runoff_lake,icemelt,calving,bmelt,vsf,flx) &
+    !$omp reduction(+:sl_steric,fw,fw_corr,fw_noise,p_e_sic,runoff,runoff_veg,runoff_ice,runoff_lake,icemelt,calving,bmelt,fw_dhdt_ice,vsf,flx) &
     !$omp reduction(+:hft,hfp,hfa,hftz,hfpz,hfaz,fwt,fwp,fwa,fwtz,fwpz,fwaz)
     do i=1,maxi
       do j=1,maxj
@@ -1181,6 +1182,7 @@ contains
           calving(1) = calving(1) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
           bmelt(1) = bmelt(1) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
           icemelt(1) = icemelt(1) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+          fw_dhdt_ice(1) = fw_dhdt_ice(1) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
           vsf(1) = vsf(1) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
           flx(1) = flx(1) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))   ! W/m2 * m2 = W
           ! Atlantic basin cells
@@ -1194,6 +1196,7 @@ contains
             calving(2) = calving(2) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             bmelt(2) = bmelt(2) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             icemelt(2) = icemelt(2) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+            fw_dhdt_ice(2) = fw_dhdt_ice(2) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             vsf(2) = vsf(2) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
             flx(2) = flx(2) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             if (lat(j).gt.0._wp) then
@@ -1207,6 +1210,7 @@ contains
               calving(8) = calving(8) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               bmelt(8) = bmelt(8) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               icemelt(8) = icemelt(8) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+              fw_dhdt_ice(8) = fw_dhdt_ice(8) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               vsf(8) = vsf(8) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
               flx(8) = flx(8) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             endif
@@ -1221,6 +1225,7 @@ contains
               calving(6) = calving(6) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               bmelt(6) = bmelt(6) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               icemelt(6) = icemelt(6) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+              fw_dhdt_ice(6) = fw_dhdt_ice(6) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               vsf(6) = vsf(6) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
               flx(6) = flx(6) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             endif
@@ -1235,6 +1240,7 @@ contains
               calving(7) = calving(7) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               bmelt(7) = bmelt(7) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               icemelt(7) = icemelt(7) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+              fw_dhdt_ice(7) = fw_dhdt_ice(7) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               vsf(7) = vsf(7) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
               flx(7) = flx(7) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             endif
@@ -1249,6 +1255,7 @@ contains
               calving(9) = calving(9) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               bmelt(9) = bmelt(9) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               icemelt(9) = icemelt(9) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+              fw_dhdt_ice(9) = fw_dhdt_ice(9) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               vsf(9) = vsf(9) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
               flx(9) = flx(9) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             endif
@@ -1263,6 +1270,7 @@ contains
             calving(3) = calving(3) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             bmelt(3) = bmelt(3) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             icemelt(3) = icemelt(3) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+            fw_dhdt_ice(3) = fw_dhdt_ice(3) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             vsf(3) = vsf(3) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
             flx(3) = flx(3) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             ! Indian basin cells
@@ -1276,6 +1284,7 @@ contains
             calving(4) = calving(4) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             bmelt(4) = bmelt(4) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             icemelt(4) = icemelt(4) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+            fw_dhdt_ice(4) = fw_dhdt_ice(4) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             vsf(4) = vsf(4) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
             flx(4) = flx(4) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             ! Southern basin cells
@@ -1289,6 +1298,7 @@ contains
             calving(5) = calving(5) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             bmelt(5) = bmelt(5) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             icemelt(5) = icemelt(5) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+            fw_dhdt_ice(5) = fw_dhdt_ice(5) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
             vsf(5) = vsf(5) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
             flx(5) = flx(5) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             if (lat(j).lt.-60._wp) then
@@ -1302,6 +1312,7 @@ contains
               calving(10) = calving(10) + ocn%calving(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               bmelt(10) = bmelt(10) + ocn%bmelt(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               icemelt(10) = icemelt(10) + ocn%melt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
+              fw_dhdt_ice(10) = fw_dhdt_ice(10) + ocn%fw_dhdt_ice(i,j)*ocn%grid%ocn_area(i,j)  ! kg/m2/s * m2 = kg/s
               vsf(10) = vsf(10) + ocn%flx_sur(i,j,2)*rho0/ocn%saln0*ocn%grid%ocn_area(i,j)  ! m/s*psu * kg/m3 / psu * m2 = kg/s
               flx(10) = flx(10) + (ocn%flx(i,j)*ocn%grid%ocn_area(i,j))
             endif
@@ -2079,6 +2090,7 @@ contains
       ann_ts(y)%calving = 0._wp
       ann_ts(y)%bmelt = 0._wp
       ann_ts(y)%icemelt = 0._wp
+      ann_ts(y)%fw_dhdt_ice = 0._wp
       ann_ts(y)%vsf = 0._wp
       ann_ts(y)%flx = 0._wp
       ann_ts(y)%drake = 0._wp
@@ -2230,6 +2242,7 @@ contains
     ann_ts(y)%calving = ann_ts(y)%calving + calving/rho0*1.e-6_wp       * ann_avg ! Sv
     ann_ts(y)%bmelt = ann_ts(y)%bmelt + bmelt/rho0*1.e-6_wp       * ann_avg ! Sv
     ann_ts(y)%icemelt = ann_ts(y)%icemelt + icemelt/rho0*1.e-6_wp       * ann_avg ! Sv
+    ann_ts(y)%fw_dhdt_ice = ann_ts(y)%fw_dhdt_ice + fw_dhdt_ice/rho0*1.e-6_wp       * ann_avg ! Sv
     ann_ts(y)%vsf = ann_ts(y)%vsf + vsf/rho0*1.e-6_wp       * ann_avg ! Sv
     ann_ts(y)%flx = ann_ts(y)%flx + flx*1.e-15_wp   * ann_avg ! PW
     ann_ts(y)%drake = ann_ts(y)%drake + tf_drake    * ann_avg ! Sv
@@ -3693,6 +3706,12 @@ contains
     call nc_write(fnm,"icemelt_pac",    vars%icemelt(3),dim1=dim_time,start=[ndat],count=[y],long_name="Pacific ice-sheet melt flux to ocean",units="Sv",ncid=ncid)
     call nc_write(fnm,"icemelt_ind",    vars%icemelt(4),dim1=dim_time,start=[ndat],count=[y],long_name="Indian ocean ice-sheet melt flux to ocean",units="Sv",ncid=ncid)
     call nc_write(fnm,"icemelt_so",     vars%icemelt(5),dim1=dim_time,start=[ndat],count=[y],long_name="Southern ocean ice-sheet melt flux to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_atl",    vars%fw_dhdt_ice(2),dim1=dim_time,start=[ndat],count=[y],long_name="Atlantic freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_atlN30", vars%fw_dhdt_ice(6),dim1=dim_time,start=[ndat],count=[y],long_name="North Atlantic (>30) freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_atlN50", vars%fw_dhdt_ice(7),dim1=dim_time,start=[ndat],count=[y],long_name="North Atlantic (>50N) freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_pac",    vars%fw_dhdt_ice(3),dim1=dim_time,start=[ndat],count=[y],long_name="Pacific freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_ind",    vars%fw_dhdt_ice(4),dim1=dim_time,start=[ndat],count=[y],long_name="Indian ocean freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
+    call nc_write(fnm,"fw_dhdt_ice_so",     vars%fw_dhdt_ice(5),dim1=dim_time,start=[ndat],count=[y],long_name="Southern ocean freshwater flux from prescribed changes in ice sheet thickness to ocean",units="Sv",ncid=ncid)
     call nc_write(fnm,"flx_glob_avg",vars%flx(1)*1.e15_wp/ocn_area_tot,dim1=dim_time,start=[ndat],count=[y],long_name="global average net heat flux to ocean",units="W/m2",ncid=ncid)
     call nc_write(fnm,"flx_glob",vars%flx(1),dim1=dim_time,start=[ndat],count=[y],long_name="global net heat flux to ocean",units="PW",ncid=ncid)
     call nc_write(fnm,"flx_atl", vars%flx(2),dim1=dim_time,start=[ndat],count=[y],long_name="Atlantic heat flux to ocean",units="PW",ncid=ncid)
