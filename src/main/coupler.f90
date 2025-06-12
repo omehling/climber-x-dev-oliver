@@ -3602,7 +3602,7 @@ contains
           cmn%runoff_ice(i,j) = cmn%runoff_ice_l(i,j) - scale_dhdt_ice*cmn%dhdt_ice_i_mon(i,j,mon)
           ! ice melt, only for diagnostics
           cmn%melt_ice(i,j) = scale_dhdt_ice*cmn%melt_ice_i_mon(i,j,mon)
-          cmn%fw_dhdt_ice(i,j) = scale_dhdt_ice*cmn%dhdt_ice_i_mon(i,j,mon)
+          cmn%fw_dhdt_ice(i,j) = -scale_dhdt_ice*cmn%dhdt_ice_i_mon(i,j,mon)
         else
           ! grid cell covered by smb model domain(s), use monthly runoff and icemelt computed by smb 
           cmn%runoff_ice(i,j) = scale_runoff_ice*cmn%runoff_ice_i_mon(i,j,mon)
