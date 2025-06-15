@@ -57,7 +57,7 @@
  !-------------------------------------------------------------------------------------------
  adrag = 4.                   ! days, inverse minimum drag
  drag_topo_n = 2.             ! drag increase in shallow water regions. 0 = no increase; 1 = in 2x2 neighbours; 2 = in 2x2 and 4x4 neighbours
- drag_topo_fac = 2.5          ! factor by which to increase drag in shallow water
+ drag_topo_fac = 3.0          ! factor by which to increase drag in shallow water
  drag_topo_scale_eq = 0.
  z_drag_shallow = 1000.       ! m, depth of shallow water regions below which to increase adrag by factor drag_topo_fac
  drag_frac_fac = 0.           ! factor by which to increase drag where small ocean fraction
