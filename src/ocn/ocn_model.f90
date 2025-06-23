@@ -260,11 +260,11 @@ contains
     ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing 
 
     ! volume compensation for freshwater hosing
-    ! TODO: check that vsf_hosing has correct value and (especially) sign!
     if (l_hosing_comp_vol) then
       vsf_hosing = sum(ocn%fw_hosing(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn%grid%ocn_vol_tot ! hosing correction per unit volume F_tot(t)/V
+      ! write(6,*) 'Hosing compensation =', vsf_hosing
       where (mask_c.eq.1)
-        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) + vsf_hosing
+        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) + vsf_hosing*dt
       endwhere
     endif
 
