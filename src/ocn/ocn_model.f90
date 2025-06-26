@@ -277,8 +277,8 @@ contains
     ocn%flx_bot = 0._wp  ! by default no input flux for tracers
 
     if (i_fw.eq.2) then
-      vsf_saln0 = sum(ocn%fw_corr(:,:)*ocn_area(:,:))*ocn%saln0/rho0 / ocn_area_tot  ! kg/m2/s * m2 * psu * m3/kg /m2
-      vsf_saloc = sum(ocn%fw_corr(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn_area_tot
+      vsf_saln0 = sum((ocn%fw_corr(:,:)-ocn%fw_hosing(:,:))*ocn_area(:,:))*ocn%saln0/rho0 / ocn_area_tot  ! kg/m2/s * m2 * psu * m3/kg /m2
+      vsf_saloc = sum((ocn%fw_corr(:,:)-ocn%fw_hosing(:,:))*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn_area_tot
       ocn%dvsf = vsf_saln0-vsf_saloc        ! m/s*psu
     else
       ocn%dvsf = 0._wp
