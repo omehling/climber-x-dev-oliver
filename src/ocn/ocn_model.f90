@@ -259,14 +259,8 @@ contains
     endif
     ocn%fw_corr = ocn%fw_corr + ocn%fw_hosing 
 
-    ! volume compensation for freshwater hosing
-    if (l_hosing_comp_vol) then
-      vsf_hosing = sum(ocn%fw_hosing(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn%grid%ocn_vol_tot ! hosing correction per unit volume F_tot(t)/V
-      ! write(6,*) 'Hosing compensation =', vsf_hosing
-      where (mask_c.eq.1)
-        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) + vsf_hosing*dt
-      endwhere
-    endif
+    ! hosing compensation factor
+    vsf_hosing = sum(ocn%fw_hosing(:,:)*ocn%ts(:,:,maxk,2)*ocn_area(:,:))/rho0 / ocn%grid%ocn_vol_tot ! hosing correction per unit volume F_tot(t)/V
 
     ! remove latent heat needed to melt ice reaching the ocean through calving and basal melt below ice shelfs
     ocn%flx = ocn%flx - ocn%calving*Lf - ocn%bmelt_flt*Lf    ! kg/m2/s * J/kg = W/m2 
@@ -468,6 +462,15 @@ contains
     ! reset min Coriolis parameter
     if (n.ge.1) then 
       call fcormin_reset
+    endif
+
+    !------------------------------------------------------------------------
+    ! volume compensation for freshwater hosing
+    !------------------------------------------------------------------------
+    if (l_hosing_comp_vol) then
+      where (mask_c.eq.1)
+        ocn%ts(:,:,:,2) = ocn%ts(:,:,:,2) + vsf_hosing*dt
+      endwhere
     endif
 
     !------------------------------------------------------------------------
